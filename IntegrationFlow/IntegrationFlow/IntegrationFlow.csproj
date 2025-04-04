@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4B644D16-A9A1-410B-9850-699954203F3B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IntegrationFlow</RootNamespace>
+    <AssemblyName>IntegrationFlow</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>7</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Autofac">
+      <HintPath>..\..\packages\Autofac.4.4.0\lib\net45\Autofac.dll</HintPath>
+    </Reference>
+    <Reference Include="EleWise.ELMA.Calendar, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EleWise.ELMA.Calendar.4.0.25.64928\lib\net48\EleWise.ELMA.Calendar.dll</HintPath>
+    </Reference>
+    <Reference Include="EleWise.ELMA.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EleWise.ELMA.Common.4.0.25.64928\lib\net48\EleWise.ELMA.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="EleWise.ELMA.SDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cb29d04eca9b031d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EleWise.ELMA.SDK.4.0.25.64928\lib\net48\EleWise.ELMA.SDK.dll</HintPath>
+    </Reference>
+    <Reference Include="EleWise.ELMA.SDK.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cb29d04eca9b031d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EleWise.ELMA.SDK.4.0.25.64928\lib\net48\EleWise.ELMA.SDK.XmlSerializers.dll</HintPath>
+    </Reference>
+    <Reference Include="EleWise.ELMA.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EleWise.ELMA.Security.4.0.25.64928\lib\net48\EleWise.ELMA.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="Iesi.Collections, Version=4.0.0.0, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Iesi.Collections.4.1.0\lib\net461\Iesi.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Exchange.WebServices, Version=15.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Exchange.WebServices.2.2\lib\40\Microsoft.Exchange.WebServices.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Exchange.WebServices.Auth, Version=15.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Exchange.WebServices.2.2\lib\40\Microsoft.Exchange.WebServices.Auth.dll</HintPath>
+    </Reference>
+    <Reference Include="NHibernate">
+      <HintPath>..\..\packages\NHibernate.5.2.0\lib\net461\NHibernate.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.HashFunction.CityHash">
+      <HintPath>..\..\packages\System.Data.HashFunction.CityHash.2.0.0\lib\net45\System.Data.HashFunction.CityHash.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.HashFunction.Core">
+      <HintPath>..\..\packages\System.Data.HashFunction.Core.2.0.0\lib\net45\System.Data.HashFunction.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.HashFunction.Interfaces">
+      <HintPath>..\..\packages\System.Data.HashFunction.Interfaces.2.0.0\lib\net45\System.Data.HashFunction.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing">
+      <HintPath>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Mvc, Version=4.0.0.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.Mvc.5.2.3\lib\net45\System.Web.Mvc.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Contexts\Integrations\00Samples\TransmitterConfigurations\RESTSimpleConfiguration.cs" />
+    <Compile Include="Contexts\Integrations\00Samples\Transmitters\RESTSimpleTransmitter.cs" />
+    <Compile Include="Contexts\Integrations\01Infrastructure\Logger.cs" />
+    <Compile Include="Contexts\Integrations\01Infrastructure\OrgIntegration.cs" />
+    <Compile Include="Contexts\Integrations\02Application\IOrgIntegration.cs" />
+    <Compile Include="Contexts\Integrations\02Application\ISentAndForgotIntegrationOppositeSideProvider.cs" />
+    <Compile Include="Contexts\Integrations\02Application\ISentAndWaitIntegrationOppositeSideProvider.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ILogger.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\Cfg\IConfiguration.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\Formatter\IFormatterInboxMessage.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\InboxMessage.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\InboxMessageProcessing\IInboxMessageFailedProcessing.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\InboxMessageProcessing\IInboxMessageProcessing.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\IntegrationProcessorSideBase.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\IntegrationPublisherSideBase.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\ListenerBase.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\ListenerStatuses.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\Logging\ILogging.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\ProcessorBase.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\PublisherBase.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\TypeCollection.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\ReceiveAndProcess\Validator\IValidator.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\Cfg\IConfiguration.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\Connection\IConnection.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\Formatter\IFormatterTransmitData.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\Logging\ILogging.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\SentAndForgotIntegration.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\SentAndForgotIntegrationOppositeSide.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\TransmitData.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndForgot\Transmitter\ITransmitter.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Cfg\IConfiguration.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Connection\IConnection.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\EmptyIntegrationResult.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Formatter\IFormatterObtainedData.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Formatter\IFormatterTransmitData.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Logging\ILogging.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\ObtainedData.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\SentAndWaitIntegration.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\SentAndWaitIntegrationOppositeSide.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\SentAndWaitIntegrationResultHandler.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\TransmitData.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Transmitter\ITransmitter.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\SentAndWait\Validator\IValidator.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\AbstractComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\AbstractComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\BaseComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Comparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ComparerOverridesCollection.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ComparersFactory.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Comparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ComparisonSettings.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\AbstractDynamicObjectsComprer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\AbstractEnumerablesComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\CompilerGeneratedObjectComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\DynamicObjectComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\EnumerablesComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\EnumerablesComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\ExpandoObjectComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\GenericEnumerablesComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\HashSetsComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\HashSetsComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\IComparerWithCondition.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\MultidimensionalArrayComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\MultidimensionalArraysComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\CustomComparers\TypesComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Difference.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\DifferenceTypes.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Exceptions\AmbiguousComparerOverrideResolutionException.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Exceptions\ValueComparerExistsException.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\IBaseComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\IComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\IComparersFactory.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\IComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Utils\MemberInfoExtensions.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Utils\PropertyHelper.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\Utils\TypeExtensions.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\AbstractValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\AbstractValueComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\DefaultValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\DefaultValueValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\DoNotCompareValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\DynamicValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\IgnoreCaseStringsValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\IValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\IValueComparer~1.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\NulableStringsValueComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\ToStringComparer.cs" />
+    <Compile Include="Contexts\Integrations\03Domain\Services\ObjectsComparerService\ValueComparers\UriComparer.cs" />
+    <Compile Include="Contexts\Integrations\Scheduler\IntegrationScheduler.cs" />
+    <Compile Include="ExtensionsPoints\IReceiveAndProcessLauncher.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Contexts\Integrations\Docs\Интеграции.png" />
+    <Content Include="Contexts\Integrations\Docs\Описание модуля интеграций_v2.docx" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
