@@ -1,0 +1,33 @@
+# Build
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+Builds/
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb
+*.exe
+
+# IDE
+.vs/
+.idea/
+*.DotSettings.user
+_ReSharper*/
+*.rsuser
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Test results
+TestResults/
+coverage/
+*.trx
