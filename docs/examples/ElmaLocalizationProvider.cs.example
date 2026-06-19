@@ -1,0 +1,13 @@
+// Пример адаптера для ELMA host-проекта (не входит в IntegrationFlow.Core).
+// Скопируйте в проект плагина ELMA и вызовите SR.Configure при старте.
+
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+
+public sealed class ElmaLocalizationProvider : ILocalizationProvider
+{
+    public string T(string format, params object[] args) =>
+        EleWise.ELMA.SR.T(format, args);
+}
+
+// При старте плагина:
+// SR.Configure(new ElmaLocalizationProvider());

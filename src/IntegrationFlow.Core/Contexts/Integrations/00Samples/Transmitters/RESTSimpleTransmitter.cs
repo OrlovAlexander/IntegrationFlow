@@ -6,6 +6,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.TransmitterConfigurati
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Transmitter;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.Transmitters
@@ -73,7 +74,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.Transmitters
                             var responseString = sr.ReadToEnd();
                             if (string.IsNullOrEmpty(responseString))
                             {
-                                throw new ArgumentNullException(responseString, EleWise.ELMA.SR.T("Получен пустой ответ при запросе {0}", Configuration.Url));
+                                throw new ArgumentNullException(responseString, SR.T("Получен пустой ответ при запросе {0}", Configuration.Url));
                             }
                             Logger.Log("Ответ: {0}", responseString);
                             return new ObtainedData(responseString);
@@ -97,7 +98,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.Transmitters
             catch (Exception ex)
             {
                 Logger.Log("Exception");
-                Logger.LogException(EleWise.ELMA.SR.T("{0}({1})", "Произошла ошибка в плагине 'Интеграция' ", Configuration.Url, ex), ex);
+                Logger.LogException(SR.T("{0}({1})", "Произошла ошибка в плагине 'Интеграция' ", Configuration.Url, ex), ex);
                 return new ObtainedData(EmptyIntegrationResult.JsonObject());
             }
         }
