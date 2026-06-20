@@ -48,7 +48,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             where TProcessor : ProcessorBase, new()
             where TIntegrationProcessorSide : IntegrationProcessorSideBase, new()
         {
-            return TypeCollection<TProcessor>.GetOrAdd(logger, () =>
+            var cacheKey = typeof(TProcessor).AssemblyQualifiedName ?? typeof(TProcessor).FullName ?? typeof(TProcessor).Name;
+
+            return TypeCollection<TProcessor>.GetOrAdd(logger, cacheKey, () =>
             {
                 var side = (TIntegrationProcessorSide)System.Activator.CreateInstance(typeof(TIntegrationProcessorSide));
                 var processor = (TProcessor)System.Activator.CreateInstance(typeof(TProcessor));

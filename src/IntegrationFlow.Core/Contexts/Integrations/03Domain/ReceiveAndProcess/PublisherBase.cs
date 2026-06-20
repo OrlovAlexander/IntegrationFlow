@@ -50,27 +50,57 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             where TPublisherBase : PublisherBase, new()
             where TIntegrationPublisherSideBase : IntegrationPublisherSideBase, new()
         {
-            return TypeCollection<TPublisherBase>.GetOrAdd(logger, () => 
-            {
-                var side = (TIntegrationPublisherSideBase)System.Activator.CreateInstance(typeof(TIntegrationPublisherSideBase));
-                var publisher = (TPublisherBase)System.Activator.CreateInstance(typeof(TPublisherBase));
+            var side = new TIntegrationPublisherSideBase();
+            var cacheKey = BuildPublisherCacheKey<TPublisherBase>(side);
 
-                //Type publisherBaseType = typeof(PublisherBase<>);
-                //Type[] typeArgs = { typeof(TIntegrationPublisherSideBase) };
-                //Type constructed = publisherBaseType.MakeGenericType(typeArgs);
-                //var publisher = (TPublisher)System.Activator.CreateInstance(constructed);
-
-                publisher.IntegrationPublisherSide = side;
-                publisher.Logger = logger;
-
-                side.Publisher = publisher;
-
-                logger.Log(SR.T("ReceiveAndProcess.PublisherBase - Create - Создать публикатор сообщений - '{0}'",
-                    typeof(TPublisherBase).FullName));
-
-                return publisher;
-            });
+            return TypeCollection<TPublisherBase>.GetOrAdd(logger, cacheKey, () =>
+                CreatePublisher<TPublisherBase>(side, logger));
         }
+
+        /// <summary>
+        /// Создать публикатор сообщений, запросов и т.п. с явно переданной стороной интеграции.
+        /// </summary>
+        /// <typeparam name="TPublisherBase">Тип публикатора</typeparam>
+        /// <param name="logger">Логгер в рамках интеграций</param>
+        /// <param name="integrationPublisherSide">Сторона публикатора сообщений, запросов и т.п.</param>
+        /// <returns>Публикатор сообщений, запросов и т.п.</returns>
+        public static PublisherBase Create<TPublisherBase>(
+            IIntegrationLogger logger,
+            IntegrationPublisherSideBase integrationPublisherSide)
+            where TPublisherBase : PublisherBase, new()
+        {
+            if (integrationPublisherSide == null)
+            {
+                throw new ArgumentNullException(nameof(integrationPublisherSide));
+            }
+
+            var cacheKey = BuildPublisherCacheKey<TPublisherBase>(integrationPublisherSide);
+
+            return TypeCollection<TPublisherBase>.GetOrAdd(logger, cacheKey, () =>
+                CreatePublisher<TPublisherBase>(integrationPublisherSide, logger));
+        }
+
+        private static TPublisherBase CreatePublisher<TPublisherBase>(
+            IntegrationPublisherSideBase side,
+            IIntegrationLogger logger)
+            where TPublisherBase : PublisherBase, new()
+        {
+            var publisher = new TPublisherBase
+            {
+                IntegrationPublisherSide = side,
+                Logger = logger
+            };
+
+            side.Publisher = publisher;
+
+            logger.Log(SR.T("ReceiveAndProcess.PublisherBase - Create - Создать публикатор сообщений - '{0}'",
+                typeof(TPublisherBase).FullName));
+
+            return publisher;
+        }
+
+        private static string BuildPublisherCacheKey<TPublisherBase>(IntegrationPublisherSideBase side)
+            => $"{typeof(TPublisherBase).AssemblyQualifiedName}|{side.GetPublisherCacheKey()}";
 
         /// <summary>
         /// Начать получать сообщения, запросы и т.п. от публикатора сообщений

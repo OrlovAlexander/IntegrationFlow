@@ -1,6 +1,5 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.InboxMessageProcessing;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Processors;
@@ -42,6 +41,19 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// </summary>
     internal abstract class RabbitMqIntegrationPublisherSideBase : IntegrationPublisherSideBase
     {
+        /// <summary>
+        /// Имя профиля в rabbitmq.json.
+        /// </summary>
+        protected abstract string ConfigurationName { get; }
+
+        /// <inheritdoc />
+        internal override string GetPublisherCacheKey()
+            => $"{GetType().AssemblyQualifiedName}|{ConfigurationName}";
+
+        /// <inheritdoc />
+        public override IConfiguration GetConfiguration(PublisherBase publisher, IIntegrationLogger logger)
+            => RabbitMqConfigurationLoader.LoadProfile(ConfigurationName);
+
         /// <inheritdoc />
         public override ListenerBase GetListener(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger)
             => ListenerBase.Create<RabbitMqListener>(publisher, configuration, logger);
@@ -49,5 +61,30 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// <inheritdoc />
         public override ProcessorBase GetProcessor(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger)
             => ProcessorBase.Create<RabbitMqProcessor, DefaultRabbitMqIntegrationProcessorSide>(publisher, configuration, logger);
+    }
+
+    /// <summary>
+    /// Сторона публикатора RabbitMQ с динамическим именем профиля конфигурации.
+    /// </summary>
+    internal sealed class NamedRabbitMqIntegrationPublisherSide : RabbitMqIntegrationPublisherSideBase
+    {
+        private readonly string configurationName;
+
+        /// <summary>
+        /// Ctor
+        /// </summary>
+        /// <param name="configurationName">Имя профиля в rabbitmq.json.</param>
+        public NamedRabbitMqIntegrationPublisherSide(string configurationName)
+        {
+            if (string.IsNullOrWhiteSpace(configurationName))
+            {
+                throw new ArgumentException("Имя профиля RabbitMQ не задано.", nameof(configurationName));
+            }
+
+            this.configurationName = configurationName;
+        }
+
+        /// <inheritdoc />
+        protected override string ConfigurationName => configurationName;
     }
 }

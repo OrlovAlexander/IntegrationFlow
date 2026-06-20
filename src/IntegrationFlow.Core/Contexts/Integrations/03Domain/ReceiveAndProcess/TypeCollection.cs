@@ -25,23 +25,21 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// Добавить в коллекцию используя указанную функцию, если ключ еще не существует.
         /// Возвращает новое значение или существующенее значение, если ключ существует.
         /// </summary>
+        /// <param name="logger">Логгер в рамках интеграций.</param>
+        /// <param name="cacheKey">Ключ кеша экземпляра.</param>
         /// <param name="valueFactory">Функция, используемая для создания значения для кюлча.</param>
-        internal static T GetOrAdd(IIntegrationLogger logger, Func<T> valueFactory)
+        internal static T GetOrAdd(IIntegrationLogger logger, string cacheKey, Func<T> valueFactory)
         {
             if (singletonCollections == null)
             {
                 singletonCollections = new TypeCollection<T>();
             }
 
-            var assemblyQualifiedName = typeof(T).AssemblyQualifiedName;
-
-            T result = singletonCollections.collections.GetOrAdd(assemblyQualifiedName, (name) => 
+            T result = singletonCollections.collections.GetOrAdd(cacheKey, (name) =>
             {
-                logger.Log("ReceiveAndProcess - TypeCollection - Добавить Публикатор '{0}'", assemblyQualifiedName);
+                logger.Log("ReceiveAndProcess - TypeCollection - Добавить Публикатор '{0}'", cacheKey);
                 return valueFactory();
             });
-
-            // logger.Log("Найден Публикатор типа '{0}' по полному имени типа '{1}'", typeof(T).AssemblyQualifiedName, assemblyQualifiedName);
 
             return result;
         }

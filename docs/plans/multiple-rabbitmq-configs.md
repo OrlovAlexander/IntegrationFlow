@@ -1,6 +1,6 @@
 # План: несколько конфигураций RabbitMQ для ReceiveAndProcess
 
-**Статус:** черновик (API loader частично подготовлен)  
+**Статус:** выполнено  
 **Дата:** 2026-06-20  
 **Цель:** поддержать несколько именованных профилей подключения к RabbitMQ в `rabbitmq.json` и параллельный запуск нескольких listener-ов.
 
@@ -100,17 +100,18 @@ public const string DefaultProfileName = "Default";
 
 | Метод | Назначение | Статус |
 |-------|------------|--------|
-| `Load()` | Один профиль из `rabbitmq.json` по умолчанию | есть |
+| `Load()` | Один профиль из `rabbitmq.json` по умолчанию | **реализовано** |
+| `LoadSingle(string filePath)` | Единственный профиль из указанного файла | **реализовано** |
 | `LoadFromFile(string filePath)` | Legacy flat config из указанного файла | **реализовано** |
 | `Load(string filePath)` | Obsolete → `LoadFromFile` | **deprecated** |
-| `LoadProfile(string profileName)` | Профиль по имени из default-файла | запланировано |
-| `LoadProfile(string profileName, string filePath)` | Профиль по имени из указанного файла | запланировано |
-| `LoadAll(string? filePath = null)` | Все именованные профили | запланировано |
-| `Populate(RabbitMqConfiguration target)` | Legacy flat из default-файла | есть |
-| `PopulateFromFile(RabbitMqConfiguration target, string filePath)` | Legacy flat из указанного файла | запланировано |
-| `Populate(RabbitMqConfiguration target, string filePath)` | Obsolete → `PopulateFromFile` | запланировано |
-| `PopulateProfile(RabbitMqConfiguration target, string profileName)` | По имени профиля из default-файла | запланировано |
-| `PopulateProfile(RabbitMqConfiguration target, string profileName, string filePath)` | По имени профиля из указанного файла | запланировано |
+| `LoadProfile(string profileName)` | Профиль по имени из default-файла | **реализовано** |
+| `LoadProfile(string profileName, string filePath)` | Профиль по имени из указанного файла | **реализовано** |
+| `LoadAll(string? filePath = null)` | Все именованные профили | **реализовано** |
+| `Populate(RabbitMqConfiguration target)` | Единственный профиль из default-файла | **реализовано** |
+| `PopulateFromFile(RabbitMqConfiguration target, string filePath)` | Legacy flat из указанного файла | **реализовано** |
+| `Populate(RabbitMqConfiguration target, string filePath)` | Obsolete → `PopulateFromFile` | **deprecated** |
+| `PopulateProfile(RabbitMqConfiguration target, string profileName)` | По имени профиля из default-файла | **реализовано** |
+| `PopulateProfile(RabbitMqConfiguration target, string profileName, string filePath)` | По имени профиля из указанного файла | **реализовано** |
 
 ### Поведение `LoadFromFile` после multi-config
 
@@ -268,30 +269,30 @@ foreach (var config in RabbitMqConfigurationLoader.LoadAll())
 
 **Этап 1 (минимальный):**
 
-- [x] Разделить API: `LoadFromFile` vs будущий `LoadProfile` (критическая проблема 1)
-- [ ] `DefaultProfileName`, whitelist детекции формата, `Name`, `LoadProfile`, `LoadAll`, `PopulateProfile`, `PopulateFromFile`
-- [ ] TypeCollection: ключ с `ConfigurationName` (контракт на `RabbitMqIntegrationPublisherSideBase`)
-- [ ] `rabbitmq.json` + sample migration (side-классы `Inbox` / `Orders`)
+- [x] Разделить API: `LoadFromFile` vs `LoadProfile` (критическая проблема 1)
+- [x] `DefaultProfileName`, whitelist детекции формата, `Name`, `LoadProfile`, `LoadAll`, `PopulateProfile`, `PopulateFromFile`
+- [x] TypeCollection: ключ с `ConfigurationName` (контракт на `RabbitMqIntegrationPublisherSideBase`)
+- [x] `rabbitmq.json` + sample migration (side-классы `Inbox` / `Orders`)
 
 **Этап 2:**
 
-- [ ] `NamedRabbitMqIntegrationPublisherSide` + composite launcher
-- [ ] Тесты: multi-config loader + два `NamedRabbitMqIntegrationPublisherSide` → два publisher
-- [ ] README (в т.ч. ограничение ProcessorBase v1, поведение `LoadFromFile` vs named)
+- [x] `NamedRabbitMqIntegrationPublisherSide` + composite launcher
+- [x] Тесты: multi-config loader + два `NamedRabbitMqIntegrationPublisherSide` → два publisher
+- [x] README (в т.ч. ограничение ProcessorBase v1, поведение `LoadFromFile` vs named)
 
 ### 9. Тесты
 
 [`RabbitMqConfigurationLoaderTests`](../../tests/IntegrationFlow.Core.Tests/RabbitMq/RabbitMqConfigurationLoaderTests.cs):
 
 - [x] `LoadFromFile` (legacy flat)
-- [ ] `LoadAll()` — несколько профилей
-- [ ] `LoadProfile("Orders")`
-- [ ] legacy flat → `Name == DefaultProfileName`
-- [ ] `LoadProfile("Unknown")` → исключение
-- [ ] `Load()` при нескольких профилях → исключение
-- [ ] `LoadFromFile` на named-файле → исключение
-- [ ] `PopulateFromFile` / `PopulateProfile`
-- [ ] детекция: ключ `HostName` на уровне `RabbitMq` → flat, иначе → named
+- [x] `LoadAll()` — несколько профилей
+- [x] `LoadProfile("Orders")`
+- [x] legacy flat → `Name == DefaultProfileName`
+- [x] `LoadProfile("Unknown")` → исключение
+- [x] `LoadSingle()` при нескольких профилях → исключение
+- [x] `LoadFromFile` на named-файле → исключение
+- [x] `PopulateFromFile` / `PopulateProfile`
+- [x] детекция: ключ `HostName` на уровне `RabbitMq` → flat, иначе → named
 
 Отдельно: publisher singleton — два side типа и два `NamedRabbitMqIntegrationPublisherSide` с разными именами.
 
@@ -324,12 +325,12 @@ foreach (var config in RabbitMqConfigurationLoader.LoadAll())
 ## Чеклист реализации
 
 - [x] Разделить API loader: `LoadFromFile`, obsolete `Load(string filePath)`
-- [ ] `DefaultProfileName`, whitelist, `Name`, `LoadProfile`, `LoadAll`, `PopulateProfile`, `PopulateFromFile`
-- [ ] Obsolete `Populate(target, filePath)` → `PopulateFromFile`
-- [ ] TypeCollection: ключ `{PublisherType}|{SideType}|{ConfigurationName}`
-- [ ] `ConfigurationName` на `RabbitMqIntegrationPublisherSideBase`
-- [ ] `PublisherBase.Create(logger, sideInstance)`
-- [ ] `NamedRabbitMqIntegrationPublisherSide` (этап 2)
-- [ ] `rabbitmq.json` + миграция sample (этап 1)
-- [ ] README
-- [ ] Тесты multi-config, `LoadFromFile` на named, publisher singleton
+- [x] `DefaultProfileName`, whitelist, `Name`, `LoadProfile`, `LoadAll`, `PopulateProfile`, `PopulateFromFile`
+- [x] Obsolete `Populate(target, filePath)` → `PopulateFromFile`
+- [x] TypeCollection: ключ `{PublisherType}|{SideType}|{ConfigurationName}`
+- [x] `ConfigurationName` на `RabbitMqIntegrationPublisherSideBase`
+- [x] `PublisherBase.Create(logger, sideInstance)`
+- [x] `NamedRabbitMqIntegrationPublisherSide` (этап 2)
+- [x] `rabbitmq.json` + миграция sample (этап 1)
+- [x] README
+- [x] Тесты multi-config, `LoadFromFile` на named, publisher singleton

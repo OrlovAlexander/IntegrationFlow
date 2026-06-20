@@ -17,6 +17,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         }
 
         /// <summary>
+        /// Ключ кеша publisher-а для данной стороны интеграции.
+        /// </summary>
+        internal virtual string GetPublisherCacheKey()
+            => GetType().AssemblyQualifiedName ?? GetType().FullName ?? GetType().Name;
+
+        /// <summary>
         /// Возвращает конфигурацию публикатора, слушателя
         /// </summary>
         /// <param name="publisher">Публикатор сообщений, запросов, и т.п.</param>

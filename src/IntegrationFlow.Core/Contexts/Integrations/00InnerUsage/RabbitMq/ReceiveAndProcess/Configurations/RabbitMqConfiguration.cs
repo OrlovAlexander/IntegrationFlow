@@ -11,6 +11,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         public bool Asynchronously { get; set; } = true;
 
         /// <summary>
+        /// Имя профиля подключения в rabbitmq.json.
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
         /// Хост брокера RabbitMQ.
         /// </summary>
         public string HostName { get; set; } = "localhost";

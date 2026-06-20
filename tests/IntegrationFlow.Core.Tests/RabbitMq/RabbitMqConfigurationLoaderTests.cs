@@ -6,7 +6,7 @@ namespace IntegrationFlow.Tests.RabbitMq;
 public sealed class RabbitMqConfigurationLoaderTests
 {
     [Fact]
-    public void Load_ReadsSettingsFromJsonFile()
+    public void LoadFromFile_ReadsLegacyFlatSettings()
     {
         var configPath = CreateConfigFile(
             """
@@ -28,6 +28,7 @@ public sealed class RabbitMqConfigurationLoaderTests
 
         var configuration = RabbitMqConfigurationLoader.LoadFromFile(configPath);
 
+        Assert.Equal(RabbitMqConfigurationLoader.DefaultProfileName, configuration.Name);
         Assert.Equal("rabbit.example.com", configuration.HostName);
         Assert.Equal(5673, configuration.Port);
         Assert.Equal("integration", configuration.UserName);
@@ -41,7 +42,80 @@ public sealed class RabbitMqConfigurationLoaderTests
     }
 
     [Fact]
-    public void Populate_FillsExistingConfigurationInstance()
+    public void LoadAll_ReadsNamedProfiles()
+    {
+        var configPath = CreateNamedConfigFile();
+
+        var profiles = RabbitMqConfigurationLoader.LoadAll(configPath);
+
+        Assert.Equal(2, profiles.Count);
+        Assert.Contains(profiles, profile => profile.Name == "Inbox" && profile.QueueName == "integration.inbox");
+        Assert.Contains(profiles, profile => profile.Name == "Orders" && profile.QueueName == "orders.inbox");
+    }
+
+    [Fact]
+    public void LoadProfile_ReadsNamedProfileByName()
+    {
+        var configPath = CreateNamedConfigFile();
+
+        var configuration = RabbitMqConfigurationLoader.LoadProfile("Orders", configPath);
+
+        Assert.Equal("Orders", configuration.Name);
+        Assert.Equal("orders.inbox", configuration.QueueName);
+        Assert.Equal("IntegrationFlow.OrdersListener", configuration.ClientProvidedName);
+    }
+
+    [Fact]
+    public void Load_ReturnsSingleProfileFromNamedFileWhenOnlyOneProfileExists()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMq": {
+                "Inbox": {
+                  "HostName": "localhost",
+                  "QueueName": "integration.inbox"
+                }
+              }
+            }
+            """);
+
+        var configuration = RabbitMqConfigurationLoader.LoadSingle(configPath);
+
+        Assert.Equal("Inbox", configuration.Name);
+        Assert.Equal("integration.inbox", configuration.QueueName);
+    }
+
+    [Fact]
+    public void Load_ThrowsWhenMultipleProfilesExist()
+    {
+        var configPath = CreateNamedConfigFile();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => RabbitMqConfigurationLoader.LoadSingle(configPath));
+
+        Assert.Contains("LoadProfile", exception.Message);
+    }
+
+    [Fact]
+    public void LoadFromFile_ThrowsForNamedProfilesFile()
+    {
+        var configPath = CreateNamedConfigFile();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => RabbitMqConfigurationLoader.LoadFromFile(configPath));
+
+        Assert.Contains("LoadProfile", exception.Message);
+    }
+
+    [Fact]
+    public void LoadProfile_ThrowsForUnknownProfile()
+    {
+        var configPath = CreateNamedConfigFile();
+
+        Assert.Throws<InvalidOperationException>(() => RabbitMqConfigurationLoader.LoadProfile("Unknown", configPath));
+    }
+
+    [Fact]
+    public void PopulateFromFile_FillsExistingConfigurationInstance()
     {
         var configPath = CreateConfigFile(
             """
@@ -54,19 +128,53 @@ public sealed class RabbitMqConfigurationLoaderTests
             """);
 
         var configuration = new RabbitMqConfiguration();
-        RabbitMqConfigurationLoader.Populate(configuration, configPath);
+        RabbitMqConfigurationLoader.PopulateFromFile(configuration, configPath);
 
+        Assert.Equal(RabbitMqConfigurationLoader.DefaultProfileName, configuration.Name);
         Assert.Equal("127.0.0.1", configuration.HostName);
         Assert.Equal("events.inbox", configuration.QueueName);
         Assert.Equal(5672, configuration.Port);
     }
 
     [Fact]
-    public void Load_ThrowsWhenFileDoesNotExist()
+    public void PopulateProfile_FillsExistingConfigurationInstance()
+    {
+        var configPath = CreateNamedConfigFile();
+
+        var configuration = new RabbitMqConfiguration();
+        RabbitMqConfigurationLoader.PopulateProfile(configuration, "Inbox", configPath);
+
+        Assert.Equal("Inbox", configuration.Name);
+        Assert.Equal("integration.inbox", configuration.QueueName);
+    }
+
+    [Fact]
+    public void LoadFromFile_ThrowsWhenFileDoesNotExist()
     {
         var missingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
 
         Assert.Throws<FileNotFoundException>(() => RabbitMqConfigurationLoader.LoadFromFile(missingPath));
+    }
+
+    private static string CreateNamedConfigFile()
+    {
+        return CreateConfigFile(
+            """
+            {
+              "RabbitMq": {
+                "Inbox": {
+                  "HostName": "localhost",
+                  "QueueName": "integration.inbox",
+                  "ClientProvidedName": "IntegrationFlow.InboxListener"
+                },
+                "Orders": {
+                  "HostName": "localhost",
+                  "QueueName": "orders.inbox",
+                  "ClientProvidedName": "IntegrationFlow.OrdersListener"
+                }
+              }
+            }
+            """);
     }
 
     private static string CreateConfigFile(string content)

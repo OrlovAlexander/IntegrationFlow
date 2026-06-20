@@ -54,62 +54,106 @@ services.AddIntegrationFlow();
 
 ### Пример запуска
 
-Пример — `SampleRabbitMqReceiveAndProcessLauncher` в `00Samples/ReceiveAndProcess/`:
+**Один профиль (Inbox):**
 
 ```csharp
 public sealed class SampleRabbitMqReceiveAndProcessLauncher : IReceiveAndProcessLauncher
 {
     public void Run()
     {
-        var publisher = PublisherBase.Create<RabbitMqPublisher, SampleRabbitMqIntegrationPublisherSide>(
-            Logger.Create());
+        var publisher = PublisherBase.Create<RabbitMqPublisher, InboxRabbitMqPublisherSide>(Logger.Create());
         publisher.BeginReceiving();
+    }
+}
+```
+
+**Все профили параллельно:**
+
+```csharp
+public sealed class SampleRabbitMqAllProfilesReceiveAndProcessLauncher : IReceiveAndProcessLauncher
+{
+    public void Run()
+    {
+        foreach (var configuration in RabbitMqConfigurationLoader.LoadAll())
+        {
+            var side = new NamedRabbitMqIntegrationPublisherSide(configuration.Name);
+            var publisher = PublisherBase.Create<RabbitMqPublisher>(Logger.Create(), side);
+            publisher.BeginReceiving();
+        }
     }
 }
 ```
 
 ### Настройка подключения
 
-Настройки подключения хранятся в файле `rabbitmq.json` рядом с приложением. Пример файла — в `00Samples/ReceiveAndProcess/rabbitmq.json`:
+Настройки хранятся в `rabbitmq.json` рядом с приложением. Поддерживаются **именованные профили** и **legacy flat**-формат.
+
+**Именованные профили** (рекомендуется):
+
+```json
+{
+  "RabbitMq": {
+    "Inbox": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "QueueName": "integration.inbox",
+      "PrefetchCount": 1,
+      "Asynchronously": true,
+      "AutomaticRecoveryEnabled": true,
+      "ClientProvidedName": "IntegrationFlow.InboxListener"
+    },
+    "Orders": {
+      "HostName": "localhost",
+      "QueueName": "orders.inbox",
+      "ClientProvidedName": "IntegrationFlow.OrdersListener"
+    }
+  }
+}
+```
+
+**Legacy flat** (один профиль `Default`):
 
 ```json
 {
   "RabbitMq": {
     "HostName": "localhost",
-    "Port": 5672,
-    "UserName": "guest",
-    "Password": "guest",
-    "VirtualHost": "/",
-    "QueueName": "integration.inbox",
-    "PrefetchCount": 1,
-    "Asynchronously": true,
-    "AutomaticRecoveryEnabled": true,
-    "ClientProvidedName": "IntegrationFlow.RabbitMqListener"
+    "QueueName": "integration.inbox"
   }
 }
 ```
 
-Для организации создайте класс конфигурации, унаследованный от `RabbitMqConfiguration`, и загрузите значения через `RabbitMqConfigurationLoader`:
+### API загрузки
+
+| Метод | Назначение |
+|-------|------------|
+| `LoadProfile("Inbox")` | Профиль по имени из default-файла |
+| `LoadAll()` | Все профили |
+| `Load()` / `LoadSingle(path)` | Единственный профиль (ошибка, если профилей несколько) |
+| `LoadFromFile(path)` | Только legacy flat-формат |
 
 ```csharp
+var inbox = RabbitMqConfigurationLoader.LoadProfile("Inbox");
+
 public sealed class MyRabbitMqConfiguration : RabbitMqConfiguration
 {
     public MyRabbitMqConfiguration()
     {
-        RabbitMqConfigurationLoader.Populate(this);
+        RabbitMqConfigurationLoader.PopulateProfile(this, "Inbox");
     }
+}
+
+internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherSideBase
+{
+    protected override string ConfigurationName => "Inbox";
 }
 ```
 
-Также можно загрузить конфигурацию напрямую:
+Для параллельного прослушивания нескольких очередей нужен **отдельный publisher на каждый профиль** (отдельный side-класс или `NamedRabbitMqIntegrationPublisherSide`).
 
-```csharp
-var configuration = RabbitMqConfigurationLoader.Load();
-// или из указанного файла:
-var configuration = RabbitMqConfigurationLoader.LoadFromFile("C:\\config\\rabbitmq.json");
-// после реализации multi-config — профиль по имени:
-// var configuration = RabbitMqConfigurationLoader.LoadProfile("Inbox");
-```
+> **Ограничение v1:** `ProcessorBase` кешируется по типу. При `NoOpInboxMessageProcessing` это безопасно; при реальной бизнес-обработке per queue потребуется доработка кеширования processor-а.
 
 | Параметр | По умолчанию | Описание |
 |----------|--------------|----------|
