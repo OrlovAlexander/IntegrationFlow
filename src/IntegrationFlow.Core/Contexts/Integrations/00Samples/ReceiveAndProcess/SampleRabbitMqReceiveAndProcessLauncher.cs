@@ -11,6 +11,7 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess
 {
     /// <summary>
     /// Пример конфигурации подключения к RabbitMQ для организации.
+    /// Значения загружаются из файла <c>rabbitmq.json</c>.
     /// </summary>
     public sealed class SampleRabbitMqConfiguration : RabbitMqConfiguration
     {
@@ -19,14 +20,7 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess
         /// </summary>
         public SampleRabbitMqConfiguration()
         {
-            HostName = "localhost";
-            Port = 5672;
-            UserName = "guest";
-            Password = "guest";
-            VirtualHost = "/";
-            QueueName = "integration.inbox";
-            PrefetchCount = 1;
-            Asynchronously = true;
+            RabbitMqConfigurationLoader.Populate(this);
         }
     }
 

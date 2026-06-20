@@ -70,22 +70,43 @@ public sealed class SampleRabbitMqReceiveAndProcessLauncher : IReceiveAndProcess
 
 ### Настройка подключения
 
-Создайте класс конфигурации, унаследованный от `RabbitMqConfiguration`:
+Настройки подключения хранятся в файле `rabbitmq.json` рядом с приложением. Пример файла — в `00Samples/ReceiveAndProcess/rabbitmq.json`:
+
+```json
+{
+  "RabbitMq": {
+    "HostName": "localhost",
+    "Port": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "VirtualHost": "/",
+    "QueueName": "integration.inbox",
+    "PrefetchCount": 1,
+    "Asynchronously": true,
+    "AutomaticRecoveryEnabled": true,
+    "ClientProvidedName": "IntegrationFlow.RabbitMqListener"
+  }
+}
+```
+
+Для организации создайте класс конфигурации, унаследованный от `RabbitMqConfiguration`, и загрузите значения через `RabbitMqConfigurationLoader`:
 
 ```csharp
 public sealed class MyRabbitMqConfiguration : RabbitMqConfiguration
 {
     public MyRabbitMqConfiguration()
     {
-        HostName = "localhost";
-        Port = 5672;
-        UserName = "guest";
-        Password = "guest";
-        VirtualHost = "/";
-        QueueName = "integration.inbox";
-        PrefetchCount = 1;
+        RabbitMqConfigurationLoader.Populate(this);
     }
 }
+```
+
+Также можно загрузить конфигурацию напрямую:
+
+```csharp
+var configuration = RabbitMqConfigurationLoader.Load();
+// или из указанного файла:
+var configuration = RabbitMqConfigurationLoader.Load("C:\\config\\rabbitmq.json");
 ```
 
 | Параметр | По умолчанию | Описание |

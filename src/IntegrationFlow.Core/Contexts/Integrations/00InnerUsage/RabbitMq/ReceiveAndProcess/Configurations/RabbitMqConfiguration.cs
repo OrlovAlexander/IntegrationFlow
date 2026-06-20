@@ -5,7 +5,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// <summary>
     /// Конфигурация подключения к очереди RabbitMQ.
     /// </summary>
-    public abstract class RabbitMqConfiguration : IConfiguration
+    public class RabbitMqConfiguration : IConfiguration
     {
         /// <inheritdoc />
         public bool Asynchronously { get; set; } = true;
@@ -13,46 +13,46 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// <summary>
         /// Хост брокера RabbitMQ.
         /// </summary>
-        public string HostName { get; protected set; } = "localhost";
+        public string HostName { get; set; } = "localhost";
 
         /// <summary>
         /// Порт брокера RabbitMQ.
         /// </summary>
-        public int Port { get; protected set; } = 5672;
+        public int Port { get; set; } = 5672;
 
         /// <summary>
         /// Имя пользователя.
         /// </summary>
-        public string UserName { get; protected set; } = "guest";
+        public string UserName { get; set; } = "guest";
 
         /// <summary>
         /// Пароль.
         /// </summary>
-        public string Password { get; protected set; } = "guest";
+        public string Password { get; set; } = "guest";
 
         /// <summary>
         /// Виртуальный хост.
         /// </summary>
-        public string VirtualHost { get; protected set; } = "/";
+        public string VirtualHost { get; set; } = "/";
 
         /// <summary>
         /// Имя очереди для прослушивания.
         /// </summary>
-        public string QueueName { get; protected set; } = string.Empty;
+        public string QueueName { get; set; } = string.Empty;
 
         /// <summary>
         /// Количество неподтверждённых сообщений, которые consumer может получить заранее.
         /// </summary>
-        public ushort PrefetchCount { get; protected set; } = 1;
+        public ushort PrefetchCount { get; set; } = 1;
 
         /// <summary>
         /// Автоматическое восстановление соединения при разрыве.
         /// </summary>
-        public bool AutomaticRecoveryEnabled { get; protected set; } = true;
+        public bool AutomaticRecoveryEnabled { get; set; } = true;
 
         /// <summary>
         /// Имя клиента для идентификации подключения на стороне брокера.
         /// </summary>
-        public string ClientProvidedName { get; protected set; } = "IntegrationFlow.RabbitMqListener";
+        public string ClientProvidedName { get; set; } = "IntegrationFlow.RabbitMqListener";
     }
 }

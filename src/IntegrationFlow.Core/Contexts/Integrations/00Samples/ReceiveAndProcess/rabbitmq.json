@@ -1,0 +1,14 @@
+{
+  "RabbitMq": {
+    "HostName": "localhost",
+    "Port": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "VirtualHost": "/",
+    "QueueName": "integration.inbox",
+    "PrefetchCount": 1,
+    "Asynchronously": true,
+    "AutomaticRecoveryEnabled": true,
+    "ClientProvidedName": "IntegrationFlow.RabbitMqListener"
+  }
+}
