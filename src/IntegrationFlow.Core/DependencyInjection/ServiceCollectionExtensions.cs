@@ -1,4 +1,5 @@
 using IntegrationFlow.Contexts.Integrations._01Infrastructure;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._02Application;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,8 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddIntegrationFlow(this IServiceCollection services)
     {
+        LocalizationBootstrap.UseEmbeddedResources();
+
         services.TryAddSingleton<IOrgIntegration, OrgIntegration>();
         services.TryAddSingleton<IIntegrationLogger>(sp =>
         {
