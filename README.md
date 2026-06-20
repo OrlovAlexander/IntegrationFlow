@@ -106,7 +106,9 @@ public sealed class MyRabbitMqConfiguration : RabbitMqConfiguration
 ```csharp
 var configuration = RabbitMqConfigurationLoader.Load();
 // или из указанного файла:
-var configuration = RabbitMqConfigurationLoader.Load("C:\\config\\rabbitmq.json");
+var configuration = RabbitMqConfigurationLoader.LoadFromFile("C:\\config\\rabbitmq.json");
+// после реализации multi-config — профиль по имени:
+// var configuration = RabbitMqConfigurationLoader.LoadProfile("Inbox");
 ```
 
 | Параметр | По умолчанию | Описание |

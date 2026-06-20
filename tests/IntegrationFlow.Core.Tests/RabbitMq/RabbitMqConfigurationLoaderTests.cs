@@ -26,7 +26,7 @@ public sealed class RabbitMqConfigurationLoaderTests
             }
             """);
 
-        var configuration = RabbitMqConfigurationLoader.Load(configPath);
+        var configuration = RabbitMqConfigurationLoader.LoadFromFile(configPath);
 
         Assert.Equal("rabbit.example.com", configuration.HostName);
         Assert.Equal(5673, configuration.Port);
@@ -66,7 +66,7 @@ public sealed class RabbitMqConfigurationLoaderTests
     {
         var missingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");
 
-        Assert.Throws<FileNotFoundException>(() => RabbitMqConfigurationLoader.Load(missingPath));
+        Assert.Throws<FileNotFoundException>(() => RabbitMqConfigurationLoader.LoadFromFile(missingPath));
     }
 
     private static string CreateConfigFile(string content)

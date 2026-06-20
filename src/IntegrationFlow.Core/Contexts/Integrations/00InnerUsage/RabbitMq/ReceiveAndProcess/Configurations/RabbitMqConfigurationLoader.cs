@@ -23,19 +23,27 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// Загружает конфигурацию RabbitMQ из файла по умолчанию.
         /// </summary>
         public static RabbitMqConfiguration Load()
-            => Load(ResolveConfigFilePath());
+            => LoadFromFile(ResolveConfigFilePath());
 
         /// <summary>
         /// Загружает конфигурацию RabbitMQ из указанного JSON-файла.
         /// </summary>
         /// <param name="filePath">Путь к JSON-файлу конфигурации.</param>
-        public static RabbitMqConfiguration Load(string filePath)
+        public static RabbitMqConfiguration LoadFromFile(string filePath)
         {
             var configuration = BuildConfiguration(filePath);
             var rabbitMqConfiguration = new RabbitMqConfiguration();
             configuration.GetSection(ConfigurationSectionName).Bind(rabbitMqConfiguration);
             return rabbitMqConfiguration;
         }
+
+        /// <summary>
+        /// Загружает конфигурацию RabbitMQ из указанного JSON-файла.
+        /// </summary>
+        /// <param name="filePath">Путь к JSON-файлу конфигурации.</param>
+        [Obsolete("Используйте LoadFromFile(string filePath). Метод будет удалён после добавления LoadProfile(string profileName).")]
+        public static RabbitMqConfiguration Load(string filePath)
+            => LoadFromFile(filePath);
 
         /// <summary>
         /// Заполняет существующий экземпляр конфигурации значениями из файла по умолчанию.
@@ -55,7 +63,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                 throw new ArgumentNullException(nameof(target));
             }
 
-            var loaded = Load(filePath);
+            var loaded = LoadFromFile(filePath);
             Copy(loaded, target);
         }
 
