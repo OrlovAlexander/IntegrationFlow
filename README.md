@@ -106,4 +106,4 @@ public sealed class MyRabbitMqConfiguration : RabbitMqConfiguration
 
 ## Лицензия
 
-Уточните условия использования у владельца репозитория.
+Проект распространяется под лицензией [MIT](LICENSE).
