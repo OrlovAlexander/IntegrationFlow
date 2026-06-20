@@ -11,6 +11,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D0C5F001-8A2B-4C3D-9E4F-567890ABCDEF}"
+	ProjectSection(SolutionItems) = preProject
+		docs\brokers-for-integration-framework.md = docs\brokers-for-integration-framework.md
+		docs\plans\localization-sr-replacement.md = docs\plans\localization-sr-replacement.md
+		docs\examples\ElmaLocalizationProvider.cs.example = docs\examples\ElmaLocalizationProvider.cs.example
+		docs\examples\ResourceLocalizationProvider.cs.example = docs\examples\ResourceLocalizationProvider.cs.example
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationFlow.Core.Tests", "tests\IntegrationFlow.Core.Tests\IntegrationFlow.Core.Tests.csproj", "{9C170348-F95D-4A8E-9073-71B0E6DECAC3}"
