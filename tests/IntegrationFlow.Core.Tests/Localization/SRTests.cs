@@ -4,6 +4,7 @@ using Xunit;
 
 namespace IntegrationFlow.Tests.Localization;
 
+[Collection(LocalizationTestCollection.Name)]
 public sealed class SRTests : IDisposable
 {
     public SRTests() => SR.Configure(null);

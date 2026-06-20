@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Connection;
 
@@ -60,14 +61,13 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
         /// <param name="integrationResultHandler">Обработчик результата</param>
         public void Integrate(SentAndWaitIntegrationResultHandler integrationResultHandler)
         {
+            var sideCode = oppositeSide.IntegrationOppositeSideCode;
             try
             {
-                logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                               $" - Интеграция запущена");
+                logger.LogInfo(SR.T("SendAndWait - '{0}' - Интеграция запущена", sideCode));
 
                 var logging = oppositeSide.GetLogging(logger);
-                logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                               $" - Получен логгер интеграции: '{logger.GetType().FullName}'");
+                logger.LogInfo(SR.T("SendAndWait - '{0}' - Получен логгер интеграции: '{1}'", sideCode, logger.GetType().FullName));
 
                 var destinationData = TransmitData;
 
@@ -75,14 +75,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                 var formatterSourceData = oppositeSide.GetFormatterSourceData(logger);
                 if (formatterSourceData != null)
                 {
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Получен форматировщик передаваемых данных: '{formatterSourceData.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Получен форматировщик передаваемых данных: '{1}'", sideCode, formatterSourceData.GetType().FullName));
                     destinationData = formatterSourceData.FormatData(TransmitData);
                 }
                 else
                 {
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Форматировщик передаваемых данных не задан.");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Форматировщик передаваемых данных не задан.", sideCode));
                 }
 
                 // логировать передаваемые данные
@@ -97,8 +95,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                 IConfiguration configuration;
                 try
                 {
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Взять блокировку");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Взять блокировку", sideCode));
 
                     Monitor.Enter(configConnectSyncObject, ref lockTaken);
 
@@ -107,43 +104,33 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                     // отмена интеграции, если конфигурация не передана
                     if (configuration == null)
                     {
-                        logger.LogInfo(
-                            $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Конфигурация не предоставлена, отмена интеграции");
+                        logger.LogInfo(SR.T("SendAndWait - '{0}' - Конфигурация не предоставлена, отмена интеграции", sideCode));
                         return;
                     }
 
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Конфигурация: '{configuration.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Конфигурация: '{1}'", sideCode, configuration.GetType().FullName));
 
                     // Подключение
                     connection = oppositeSide.GetConnection(configuration, logger);
                     // отмена интеграции, если ошибка конфигурации
                     if (connection == null)
                     {
-                        logger.LogInfo(
-                            $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Подключение не предоставлено, отмена интеграции - ");
+                        logger.LogInfo(SR.T("SendAndWait - '{0}' - Подключение не предоставлено, отмена интеграции - ", sideCode));
                         return;
                     }
 
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Подключение: '{connection.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Подключение: '{1}'", sideCode, connection.GetType().FullName));
                 }
                 finally
                 {
                     if (lockTaken)
                     {
                         Monitor.Exit(configConnectSyncObject);
-                        logger.LogInfo(
-                            $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Блокировка освобождена");
+                        logger.LogInfo(SR.T("SendAndWait - '{0}' - Блокировка освобождена", sideCode));
                     }
                     else
                     {
-                        logger.LogInfo(
-                            $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Блокировка не была получена");
+                        logger.LogInfo(SR.T("SendAndWait - '{0}' - Блокировка не была получена", sideCode));
                     }
                 }
 
@@ -155,9 +142,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                     {
                         if (!connection.Reconnect())
                         {
-                            logger.LogWarn(
-                                $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                $" - Возникла ошибка переподключения.");
+                            logger.LogWarn(SR.T("SendAndWait - '{0}' - Возникла ошибка переподключения.", sideCode));
                             return;
                         }
                     }
@@ -166,15 +151,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                     if (transmitter != null)
                     {
                         result = transmitter.Transmit(destinationData);
-                        logger.LogInfo(
-                            $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Обмен данными состоялся");
+                        logger.LogInfo(SR.T("SendAndWait - '{0}' - Обмен данными состоялся", sideCode));
                     }
                     else
                     {
-                        logger.LogInfo(
-                            $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Передатчик для обмена данными не предоставлен");
+                        logger.LogInfo(SR.T("SendAndWait - '{0}' - Передатчик для обмена данными не предоставлен", sideCode));
                     }
                 } // connection Disposing
 
@@ -183,13 +164,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                 if (validator != null)
                 {
                     validator.Validate(ref result);
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Валидация полученных данных");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Валидация полученных данных", sideCode));
                 }
                 else
                 {
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Валидатор полученных данных не предоставлен");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Валидатор полученных данных не предоставлен", sideCode));
                 }
 
                 if (logging != null && logger != null)
@@ -200,8 +179,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                 // Обработка данных не прошедших проверку
                 if (result.IsFailed)
                 {
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Полученные данные не прошли валидацию");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Полученные данные не прошли валидацию", sideCode));
 
                     if (integrationResultHandler != null)
                     {
@@ -210,8 +188,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                     }
 
                     throw new NotImplementedException(
-                        $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                        $" - Отсутствует обработчик полученных данных не прошедших проверку.");
+                        SR.T("SendAndWait - '{0}' - Отсутствует обработчик полученных данных не прошедших проверку.", sideCode));
                 }
 
                 var integrationResult = result;
@@ -221,13 +198,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                 if (formatterObtainedData != null)
                 {
                     integrationResult = formatterObtainedData.FormatData(result);
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Форматировщик полученных данных: '{formatterObtainedData.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Форматировщик полученных данных: '{1}'", sideCode, formatterObtainedData.GetType().FullName));
                 }
                 else
                 {
-                    logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Форматировщик полученных данных не предоставлен");
+                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Форматировщик полученных данных не предоставлен", sideCode));
                 }
 
                 if (logging != null && logger != null)
@@ -239,20 +214,17 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                 if (integrationResultHandler == null)
                 {
                     throw new NotImplementedException(
-                        $"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                        $" - Отсутствует обработчик полученных данных прошедших проверку.");
+                        SR.T("SendAndWait - '{0}' - Отсутствует обработчик полученных данных прошедших проверку.", sideCode));
                 }
                 integrationResultHandler.ProcessResult(integrationResult);
             }
             catch (Exception ex)
             {
-                logger.LogException(string.Format("SendAndWait - '{0}'",
-                        oppositeSide.IntegrationOppositeSideCode.ToString()), ex);
+                logger.LogException(SR.T("SendAndWait - '{0}'", sideCode), ex);
             }
             finally
             {
-                logger.LogInfo($"SendAndWait - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                               $" - Интеграция завершена");
+                logger.LogInfo(SR.T("SendAndWait - '{0}' - Интеграция завершена", sideCode));
             }
         }
     }

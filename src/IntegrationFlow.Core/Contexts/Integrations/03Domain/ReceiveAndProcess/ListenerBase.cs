@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
@@ -83,7 +84,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                         };
                         thread.Start(Configuration);
 
-                        Logger.Log("Поток слушателя запущен '{0}", thread.ManagedThreadId);
+                        Logger.Log(SR.T("Поток слушателя запущен '{0}'", thread.ManagedThreadId));
 
                         // Блокируем текущую task, чтобы по завершении вызывать postStartAction
                         thread.Join();
@@ -92,7 +93,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             }
             catch (Exception ex)
             {
-                Logger.LogException("Поток слушателя. Ошибка запуска.", ex);
+                Logger.LogException(SR.T("Поток слушателя. Ошибка запуска."), ex);
             }
         }
 
@@ -107,16 +108,16 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                 if (thread.ThreadState == ThreadState.Running)
                 {
                     thread.Abort();
-                    Logger.Log("Поток запускающий слушателя находился в состоянии 'Running'. Был прерван '{0}", thread.ManagedThreadId);
+                    Logger.Log(SR.T("Поток запускающий слушателя находился в состоянии 'Running'. Был прерван '{0}'", thread.ManagedThreadId));
                 }
                 else
                 {
-                    Logger.Log("Поток запускающий слушателя '{0} находится в состоянии '{1}'. Не прерван.", thread.ManagedThreadId, thread.ThreadState);
+                    Logger.Log(SR.T("Поток запускающий слушателя '{0}' находится в состоянии '{1}'. Не прерван.", thread.ManagedThreadId, thread.ThreadState));
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogException("Останов потока запускающего слушателя сообщений, запросов и т.п.", ex);
+                Logger.LogException(SR.T("Останов потока запускающего слушателя сообщений, запросов и т.п."), ex);
             }
         }
 
@@ -135,7 +136,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             }
             catch (Exception ex)
             {
-                Logger.LogException("Статус Слушателя неопрделен. Ошибка. ", ex);
+                Logger.LogException(SR.T("Статус Слушателя неопределен. Ошибка."), ex);
             }
             try
             {
@@ -143,9 +144,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             }
             catch (Exception ex)
             {
-                Logger.LogException("Статус Слушателя неопрделен. Ошибка. ", ex);
+                Logger.LogException(SR.T("Статус Слушателя неопределен. Ошибка."), ex);
             }
-            Logger.Log("Статус Слушателя '{0}'", status);
+            Logger.Log(SR.T("Статус Слушателя '{0}'", status));
             return status;
         }
 

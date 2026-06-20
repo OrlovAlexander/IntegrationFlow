@@ -98,7 +98,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.Transmitters
             catch (Exception ex)
             {
                 Logger.Log("Exception");
-                Logger.LogException(SR.T("{0}({1})", "Произошла ошибка в плагине 'Интеграция' ", Configuration.Url, ex), ex);
+                Logger.LogException(SR.T("{0}({1})", "Произошла ошибка в плагине 'Интеграция' ", Configuration.Url), ex);
                 return new ObtainedData(EmptyIntegrationResult.JsonObject());
             }
         }

@@ -1,0 +1,6 @@
+// Пример регистрации standalone-локализации через .resx (не входит в IntegrationFlow.Core).
+// Вызовите SR.Configure при старте host-приложения.
+
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+
+// SR.Configure(new ResourceLocalizationProvider());

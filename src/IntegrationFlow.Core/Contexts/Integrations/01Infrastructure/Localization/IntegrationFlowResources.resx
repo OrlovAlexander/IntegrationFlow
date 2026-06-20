@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Resources.Extensions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Resources.Extensions, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</value>
+  </resheader>
+  <data name="Получен пустой ответ при запросе {0}" xml:space="preserve">
+    <value>Получен пустой ответ при запросе {0}</value>
+  </data>
+  <data name="{0}({1})" xml:space="preserve">
+    <value>{0}({1})</value>
+  </data>
+  <data name="Поток слушателя запущен '{0}'" xml:space="preserve">
+    <value>Поток слушателя запущен '{0}'</value>
+  </data>
+  <data name="Поток слушателя. Ошибка запуска." xml:space="preserve">
+    <value>Поток слушателя. Ошибка запуска.</value>
+  </data>
+  <data name="Поток запускающий слушателя находился в состоянии 'Running'. Был прерван '{0}'" xml:space="preserve">
+    <value>Поток запускающий слушателя находился в состоянии 'Running'. Был прерван '{0}'</value>
+  </data>
+  <data name="Поток запускающий слушателя '{0}' находится в состоянии '{1}'. Не прерван." xml:space="preserve">
+    <value>Поток запускающий слушателя '{0}' находится в состоянии '{1}'. Не прерван.</value>
+  </data>
+  <data name="Останов потока запускающего слушателя сообщений, запросов и т.п." xml:space="preserve">
+    <value>Останов потока запускающего слушателя сообщений, запросов и т.п.</value>
+  </data>
+  <data name="Статус Слушателя неопределен. Ошибка." xml:space="preserve">
+    <value>Статус Слушателя неопределен. Ошибка.</value>
+  </data>
+  <data name="Статус Слушателя '{0}'" xml:space="preserve">
+    <value>Статус Слушателя '{0}'</value>
+  </data>
+  <data name="Отсутствует обработка результата не прошедшего проверку." xml:space="preserve">
+    <value>Отсутствует обработка результата не прошедшего проверку.</value>
+  </data>
+  <data name="Отсутствует обработка результата." xml:space="preserve">
+    <value>Отсутствует обработка результата.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - Create - Создать публикатор сообщений - '{0}'" xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - Create - Создать публикатор сообщений - '{0}'</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - BeginReceiving - Первый запуск с заданной конфигурацией подключения." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - BeginReceiving - Первый запуск с заданной конфигурацией подключения.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - BeginReceiving - Отмена запуска" xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - BeginReceiving - Отмена запуска</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - BeginReceiving - Перезапуск запущенного слушателя публикатора с новой конфигурацией подключения." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - BeginReceiving - Перезапуск запущенного слушателя публикатора с новой конфигурацией подключения.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - BeginReceiving - Перезапуск остановленного слушателя публикатора с новой конфигурацией подключения." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - BeginReceiving - Перезапуск остановленного слушателя публикатора с новой конфигурацией подключения.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - BeginReceiving - Запуск/перезапуск слушателя." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - BeginReceiving - Запуск/перезапуск слушателя.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - ConfigurationChanged - Конфигурация не задана." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - ConfigurationChanged - Конфигурация не задана.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - ConfigurationChanged - Ошибка конфигурирования" xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - ConfigurationChanged - Ошибка конфигурирования</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - ConfigurationChanged - В конфигурации подключения есть изменения." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - ConfigurationChanged - В конфигурации подключения есть изменения.</value>
+  </data>
+  <data name=" - Что изменилось '{0}'. Исходное значение '{1}'. Новое значение '{2}'." xml:space="preserve">
+    <value> - Что изменилось '{0}'. Исходное значение '{1}'. Новое значение '{2}'.</value>
+  </data>
+  <data name="ReceiveAndProcess.PublisherBase - ConfigurationChanged - Конфигурация подключения осталась прежней." xml:space="preserve">
+    <value>ReceiveAndProcess.PublisherBase - ConfigurationChanged - Конфигурация подключения осталась прежней.</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Интеграция запущена" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Интеграция запущена</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Получен логгер интеграции: '{1}'" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Получен логгер интеграции: '{1}'</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Получен форматировщик передаваемых данных: '{1}'" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Получен форматировщик передаваемых данных: '{1}'</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Форматировщик передаваемых данных не задан." xml:space="preserve">
+    <value>SendAndWait - '{0}' - Форматировщик передаваемых данных не задан.</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Взять блокировку" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Взять блокировку</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Конфигурация не предоставлена, отмена интеграции" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Конфигурация не предоставлена, отмена интеграции</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Конфигурация: '{1}'" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Конфигурация: '{1}'</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Подключение не предоставлено, отмена интеграции - " xml:space="preserve">
+    <value>SendAndWait - '{0}' - Подключение не предоставлено, отмена интеграции - </value>
+  </data>
+  <data name="SendAndWait - '{0}' - Подключение: '{1}'" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Подключение: '{1}'</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Блокировка освобождена" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Блокировка освобождена</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Блокировка не была получена" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Блокировка не была получена</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Возникла ошибка переподключения." xml:space="preserve">
+    <value>SendAndWait - '{0}' - Возникла ошибка переподключения.</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Обмен данными состоялся" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Обмен данными состоялся</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Передатчик для обмена данными не предоставлен" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Передатчик для обмена данными не предоставлен</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Валидация полученных данных" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Валидация полученных данных</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Валидатор полученных данных не предоставлен" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Валидатор полученных данных не предоставлен</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Полученные данные не прошли валидацию" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Полученные данные не прошли валидацию</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Отсутствует обработчик полученных данных не прошедших проверку." xml:space="preserve">
+    <value>SendAndWait - '{0}' - Отсутствует обработчик полученных данных не прошедших проверку.</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Форматировщик полученных данных: '{1}'" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Форматировщик полученных данных: '{1}'</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Форматировщик полученных данных не предоставлен" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Форматировщик полученных данных не предоставлен</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Отсутствует обработчик полученных данных прошедших проверку." xml:space="preserve">
+    <value>SendAndWait - '{0}' - Отсутствует обработчик полученных данных прошедших проверку.</value>
+  </data>
+  <data name="SendAndWait - '{0}'" xml:space="preserve">
+    <value>SendAndWait - '{0}'</value>
+  </data>
+  <data name="SendAndWait - '{0}' - Интеграция завершена" xml:space="preserve">
+    <value>SendAndWait - '{0}' - Интеграция завершена</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Интеграция запущена" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Интеграция запущена</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Получен логгер интеграции: '{1}'" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Получен логгер интеграции: '{1}'</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Получен форматировщик передаваемых данных: '{1}'" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Получен форматировщик передаваемых данных: '{1}'</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Форматировщик передаваемых данных не задан." xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Форматировщик передаваемых данных не задан.</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Взять блокировку" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Взять блокировку</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Конфигурация не предоставлена, отмена интеграции" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Конфигурация не предоставлена, отмена интеграции</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Конфигурация: '{1}'" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Конфигурация: '{1}'</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Подключение не предоставлено, отмена интеграции - " xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Подключение не предоставлено, отмена интеграции - </value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Подключение: '{1}'" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Подключение: '{1}'</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Блокировка освобождена" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Блокировка освобождена</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Блокировка не была получена" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Блокировка не была получена</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Возникла ошибка переподключения." xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Возникла ошибка переподключения.</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Обмен данными состоялся" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Обмен данными состоялся</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Передатчик для обмена данными не предоставлен" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Передатчик для обмена данными не предоставлен</value>
+  </data>
+  <data name="SendAndForgot - '{0}'" xml:space="preserve">
+    <value>SendAndForgot - '{0}'</value>
+  </data>
+  <data name="SendAndForgot - '{0}' - Интеграция завершена" xml:space="preserve">
+    <value>SendAndForgot - '{0}' - Интеграция завершена</value>
+  </data>
+</root>

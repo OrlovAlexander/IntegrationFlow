@@ -24,4 +24,19 @@
     <None Include="Contexts\Integrations\Docs\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Contexts\Integrations\01Infrastructure\Localization\IntegrationFlowResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>IntegrationFlowResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Contexts\Integrations\01Infrastructure\Localization\IntegrationFlowResources.en.resx">
+      <DependentUpon>IntegrationFlowResources.resx</DependentUpon>
+    </EmbeddedResource>
+    <Compile Update="Contexts\Integrations\01Infrastructure\Localization\IntegrationFlowResources.Designer.cs">
+      <DependentUpon>IntegrationFlowResources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+  </ItemGroup>
+
 </Project>

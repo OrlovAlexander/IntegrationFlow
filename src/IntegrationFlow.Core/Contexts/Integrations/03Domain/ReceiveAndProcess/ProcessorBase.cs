@@ -1,4 +1,5 @@
 using System;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
@@ -89,7 +90,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                     failedProcessing.ProcessFailedInboxMessage(inboxMessage);
                     return;
                 }
-                throw new NotImplementedException("Отсутствует обработка результата не прошедшего проверку.");
+                throw new NotImplementedException(SR.T("Отсутствует обработка результата не прошедшего проверку."));
             }
 
             var formatterInboxMessage = IntegrationProcessorSide.GetFormatterInboxMessage(Publisher, Configuration, Logger);
@@ -101,7 +102,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             var inboxMessageProcessing = IntegrationProcessorSide.GetInboxMessageProcessing(Publisher, Configuration, Logger);
             if (inboxMessageProcessing == null)
             {
-                throw new NotImplementedException("Отсутствует обработка результата.");
+                throw new NotImplementedException(SR.T("Отсутствует обработка результата."));
             }
 
             inboxMessageProcessing.ProcessInboxMessage(inboxMessage);

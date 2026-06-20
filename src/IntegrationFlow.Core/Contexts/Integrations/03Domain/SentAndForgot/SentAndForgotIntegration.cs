@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Connection;
 
@@ -59,14 +60,13 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
         /// </summary>
         public void Integrate()
         {
+            var sideCode = oppositeSide.IntegrationOppositeSideCode;
             try
             {
-                logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                               $" - Интеграция запущена");
+                logger.LogInfo(SR.T("SendAndForgot - '{0}' - Интеграция запущена", sideCode));
 
                 var logging = oppositeSide.GetLogging(logger);
-                logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                               $" - Получен логгер интеграции: '{logger.GetType().FullName}'");
+                logger.LogInfo(SR.T("SendAndForgot - '{0}' - Получен логгер интеграции: '{1}'", sideCode, logger.GetType().FullName));
 
                 var destinationData = TransmitData;
 
@@ -74,14 +74,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                 var formatterSourceData = oppositeSide.GetFormatterSourceData(logger);
                 if (formatterSourceData != null)
                 {
-                    logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Получен форматировщик передаваемых данных: '{formatterSourceData.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Получен форматировщик передаваемых данных: '{1}'", sideCode, formatterSourceData.GetType().FullName));
                     destinationData = formatterSourceData.FormatData(TransmitData);
                 }
                 else
                 {
-                    logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Форматировщик передаваемых данных не задан.");
+                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Форматировщик передаваемых данных не задан.", sideCode));
                 }
 
                 // логировать передаваемые данные
@@ -97,8 +95,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                 IConfiguration configuration;
                 try
                 {
-                    logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Взять блокировку");
+                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Взять блокировку", sideCode));
 
                     Monitor.Enter(configConnectSyncObject, ref lockTaken);
 
@@ -107,43 +104,33 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     // отмена интеграции, если конфигурация не передана
                     if (configuration == null)
                     {
-                        logger.LogInfo(
-                            $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Конфигурация не предоставлена, отмена интеграции");
+                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Конфигурация не предоставлена, отмена интеграции", sideCode));
                         return;
                     }
 
-                    logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Конфигурация: '{configuration.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Конфигурация: '{1}'", sideCode, configuration.GetType().FullName));
 
                     // Подключение
                     connection = oppositeSide.GetConnection(configuration, logger);
                     // отмена интеграции, если ошибка конфигурации
                     if (connection == null)
                     {
-                        logger.LogInfo(
-                            $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Подключение не предоставлено, отмена интеграции - ");
+                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Подключение не предоставлено, отмена интеграции - ", sideCode));
                         return;
                     }
 
-                    logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                   $" - Подключение: '{connection.GetType().FullName}'");
+                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Подключение: '{1}'", sideCode, connection.GetType().FullName));
                 }
                 finally
                 {
                     if (lockTaken)
                     {
                         Monitor.Exit(configConnectSyncObject);
-                        logger.LogInfo(
-                            $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Блокировка освобождена");
+                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Блокировка освобождена", sideCode));
                     }
                     else
                     {
-                        logger.LogInfo(
-                            $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Блокировка не была получена");
+                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Блокировка не была получена", sideCode));
                     }
                 }
 
@@ -154,9 +141,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     {
                         if (!connection.Reconnect())
                         {
-                            logger.LogWarn(
-                                $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                                $" - Возникла ошибка переподключения.");
+                            logger.LogWarn(SR.T("SendAndForgot - '{0}' - Возникла ошибка переподключения.", sideCode));
                             return;
                         }
                     }
@@ -166,27 +151,22 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     if (transmitter != null)
                     {
                         transmitter.Transmit(destinationData);
-                        logger.LogInfo(
-                            $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Обмен данными состоялся");
+                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Обмен данными состоялся", sideCode));
                     }
                     else
                     {
-                        logger.LogInfo(
-                            $"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                            $" - Передатчик для обмена данными не предоставлен");
+                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Передатчик для обмена данными не предоставлен", sideCode));
                     }
 
                 } // connection Disposing
             }
             catch (Exception ex)
             {
-                logger.LogException($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'", ex);
+                logger.LogException(SR.T("SendAndForgot - '{0}'", sideCode), ex);
             }
             finally
             {
-                logger.LogInfo($"SendAndForgot - '{oppositeSide.IntegrationOppositeSideCode}'" +
-                               $" - Интеграция завершена");
+                logger.LogInfo(SR.T("SendAndForgot - '{0}' - Интеграция завершена", sideCode));
             }
         }
     }

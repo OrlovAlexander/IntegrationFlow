@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.Services.ObjectsComparerService;
 
@@ -64,8 +65,8 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 
                 side.Publisher = publisher;
 
-                logger.Log($"ReceiveAndProcess.PublisherBase - Create - Создать публикатор сообщений" +
-                           $" - '{typeof(TPublisherBase).FullName}'");
+                logger.Log(SR.T("ReceiveAndProcess.PublisherBase - Create - Создать публикатор сообщений - '{0}'",
+                    typeof(TPublisherBase).FullName));
 
                 return publisher;
             });
@@ -83,8 +84,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 
                 if (Listener == null)
                 {
-                    Logger.Log("ReceiveAndProcess.PublisherBase - BeginReceiving" +
-                               " - Первый запуск с заданной конфигурацией подключения.");
+                    Logger.Log(SR.T("ReceiveAndProcess.PublisherBase - BeginReceiving - Первый запуск с заданной конфигурацией подключения."));
                     // Новая конфигурация
                     Configuration = configuration;
                     // Новая конфигурация передается в Слушатель
@@ -100,16 +100,14 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                 if (!configurationChanged.HasValue)
                 {
                     // Прерываем запуск интеграции
-                    Logger.LogWarn("ReceiveAndProcess.PublisherBase - BeginReceiving" +
-                                   " - Отмена запуска");
+                    Logger.LogWarn(SR.T("ReceiveAndProcess.PublisherBase - BeginReceiving - Отмена запуска"));
                     return;
                 }
 
                 // Слушатель есть, запущен и есть изменения в конфигурации
                 if (status == ListenerStatuses.Started && configurationChanged.Value)
                 {
-                    Logger.Log("ReceiveAndProcess.PublisherBase - BeginReceiving" +
-                               " - Перезапуск запущенного слушателя публикатора с новой конфигурацией подключения.");
+                    Logger.Log(SR.T("ReceiveAndProcess.PublisherBase - BeginReceiving - Перезапуск запущенного слушателя публикатора с новой конфигурацией подключения."));
                     // Остановить Слушатель с прежней конфигурацией
                     Listener.Stop();
                     // Новая конфигурация передается в Слушатель
@@ -119,8 +117,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                 // Слушатель есть, но не запущен и есть изменения в конфигурации
                 if (status == ListenerStatuses.NotStarted && configurationChanged.Value)
                 {
-                    Logger.Log("ReceiveAndProcess.PublisherBase - BeginReceiving" +
-                               " - Перезапуск остановленного слушателя публикатора с новой конфигурацией подключения.");
+                    Logger.Log(SR.T("ReceiveAndProcess.PublisherBase - BeginReceiving - Перезапуск остановленного слушателя публикатора с новой конфигурацией подключения."));
                     // Остановить Слушатель с прежней конфигурацией
                     Listener.Stop();
                     // Новая конфигурация передается в Слушатель
@@ -145,8 +142,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             }
             catch (Exception ex)
             {
-                Logger.LogException("ReceiveAndProcess.PublisherBase - BeginReceiving" +
-                                    " - Запуск/перезапуск слушателя.", ex);
+                Logger.LogException(SR.T("ReceiveAndProcess.PublisherBase - BeginReceiving - Запуск/перезапуск слушателя."), ex);
             }
         }
 
@@ -159,14 +155,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         {
             if (configuration == null)
             {
-                throw new InvalidOperationException("ReceiveAndProcess.PublisherBase - ConfigurationChanged" +
-                                                    " - Конфигурация не задана.");
+                throw new InvalidOperationException(SR.T("ReceiveAndProcess.PublisherBase - ConfigurationChanged - Конфигурация не задана."));
             }
 
             if (Configuration != null && Configuration.GetType() != configuration.GetType())
             {
-                Logger.Log("ReceiveAndProcess.PublisherBase - ConfigurationChanged" +
-                           " - Ошибка конфигурирования");
+                Logger.Log(SR.T("ReceiveAndProcess.PublisherBase - ConfigurationChanged - Ошибка конфигурирования"));
                 return null;
             }
 
@@ -175,21 +169,19 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             IEnumerable<Difference> differences;
             if (!comparer.Compare(type, Configuration, configuration, out differences))
             {
-                Logger.Log("ReceiveAndProcess.PublisherBase - ConfigurationChanged" +
-                           " - В конфигурации подключения есть изменения.");
+                Logger.Log(SR.T("ReceiveAndProcess.PublisherBase - ConfigurationChanged - В конфигурации подключения есть изменения."));
 
                 foreach (var difference in differences)
                 {
-                    Logger.Log(" - Что изменилось '{0}'. Исходное значение '{1}'. Новое значение '{2}'.",
-                        difference.MemberPath, difference.Value1, difference.Value2);
+                    Logger.Log(SR.T(" - Что изменилось '{0}'. Исходное значение '{1}'. Новое значение '{2}'.",
+                        difference.MemberPath, difference.Value1, difference.Value2));
                 }
 
                 Configuration = configuration;
                 return true;
             }
 
-            Logger.Log("ReceiveAndProcess.PublisherBase - ConfigurationChanged" +
-                       " - Конфигурация подключения осталась прежней.");
+            Logger.Log(SR.T("ReceiveAndProcess.PublisherBase - ConfigurationChanged - Конфигурация подключения осталась прежней."));
 
             return false;
         }
