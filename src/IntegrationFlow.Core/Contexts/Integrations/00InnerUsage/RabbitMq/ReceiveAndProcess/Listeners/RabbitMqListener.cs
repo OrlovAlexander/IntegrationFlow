@@ -1,7 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
@@ -75,7 +77,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
         private async Task ListenAsync(RabbitMqConfiguration configuration, CancellationToken cancellationToken)
         {
-            var factory = CreateConnectionFactory(configuration);
+            var factory = RabbitMqConnectionFactory.Create(RabbitMqPublishConfiguration.ToConnectionSettings(configuration));
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
 
@@ -147,21 +149,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
                 channel.BasicAck(deliveryTag, multiple: false);
             }
-        }
-
-        private static ConnectionFactory CreateConnectionFactory(RabbitMqConfiguration configuration)
-        {
-            return new ConnectionFactory
-            {
-                HostName = configuration.HostName,
-                Port = configuration.Port,
-                UserName = configuration.UserName,
-                Password = configuration.Password,
-                VirtualHost = configuration.VirtualHost,
-                AutomaticRecoveryEnabled = configuration.AutomaticRecoveryEnabled,
-                DispatchConsumersAsync = true,
-                ClientProvidedName = configuration.ClientProvidedName
-            };
         }
 
         private void CloseChannelAndConnection()

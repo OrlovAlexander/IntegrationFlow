@@ -18,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D0C5F001-8
 		docs\plans\multiple-rabbitmq-configs.md = docs\plans\multiple-rabbitmq-configs.md
 		docs\examples\ElmaLocalizationProvider.cs.example = docs\examples\ElmaLocalizationProvider.cs.example
 		docs\examples\ResourceLocalizationProvider.cs.example = docs\examples\ResourceLocalizationProvider.cs.example
+		docs\plans\rabbitmq-sentandforgot.md = docs\plans\rabbitmq-sentandforgot.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"

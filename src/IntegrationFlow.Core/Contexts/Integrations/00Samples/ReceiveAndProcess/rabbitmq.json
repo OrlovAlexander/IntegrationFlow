@@ -24,5 +24,32 @@
       "AutomaticRecoveryEnabled": true,
       "ClientProvidedName": "IntegrationFlow.OrdersListener"
     }
+  },
+  "RabbitMqPublish": {
+    "OrdersOut": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "PublishTarget": "Queue",
+      "QueueName": "orders.outbox",
+      "ContentType": "application/json",
+      "Persistent": true,
+      "ClientProvidedName": "IntegrationFlow.OrdersPublisher"
+    },
+    "EventsOut": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "PublishTarget": "Exchange",
+      "Exchange": "integration.events",
+      "RoutingKey": "order.created",
+      "ContentType": "application/json",
+      "Persistent": true,
+      "ClientProvidedName": "IntegrationFlow.EventsPublisher"
+    }
   }
 }

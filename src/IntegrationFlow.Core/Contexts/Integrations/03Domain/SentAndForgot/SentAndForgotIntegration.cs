@@ -99,9 +99,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
 
                     Monitor.Enter(configConnectSyncObject, ref lockTaken);
 
-                    // Конфигурация
                     configuration = oppositeSide.GetTransmitterConfiguration(logger);
-                    // отмена интеграции, если конфигурация не передана
                     if (configuration == null)
                     {
                         logger.LogInfo(SR.T("SendAndForgot - '{0}' - Конфигурация не предоставлена, отмена интеграции", sideCode));
@@ -110,9 +108,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
 
                     logger.LogInfo(SR.T("SendAndForgot - '{0}' - Конфигурация: '{1}'", sideCode, configuration.GetType().FullName));
 
-                    // Подключение
                     connection = oppositeSide.GetConnection(configuration, logger);
-                    // отмена интеграции, если ошибка конфигурации
                     if (connection == null)
                     {
                         logger.LogInfo(SR.T("SendAndForgot - '{0}' - Подключение не предоставлено, отмена интеграции - ", sideCode));
@@ -134,8 +130,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     }
                 }
 
-                // Обмен данными
-                using (connection = oppositeSide.GetConnection(configuration, logger))
+                using (connection)
                 {
                     if (connection.NeedReconnect())
                     {
