@@ -284,6 +284,8 @@ flowchart TD
 - [x] Unit-тесты на новые компоненты
 - [x] Обновлены [`README.md`](../../README.md) и [`brokers-for-integration-framework.md`](../brokers-for-integration-framework.md)
 
+> **Анализ рисков:** см. [`delivery-guarantee-risk-analysis.md`](delivery-guarantee-risk-analysis.md).
+
 ---
 
 ## Чеклист реализации

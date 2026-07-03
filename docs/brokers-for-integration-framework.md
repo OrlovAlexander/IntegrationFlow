@@ -122,4 +122,4 @@ REST уже покрывает синхронные интеграции; бро
 | **SentAndForgot (direct)** | Publisher confirms; `IntegrateWithResult()`; `MessageId` в AMQP properties |
 | **SentAndForgot (outbox)** | `IOutboxStore` + `OutboxRelayService` / `AddIntegrationFlowOutboxRelay()` |
 
-Целевая семантика: **at-least-once** + идемпотентные обработчики. План и детали: [`docs/plans/delivery-guarantee.md`](plans/delivery-guarantee.md).
+Целевая семантика: **at-least-once** + идемпотентные обработчики. План и детали: [`docs/plans/delivery-guarantee.md`](plans/delivery-guarantee.md). Анализ рисков: [`docs/plans/delivery-guarantee-risk-analysis.md`](plans/delivery-guarantee-risk-analysis.md).

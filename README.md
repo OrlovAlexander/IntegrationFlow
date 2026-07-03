@@ -210,7 +210,8 @@ services.AddIntegrationFlowOutboxRelay(options =>
 });
 ```
 
-Подробнее: [`docs/plans/delivery-guarantee.md`](docs/plans/delivery-guarantee.md).
+Подробнее: [`docs/plans/delivery-guarantee.md`](docs/plans/delivery-guarantee.md).  
+Анализ рисков и готовности к production: [`docs/plans/delivery-guarantee-risk-analysis.md`](docs/plans/delivery-guarantee-risk-analysis.md).
 
 ## Локализация
 
