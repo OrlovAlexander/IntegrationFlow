@@ -55,7 +55,28 @@ services.AddIntegrationFlow();
 
 Реализация прослушивания очереди RabbitMQ находится в `00InnerUsage/RabbitMq/ReceiveAndProcess/`. Слушатель работает асинхронно, потокобезопасно и подтверждает сообщения вручную (`manual ack`).
 
-### Пример запуска
+### Запуск через IHost (рекомендуется, .NET 8+)
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services =>
+    {
+        services.AddIntegrationFlow();
+        services.AddIntegrationFlowRabbitMqListener("Inbox");
+        // services.AddIntegrationFlowRabbitMqListener("Orders"); // несколько профилей
+    })
+    .Build();
+
+await host.RunAsync();
+```
+
+Legacy `IReceiveAndProcessLauncher` + `BeginReceiving()` сохранён для обратной совместимости, но помечен `[Obsolete]` на net8.0.
+
+### Пример запуска (legacy launcher)
 
 **Один профиль (Inbox):**
 

@@ -11,8 +11,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
     /// </summary>
     internal abstract class ListenerBase
     {
-        private bool disposed = false; // Для обнаружения избыточных вызовов
-        private Thread thread;
+        private bool disposed;
+        private CancellationTokenSource? runCts;
+        private Task? runTask;
 
         /// <summary>
         /// Конфигурация публикатора, слушателя
@@ -44,14 +45,10 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <summary>
         /// Создать слушателя входящих сообщений, запросов и т.п.
         /// </summary>
-        /// <typeparam name="TListener">Тип слушателя</typeparam>
-        /// <param name="publisher">Публикатор сообщений, запросов и т.п.</param>
-        /// <param name="configuration">Конфигурация публикатора, слушателя</param>
-        /// <param name="logger">Логгер в рамках интеграций</param>
         internal static ListenerBase Create<TListener>(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger)
-        where TListener : ListenerBase, new()
+            where TListener : ListenerBase, new()
         {
-            var listener = (TListener)System.Activator.CreateInstance(typeof(TListener));
+            var listener = (TListener)Activator.CreateInstance(typeof(TListener))!;
             listener.Publisher = publisher;
             listener.Configuration = configuration;
             listener.IntegrationPublisherSide = publisher.IntegrationPublisherSide;
@@ -61,35 +58,20 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 
         public void Dispose()
         {
-            // Dispose of unmanaged resources.
             Dispose(true);
-
-            // Финализатора нет, поэтому не актуально
-            // Suppress finalization.
-            //GC.SuppressFinalize(this);
         }
 
         /// <summary>
-        /// Запустить слушателя в отдельном потоке
+        /// Запустить слушателя в фоновой задаче.
         /// </summary>
-        internal void Start(Action postStartAction = null)
+        internal void Start(Action? postStartAction = null)
         {
             try
             {
-                Task.Run(() =>
-                    {
-                        thread = new Thread(Listen)
-                        {
-                            IsBackground = true
-                        };
-                        thread.Start(Configuration);
-
-                        Logger.Log(SR.T("Поток слушателя запущен '{0}'", thread.ManagedThreadId));
-
-                        // Блокируем текущую task, чтобы по завершении вызывать postStartAction
-                        thread.Join();
-                    })
-                    .ContinueWith((task) => postStartAction?.Invoke());
+                runCts?.Cancel();
+                runCts?.Dispose();
+                runCts = new CancellationTokenSource();
+                runTask = RunHostedAsync(runCts.Token, postStartAction);
             }
             catch (Exception ex)
             {
@@ -98,30 +80,19 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         }
 
         /// <summary>
-        /// Остановить слушателя
+        /// Остановить слушателя.
         /// </summary>
         internal void Stop()
         {
             try
             {
-                Dispose();
-                if (thread != null && thread.IsAlive)
-                {
-                    if (!thread.Join(TimeSpan.FromSeconds(30)))
-                    {
-                        Logger.LogWarn(SR.T(
-                            "Поток запускающий слушателя '{0}' не завершился за 30 секунд.",
-                            thread.ManagedThreadId));
-                    }
-                    else
-                    {
-                        Logger.Log(SR.T("Поток запускающий слушателя завершён '{0}'.", thread.ManagedThreadId));
-                    }
-                }
+                StopAsync().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
-                Logger.LogException(SR.T("Останов потока запускающего слушателя сообщений, запросов и т.п."), ex);
+                Logger.LogException(
+                    SR.T("Останов потока запускающего слушателя сообщений, запросов и т.п."),
+                    ex);
             }
         }
 
@@ -130,28 +101,17 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// </summary>
         internal ListenerStatuses GetStatus()
         {
-            var status = ListenerStatuses.NotStarted;
             try
             {
-                if (thread.ThreadState == ThreadState.Running)
-                {
-                    return GetStatusInternal(ListenerStatuses.Started);
-                }
+                var status = GetStatusInternal(ListenerStatuses.NotStarted);
+                Logger.Log(SR.T("Статус Слушателя '{0}'", status));
+                return status;
             }
             catch (Exception ex)
             {
                 Logger.LogException(SR.T("Статус Слушателя неопределен. Ошибка."), ex);
+                return ListenerStatuses.NotStarted;
             }
-            try
-            {
-                status = GetStatusInternal(ListenerStatuses.NotStarted);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(SR.T("Статус Слушателя неопределен. Ошибка."), ex);
-            }
-            Logger.Log(SR.T("Статус Слушателя '{0}'", status));
-            return status;
         }
 
         /// <summary>
@@ -163,6 +123,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             {
                 return;
             }
+
             disposed = true;
 
             if (disposing)
@@ -174,30 +135,64 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <summary>
         /// Обработать входящее сообщение, запрос и т.п.
         /// </summary>
-        protected virtual Task ProcessMessageAsync(object message)
+        protected virtual Task ProcessMessageAsync(object message, CancellationToken cancellationToken)
         {
             var processor = IntegrationPublisherSide.GetProcessor(Publisher, Configuration, Logger);
-            return processor.ProcessMessageAsync(message, CancellationToken.None);
+            return processor.ProcessMessageAsync(message, cancellationToken);
         }
 
         /// <summary>
-        /// Реализация метода слушателя
-        /// Реализуется в глобальном модуле
+        /// Реализация async lifecycle слушателя.
         /// </summary>
-        protected abstract void Listen(object configuration);
+        protected abstract Task RunAsync(CancellationToken cancellationToken, Action? postStartAction);
 
         /// <summary>
         /// Освобождение ресурсов.
-        /// Реализуется в глобальном модуле
         /// </summary>
-        /// <param name="disposing">Указывает, откуда осуществляется вызов метода: из метода Dispose (значение true) или из метода завершения (значение false)</param>
         protected abstract void DisposeInternal(bool disposing);
 
         /// <summary>
         /// Возвращает статус слушателя
         /// </summary>
-        /// <param name="listenerStatuses">Состояние слушателя, которое определено в выделенном модуле интеграций.</param>
-        /// <returns>Переопределенное в глобальном модуле состояние слушателя</returns>
         protected abstract ListenerStatuses GetStatusInternal(ListenerStatuses listenerStatuses);
+
+        private async Task RunHostedAsync(CancellationToken cancellationToken, Action? postStartAction)
+        {
+            try
+            {
+                await RunAsync(cancellationToken, postStartAction).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(SR.T("Поток слушателя. Ошибка выполнения."), ex);
+            }
+        }
+
+        private async Task StopAsync()
+        {
+            if (runCts != null)
+            {
+                runCts.Cancel();
+            }
+
+            if (runTask != null)
+            {
+#if NET8_0_OR_GREATER
+                await runTask.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+#else
+                var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(30)))
+                    .ConfigureAwait(false);
+                if (completed != runTask)
+                {
+                    Logger.LogWarn(SR.T("Слушатель не завершился за 30 секунд."));
+                }
+#endif
+            }
+
+            Dispose();
+        }
     }
 }

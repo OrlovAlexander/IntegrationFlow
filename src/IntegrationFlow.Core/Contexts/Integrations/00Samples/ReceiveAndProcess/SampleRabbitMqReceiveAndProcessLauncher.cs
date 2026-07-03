@@ -43,6 +43,7 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess
 
     /// <summary>
     /// Пример запуска интеграции "Получить и обработать" для профиля Inbox.
+    /// Legacy launcher — для Worker/ASP.NET Core используйте <c>AddIntegrationFlowRabbitMqListener</c>.
     /// </summary>
     public sealed class SampleRabbitMqReceiveAndProcessLauncher : IReceiveAndProcessLauncher
     {
@@ -50,7 +51,9 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess
         public void Run()
         {
             var publisher = PublisherBase.Create<RabbitMqPublisher, InboxRabbitMqPublisherSide>(Logger.Create());
+#pragma warning disable CS0618
             publisher.BeginReceiving();
+#pragma warning restore CS0618
         }
     }
 
@@ -63,7 +66,9 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess
         public void Run()
         {
             var publisher = PublisherBase.Create<RabbitMqPublisher, OrdersRabbitMqPublisherSide>(Logger.Create());
+#pragma warning disable CS0618
             publisher.BeginReceiving();
+#pragma warning restore CS0618
         }
     }
 
@@ -79,7 +84,9 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess
             {
                 var side = new NamedRabbitMqIntegrationPublisherSide(configuration.Name);
                 var publisher = PublisherBase.Create<RabbitMqPublisher>(Logger.Create(), side);
+#pragma warning disable CS0618
                 publisher.BeginReceiving();
+#pragma warning restore CS0618
             }
         }
     }

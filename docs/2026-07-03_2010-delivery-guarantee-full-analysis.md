@@ -363,7 +363,7 @@ flowchart TB
 | 14 | DLQ не создаётся runtime — только документация (осознанно) |
 | 15 | `SentAndWait` — неполная реализация |
 | 16 | Custom `IntegrationProcessorSideBase` без `cacheKeySuffix` — риск stale Configuration при multi-queue |
-| 17 | Listener на dedicated thread (`Task.Run` + `Thread`) — legacy-подход, не `IHostedService` |
+| 17 | ~~Listener на dedicated thread~~ | ✅ Закрыто: `RabbitMqListenerWorker` + `ReceiveAndProcessHostedService`; legacy `BeginReceiving()` без `Thread` |
 
 ---
 

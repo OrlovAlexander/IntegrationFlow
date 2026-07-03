@@ -106,6 +106,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// Начать получать сообщения, запросы и т.п. от публикатора сообщений
         /// Вызывается из реализации точки расширения IReceiveAndProcessLauncher в глобальном модуле
         /// </summary>
+#if NET8_0_OR_GREATER
+        [Obsolete("Use AddIntegrationFlowRabbitMqListener() and IHost instead.")]
+#endif
         public virtual void BeginReceiving(Action postStartAction = null)
         {
             try

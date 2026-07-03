@@ -1,14 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
-using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Workers;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners
 {
@@ -17,160 +12,37 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// </summary>
     internal sealed class RabbitMqListener : ListenerBase
     {
-        private readonly object channelSync = new();
-        private IConnection connection;
-        private IModel channel;
-        private CancellationTokenSource cancellationTokenSource;
+        private readonly RabbitMqListenerWorker worker = new();
         private volatile bool listening;
-        private RabbitMqConfiguration activeConfiguration;
-        private RabbitMqReceivedMessageHandler messageHandler;
 
         /// <inheritdoc />
-        protected override void Listen(object configuration)
+        protected override Task RunAsync(CancellationToken cancellationToken, Action? postStartAction)
         {
-            var rabbitMqConfiguration = (RabbitMqConfiguration)configuration;
+            var configuration = (RabbitMqConfiguration)Configuration;
 
-            if (string.IsNullOrWhiteSpace(rabbitMqConfiguration.QueueName))
-            {
-                throw new InvalidOperationException(SR.T("Не задано имя очереди RabbitMQ."));
-            }
-
-            cancellationTokenSource = new CancellationTokenSource();
-
-            try
-            {
-                ListenAsync(rabbitMqConfiguration, cancellationTokenSource.Token).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(SR.T("RabbitMQ listener. Ошибка прослушивания очереди '{0}'.", rabbitMqConfiguration.QueueName), ex);
-            }
-            finally
-            {
-                listening = false;
-                activeConfiguration = null;
-                messageHandler = null;
-            }
+            return worker.RunAsync(
+                configuration,
+                message => ProcessMessageAsync(message, cancellationToken),
+                Logger,
+                cancellationToken,
+                () =>
+                {
+                    listening = true;
+                    postStartAction?.Invoke();
+                },
+                () => listening = false);
         }
 
         /// <inheritdoc />
         protected override void DisposeInternal(bool disposing)
         {
-            cancellationTokenSource?.Cancel();
-
-            lock (channelSync)
-            {
-                CloseChannelAndConnection();
-                listening = false;
-                messageHandler = null;
-            }
+            listening = false;
         }
 
         /// <inheritdoc />
         protected override ListenerStatuses GetStatusInternal(ListenerStatuses listenerStatuses)
         {
-            lock (channelSync)
-            {
-                if (listening && connection != null && connection.IsOpen && channel != null && channel.IsOpen)
-                {
-                    return ListenerStatuses.Started;
-                }
-            }
-
-            return ListenerStatuses.NotStarted;
-        }
-
-        private async Task ListenAsync(RabbitMqConfiguration configuration, CancellationToken cancellationToken)
-        {
-            activeConfiguration = configuration;
-            var factory = RabbitMqConnectionFactory.Create(RabbitMqPublishConfiguration.ToConnectionSettings(configuration));
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
-
-            var acknowledgement = new RabbitMqChannelAcknowledgement(
-                channelSync,
-                () => channel,
-                Logger);
-
-            messageHandler = new RabbitMqReceivedMessageHandler(
-                ProcessMessageAsync,
-                acknowledgement,
-                Logger);
-
-            channel.BasicQos(prefetchSize: 0, prefetchCount: configuration.PrefetchCount, global: false);
-            channel.QueueDeclarePassive(configuration.QueueName);
-
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.Received += async (_, eventArgs) =>
-            {
-                await HandleReceivedAsync(eventArgs, cancellationToken).ConfigureAwait(false);
-            };
-
-            channel.BasicConsume(
-                queue: configuration.QueueName,
-                autoAck: false,
-                consumer: consumer);
-
-            listening = true;
-            Logger.Log(SR.T("RabbitMQ listener. Подключение к очереди '{0}' установлено.", configuration.QueueName));
-
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested && connection.IsOpen)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-        }
-
-        private Task HandleReceivedAsync(BasicDeliverEventArgs eventArgs, CancellationToken cancellationToken)
-        {
-            var receivedMessage = new RabbitMqReceivedMessage(
-                eventArgs.Body.ToArray(),
-                eventArgs.DeliveryTag,
-                eventArgs.RoutingKey,
-                eventArgs.BasicProperties?.MessageId,
-                eventArgs.BasicProperties?.CorrelationId);
-
-            return messageHandler.HandleAsync(
-                receivedMessage,
-                activeConfiguration,
-                eventArgs.BasicProperties?.Headers,
-                cancellationToken);
-        }
-
-        private void CloseChannelAndConnection()
-        {
-            try
-            {
-                channel?.Close();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(SR.T("RabbitMQ listener. Ошибка закрытия канала."), ex);
-            }
-            finally
-            {
-                channel?.Dispose();
-                channel = null;
-            }
-
-            try
-            {
-                connection?.Close();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(SR.T("RabbitMQ listener. Ошибка закрытия соединения."), ex);
-            }
-            finally
-            {
-                connection?.Dispose();
-                connection = null;
-            }
+            return listening ? ListenerStatuses.Started : ListenerStatuses.NotStarted;
         }
     }
 }
