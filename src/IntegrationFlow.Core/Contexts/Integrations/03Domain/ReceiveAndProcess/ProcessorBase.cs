@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 
@@ -71,6 +72,23 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <param name="message">Входное сообщение, запрос и т.п.</param>
         protected internal virtual void Process(object message)
         {
+            var deduplicationStore = IntegrationProcessorSide.GetMessageDeduplicationStore(Publisher, Configuration, Logger);
+            var messageId = ExtractMessageId(message);
+            var skipProcessing = false;
+
+            if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
+            {
+                skipProcessing = !deduplicationStore.TryBeginProcessingAsync(messageId, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
+            if (skipProcessing)
+            {
+                Logger.LogInfo(SR.T("Сообщение '{0}' уже обработано, пропуск.", messageId));
+                return;
+            }
+
             var inboxMessage = new InboxMessage(message);
             var validator = IntegrationProcessorSide.GetValidator(Publisher, Configuration, Logger);
             if (validator != null)
@@ -108,6 +126,18 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             }
 
             inboxMessageProcessing.ProcessInboxMessage(inboxMessage);
+
+            if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
+            {
+                deduplicationStore.MarkProcessedAsync(messageId, CancellationToken.None).GetAwaiter().GetResult();
+            }
+        }
+
+        private static string ExtractMessageId(object message)
+        {
+            return message is IIntegrationMessageMetadata metadata
+                ? metadata.MessageId
+                : string.Empty;
         }
     }
 }

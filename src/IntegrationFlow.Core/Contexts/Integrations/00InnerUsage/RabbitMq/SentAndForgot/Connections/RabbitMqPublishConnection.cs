@@ -1,8 +1,10 @@
 using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Connection;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using DomainConnection = IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Connection.IConnection;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections
@@ -16,6 +18,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         private IModel channel;
         private readonly RabbitMqPublishConfiguration configuration;
         private bool disposed;
+        private volatile bool unroutableMessageReceived;
 
         public RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration)
         {
@@ -48,15 +51,48 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             DisposeInternal();
         }
 
+        internal void ResetUnroutableFlag()
+        {
+            unroutableMessageReceived = false;
+        }
+
+        internal void EnsureNotUnroutable()
+        {
+            if (unroutableMessageReceived)
+            {
+                throw new UnroutableMessageException("RabbitMQ returned BasicReturn for mandatory publish.");
+            }
+        }
+
         private void Open()
         {
             var factory = RabbitMqConnectionFactory.Create(configuration.ToConnectionSettings());
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
+
+            if (configuration.PublisherConfirmsEnabled)
+            {
+                channel.ConfirmSelect();
+            }
+
+            if (configuration.Mandatory)
+            {
+                channel.BasicReturn += OnBasicReturn;
+            }
+        }
+
+        private void OnBasicReturn(object sender, BasicReturnEventArgs eventArgs)
+        {
+            unroutableMessageReceived = true;
         }
 
         private void DisposeInternal()
         {
+            if (channel != null && configuration.Mandatory)
+            {
+                channel.BasicReturn -= OnBasicReturn;
+            }
+
             try
             {
                 channel?.Close();

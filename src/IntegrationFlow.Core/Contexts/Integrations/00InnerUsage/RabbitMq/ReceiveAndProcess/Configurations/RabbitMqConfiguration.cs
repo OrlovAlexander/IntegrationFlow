@@ -59,5 +59,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// Имя клиента для идентификации подключения на стороне брокера.
         /// </summary>
         public string ClientProvidedName { get; set; } = "IntegrationFlow.RabbitMqListener";
+
+        /// <summary>
+        /// Повторно ставить сообщение в очередь при ошибке обработки.
+        /// </summary>
+        public bool RequeueOnFailure { get; set; }
+
+        /// <summary>
+        /// Максимальное количество попыток доставки (0 = без ограничения).
+        /// </summary>
+        public int MaxRetryCount { get; set; }
     }
 }

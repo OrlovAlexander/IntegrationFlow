@@ -170,18 +170,16 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <summary>
         /// Обработать входящее сообщение, запрос и т.п.
         /// </summary>
-        protected virtual void ProcessMessage(object message)
+        protected virtual Task ProcessMessageAsync(object message)
         {
-            // processor кешируется и по сути singleton
             var processor = IntegrationPublisherSide.GetProcessor(Publisher, Configuration, Logger);
             if (Configuration.Asynchronously)
             {
-                ThreadPool.QueueUserWorkItem(processor.Process, message);
+                return Task.Run(() => processor.Process(message));
             }
-            else
-            {
-                processor.Process(message);
-            }
+
+            processor.Process(message);
+            return Task.CompletedTask;
         }
 
         /// <summary>

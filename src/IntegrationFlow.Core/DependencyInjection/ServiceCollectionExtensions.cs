@@ -11,7 +11,7 @@ namespace IntegrationFlow.DependencyInjection;
 /// <summary>
 /// DI registration helpers for IntegrationFlow.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static partial class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers core integration services.

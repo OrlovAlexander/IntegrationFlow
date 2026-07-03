@@ -98,7 +98,7 @@
 
 1. **Listener** — blocking/long-poll loop в `Listen()`
 2. **Ack/nack** — подтверждение только после успешной обработки
-3. **Idempotency** — большинство брокеров дают at-least-once
+3. **Idempotency** — `IMessageDeduplicationStore` + `MessageId` в publish; at-least-once семантика
 4. **Конфигурация** — наследник `IConfiguration` с параметрами подключения
 5. **Модель сообщения** — свой `*ReceivedMessage`, передаваемый в `ProcessMessage(object)`
 
@@ -113,3 +113,13 @@
 5. **IBM MQ / Artemis** — если enterprise/on-prem
 
 REST уже покрывает синхронные интеграции; брокеры лучше использовать для **асинхронного ReceiveAndProcess** и **fire-and-forget / async request-reply**.
+
+## Гарантии доставки (реализовано для RabbitMQ)
+
+| Сценарий | Механизм |
+|----------|----------|
+| **ReceiveAndProcess** | Ack после обработки; nack + `RequeueOnFailure` / `MaxRetryCount`; dedup через `IMessageDeduplicationStore` |
+| **SentAndForgot (direct)** | Publisher confirms; `IntegrateWithResult()`; `MessageId` в AMQP properties |
+| **SentAndForgot (outbox)** | `IOutboxStore` + `OutboxRelayService` / `AddIntegrationFlowOutboxRelay()` |
+
+Целевая семантика: **at-least-once** + идемпотентные обработчики. План и детали: [`docs/plans/delivery-guarantee.md`](plans/delivery-guarantee.md).

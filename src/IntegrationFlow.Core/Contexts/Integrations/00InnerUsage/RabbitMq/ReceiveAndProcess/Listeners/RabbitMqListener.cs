@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
@@ -22,6 +24,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         private IModel channel;
         private CancellationTokenSource cancellationTokenSource;
         private volatile bool listening;
+        private RabbitMqConfiguration activeConfiguration;
 
         /// <inheritdoc />
         protected override void Listen(object configuration)
@@ -46,6 +49,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             finally
             {
                 listening = false;
+                activeConfiguration = null;
             }
         }
 
@@ -77,6 +81,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
         private async Task ListenAsync(RabbitMqConfiguration configuration, CancellationToken cancellationToken)
         {
+            activeConfiguration = configuration;
             var factory = RabbitMqConnectionFactory.Create(RabbitMqPublishConfiguration.ToConnectionSettings(configuration));
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
@@ -120,11 +125,13 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             var receivedMessage = new RabbitMqReceivedMessage(
                 eventArgs.Body.ToArray(),
                 eventArgs.DeliveryTag,
-                eventArgs.RoutingKey);
+                eventArgs.RoutingKey,
+                eventArgs.BasicProperties?.MessageId,
+                eventArgs.BasicProperties?.CorrelationId);
 
             try
             {
-                ProcessMessage(receivedMessage);
+                await ProcessMessageAsync(receivedMessage).ConfigureAwait(false);
                 Acknowledge(receivedMessage.DeliveryTag);
                 Logger.Log(SR.T("RabbitMQ listener. Сообщение подтверждено. DeliveryTag='{0}'.", receivedMessage.DeliveryTag));
             }
@@ -133,9 +140,51 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                 Logger.LogException(
                     SR.T("RabbitMQ listener. Ошибка обработки сообщения. DeliveryTag='{0}'.", receivedMessage.DeliveryTag),
                     ex);
+
+                var requeue = ShouldRequeue(eventArgs, activeConfiguration);
+                NegativeAcknowledge(receivedMessage.DeliveryTag, requeue);
+                Logger.Log(SR.T(
+                    "RabbitMQ listener. Сообщение отклонено. DeliveryTag='{0}', Requeue='{1}'.",
+                    receivedMessage.DeliveryTag,
+                    requeue));
+            }
+        }
+
+        private static bool ShouldRequeue(BasicDeliverEventArgs eventArgs, RabbitMqConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                return false;
             }
 
-            await Task.CompletedTask.ConfigureAwait(false);
+            if (configuration.MaxRetryCount > 0)
+            {
+                var deathCount = GetDeathCount(eventArgs.BasicProperties?.Headers);
+                if (deathCount >= configuration.MaxRetryCount)
+                {
+                    return false;
+                }
+            }
+
+            return configuration.RequeueOnFailure;
+        }
+
+        private static int GetDeathCount(IDictionary<string, object> headers)
+        {
+            if (headers == null || !headers.TryGetValue("x-death", out var deathHeader))
+            {
+                return 0;
+            }
+
+            if (deathHeader is IList deathList && deathList.Count > 0 && deathList[0] is IDictionary deathEntry)
+            {
+                if (deathEntry.Contains("count"))
+                {
+                    return Convert.ToInt32(Convert.ToInt64(deathEntry["count"]));
+                }
+            }
+
+            return 0;
         }
 
         private void Acknowledge(ulong deliveryTag)
@@ -144,10 +193,25 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             {
                 if (channel == null || !channel.IsOpen)
                 {
+                    Logger.Log(SR.T("RabbitMQ listener. Канал недоступен для ack. DeliveryTag='{0}'.", deliveryTag));
                     return;
                 }
 
                 channel.BasicAck(deliveryTag, multiple: false);
+            }
+        }
+
+        private void NegativeAcknowledge(ulong deliveryTag, bool requeue)
+        {
+            lock (channelSync)
+            {
+                if (channel == null || !channel.IsOpen)
+                {
+                    Logger.Log(SR.T("RabbitMQ listener. Канал недоступен для nack. DeliveryTag='{0}'.", deliveryTag));
+                    return;
+                }
+
+                channel.BasicNack(deliveryTag, multiple: false, requeue: requeue);
             }
         }
 

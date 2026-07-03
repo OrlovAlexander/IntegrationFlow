@@ -86,6 +86,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         public bool Mandatory { get; set; }
 
         /// <summary>
+        /// Включить publisher confirms для подтверждения приёма сообщения брокером.
+        /// </summary>
+        public bool PublisherConfirmsEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Таймаут ожидания publisher confirm (секунды).
+        /// </summary>
+        public int ConfirmTimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
         /// Проверять существование очереди/exchange перед публикацией (passive declare).
         /// </summary>
         public bool ValidateTopology { get; set; } = true;

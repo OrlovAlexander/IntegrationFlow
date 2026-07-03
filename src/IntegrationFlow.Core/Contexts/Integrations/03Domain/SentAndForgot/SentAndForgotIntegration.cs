@@ -3,6 +3,7 @@ using System.Threading;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Connection;
+using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Transmitter;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
 {
@@ -60,6 +61,14 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
         /// </summary>
         public void Integrate()
         {
+            IntegrateWithResult();
+        }
+
+        /// <summary>
+        /// Выполнить интеграцию и вернуть результат.
+        /// </summary>
+        public IntegrateResult IntegrateWithResult()
+        {
             var sideCode = oppositeSide.IntegrationOppositeSideCode;
             try
             {
@@ -70,7 +79,6 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
 
                 var destinationData = TransmitData;
 
-                // преобразование исходных данных (подготовка передаваемых данных)
                 var formatterSourceData = oppositeSide.GetFormatterSourceData(logger);
                 if (formatterSourceData != null)
                 {
@@ -82,17 +90,14 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     logger.LogInfo(SR.T("SendAndForgot - '{0}' - Форматировщик передаваемых данных не задан.", sideCode));
                 }
 
-                // логировать передаваемые данные
                 if (logging != null && logger != null)
                 {
                     logging.LogTransmitData(destinationData);
                 }
 
-
-                // Конфигурирование и подключение выполняются атомарно
+                IConnection connection = null;
+                IConfiguration configuration = null;
                 var lockTaken = false;
-                IConnection connection;
-                IConfiguration configuration;
                 try
                 {
                     logger.LogInfo(SR.T("SendAndForgot - '{0}' - Взять блокировку", sideCode));
@@ -100,19 +105,16 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     Monitor.Enter(configConnectSyncObject, ref lockTaken);
 
                     configuration = oppositeSide.GetTransmitterConfiguration(logger);
-                    if (configuration == null)
-                    {
-                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Конфигурация не предоставлена, отмена интеграции", sideCode));
-                        return;
-                    }
-
-                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Конфигурация: '{1}'", sideCode, configuration.GetType().FullName));
+                    logger.LogInfo(SR.T(
+                        "SendAndForgot - '{0}' - Конфигурация: '{1}'",
+                        sideCode,
+                        configuration?.GetType().FullName ?? "null"));
 
                     connection = oppositeSide.GetConnection(configuration, logger);
                     if (connection == null)
                     {
                         logger.LogInfo(SR.T("SendAndForgot - '{0}' - Подключение не предоставлено, отмена интеграции - ", sideCode));
-                        return;
+                        return IntegrateResult.Failed("Connection was not provided.");
                     }
 
                     logger.LogInfo(SR.T("SendAndForgot - '{0}' - Подключение: '{1}'", sideCode, connection.GetType().FullName));
@@ -137,32 +139,42 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                         if (!connection.Reconnect())
                         {
                             logger.LogWarn(SR.T("SendAndForgot - '{0}' - Возникла ошибка переподключения.", sideCode));
-                            return;
+                            return IntegrateResult.Failed("Reconnect failed.");
                         }
                     }
 
-                    // Transmit(configuration, connection, TransmitData);
                     var transmitter = oppositeSide.GetTransmitter(configuration, connection, logger);
-                    if (transmitter != null)
-                    {
-                        transmitter.Transmit(destinationData);
-                        logger.LogInfo(SR.T("SendAndForgot - '{0}' - Обмен данными состоялся", sideCode));
-                    }
-                    else
+                    if (transmitter == null)
                     {
                         logger.LogInfo(SR.T("SendAndForgot - '{0}' - Передатчик для обмена данными не предоставлен", sideCode));
+                        return IntegrateResult.Failed("Transmitter was not provided.");
                     }
 
-                } // connection Disposing
+                    var transmitResult = TransmitWithResult(transmitter, destinationData);
+                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Обмен данными состоялся", sideCode));
+                    return IntegrateResult.Succeeded(transmitResult.MessageId);
+                }
             }
             catch (Exception ex)
             {
                 logger.LogException(SR.T("SendAndForgot - '{0}'", sideCode), ex);
+                return IntegrateResult.Failed(ex.Message);
             }
             finally
             {
                 logger.LogInfo(SR.T("SendAndForgot - '{0}' - Интеграция завершена", sideCode));
             }
+        }
+
+        private static TransmitResult TransmitWithResult(ITransmitter transmitter, TransmitData destinationData)
+        {
+            if (transmitter is ITransmitterWithResult transmitterWithResult)
+            {
+                return transmitterWithResult.TransmitWithResult(destinationData);
+            }
+
+            transmitter.Transmit(destinationData);
+            return TransmitResult.Create(destinationData.MessageId);
         }
     }
 }

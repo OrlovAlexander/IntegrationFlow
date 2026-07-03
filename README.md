@@ -163,9 +163,54 @@ internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherS
 | `VirtualHost` | `/` | Виртуальный хост |
 | `QueueName` | — | Имя очереди для прослушивания (обязательно) |
 | `PrefetchCount` | `1` | Количество неподтверждённых сообщений |
+| `RequeueOnFailure` | `false` | Повторно ставить сообщение в очередь при ошибке обработки |
+| `MaxRetryCount` | `0` | Лимит попыток (0 = без ограничения); после лимита nack без requeue (DLQ) |
 | `AutomaticRecoveryEnabled` | `true` | Автовосстановление соединения |
 
 Очередь должна существовать на брокере — слушатель подключается к ней через `QueueDeclarePassive`.
+
+**Гарантии доставки (consumer):** ack выполняется **после** завершения обработки (в том числе при `Asynchronously=true`). При ошибке — `BasicNack` с настраиваемым `RequeueOnFailure`. Для poison messages настройте DLQ на брокере (`x-dead-letter-exchange` на основной очереди).
+
+**Идемпотентность:** реализуйте `IMessageDeduplicationStore` и верните его из `IntegrationProcessorSideBase.GetMessageDeduplicationStore`. Sample: `InMemoryMessageDeduplicationStore`.
+
+## RabbitMQ (SentAndForgot)
+
+Публикация в очередь/exchange с **publisher confirms** (по умолчанию включены), `MessageId` и `IntegrateWithResult()`:
+
+```csharp
+var integration = orgIntegration.CreateSentAndForgotIntegration<SampleRabbitMqSentAndForgotProvider>(
+    oppositeSideCode: "OrdersOut",
+    srcData: orderEvent);
+
+var result = integration.IntegrateWithResult();
+if (!result.Success)
+{
+    // обработать ошибку publish/reconnect
+}
+```
+
+| Параметр (`RabbitMqPublish`) | По умолчанию | Описание |
+|------------------------------|--------------|----------|
+| `PublisherConfirmsEnabled` | `true` | Ждать confirm от брокера после `BasicPublish` |
+| `ConfirmTimeoutSeconds` | `30` | Таймаут ожидания confirm |
+| `Persistent` | `true` | `DeliveryMode=2` |
+| `Mandatory` | `false` | При `true` — ошибка, если сообщение не маршрутизируется |
+
+### Transactional Outbox
+
+Для атомарности «БД + сообщение» используйте `IOutboxStore` и `OutboxSentAndForgotIntegrationOppositeSideBase`. Relay worker:
+
+```csharp
+services.AddIntegrationFlow();
+services.AddSingleton<IOutboxStore, InMemoryOutboxStore>(); // или EF-реализация приложения
+services.AddIntegrationFlowOutboxRelay(options =>
+{
+    options.BatchSize = 20;
+    options.PollingInterval = TimeSpan.FromSeconds(5);
+});
+```
+
+Подробнее: [`docs/plans/delivery-guarantee.md`](docs/plans/delivery-guarantee.md).
 
 ## Локализация
 

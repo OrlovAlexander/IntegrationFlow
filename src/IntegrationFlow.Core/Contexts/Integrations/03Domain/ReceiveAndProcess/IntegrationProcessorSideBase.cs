@@ -1,4 +1,5 @@
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Formatter;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Logging;
@@ -62,5 +63,14 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <param name="configuration">Конфигурация публикатора, слушателя</param>
         /// <param name="logger">Логгер в рамках интеграций</param>
         public abstract IInboxMessageProcessing GetInboxMessageProcessing(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger);
+
+        /// <summary>
+        /// Возвращает хранилище dedup для идемпотентной обработки входящих сообщений.
+        /// </summary>
+        public virtual IMessageDeduplicationStore GetMessageDeduplicationStore(
+            PublisherBase publisher,
+            IConfiguration configuration,
+            IIntegrationLogger logger)
+            => null;
     }
 }
