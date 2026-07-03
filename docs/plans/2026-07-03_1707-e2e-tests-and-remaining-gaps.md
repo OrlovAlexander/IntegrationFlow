@@ -2,7 +2,7 @@
 
 **Статус:** в работе  
 **Создан:** 2026-07-03 17:07 (UTC+3)  
-**Обновлён:** 2026-07-03 19:35 (UTC+3)  
+**Обновлён:** 2026-07-03 19:37 (UTC+3)  
 **Основание:** [`../2026-07-03_1706-delivery-guarantee-full-analysis.md`](../2026-07-03_1706-delivery-guarantee-full-analysis.md)  
 **Цель:** закрыть оставшиеся gaps тестового покрытия и мелкие code-fixes; довести решение до production-ready с точки зрения CI и E2E-валидации.
 
@@ -14,17 +14,18 @@
 
 **Этап 1 выполнен** (2026-07-03 19:35): shared `IntegrationFlow.Testing`, дубликаты удалены, `RabbitMqContainerFixture`, Core.IntegrationTests → Testing + EF.
 
+**Этап 2 выполнен** (2026-07-03 19:37): `OutboxRelayEndToEndTests` — relay через `OutboxRelayService` + `EfOutboxStore`, assert `MessageId = OutboxId`.
+
 | Что уже есть | Этап плана | Статус |
 |--------------|------------|--------|
 | Анализ v2 + этот план в docs/sln | — | ✅ |
 | `IntegrationFlow.Testing` в sln, shared helpers | 1 | ✅ |
-| `InternalsVisibleTo` для integration projects | 1 | ✅ |
-| EF.Tests → `IntegrationFlow.Testing` (без дубликатов) | 1 | ✅ |
 | `RabbitMqContainerFixture` + refactor integration tests | 1 | ✅ |
+| Outbox relay E2E (2 теста) | 2 | ✅ |
 | Mandatory BasicReturn: `ManualResetEventSlim` + wait | 5 | ~60% (без unit-тестов) |
-| E2E / CI / PG claim tests | 2–4, 6 | ❌ |
+| Consumer E2E / PG claim / CI | 3–4, 6 | ❌ |
 
-**Следующий шаг:** [Этап 2 — Outbox relay E2E](#этап-2--outbox-relay-e2e-p1).
+**Следующий шаг:** [Этап 3 — Consumer handler E2E](#этап-3--consumer-handler-e2e-p1).
 
 ---
 
@@ -210,9 +211,9 @@ Unit- и integration-тесты ссылаются на него — без ду
 
 ### Критерии готовности этапа 2
 
-- [ ] ≥ 2 E2E-теста outbox relay через `OutboxRelayService` + `EfOutboxStore`
-- [ ] Assert `MessageId = OutboxId`
-- [ ] Shared test helpers в `IntegrationFlow.Testing` (или эквивалент)
+- [x] ≥ 2 E2E-теста outbox relay через `OutboxRelayService` + `EfOutboxStore`
+- [x] Assert `MessageId = OutboxId`
+- [x] Shared test helpers в `IntegrationFlow.Testing`
 
 ---
 
@@ -477,14 +478,14 @@ gantt
 
 - [x] **Этап 0:** checkpoint — commit, build/test green, статус плана
 - [x] **Этап 1:** InternalsVisibleTo, fixtures, shared Testing project, без дубликатов
-- [ ] Этап 2: Outbox relay E2E (≥ 2 теста)
+- [x] **Этап 2:** Outbox relay E2E (2 теста)
 - [ ] Этап 3: Consumer handler E2E (≥ 3 теста)
 - [ ] Этап 4: PostgreSQL + SQL Server claim integration tests
 - [ ] Этап 5: Mandatory BasicReturn race fix + unit tests (частично: код без тестов)
 - [ ] Этап 6: GitHub Actions CI
 - [ ] Этап 7: Docs superseded + README
 
-**Ожидаемый итог:** ≥ 85 тестов (74 + ~11 новых), E2E покрытие framework path, CI green.
+**Ожидаемый итог:** ≥ 85 тестов (76 + ~9 новых), E2E покрытие framework path, CI green.
 
 ---
 
