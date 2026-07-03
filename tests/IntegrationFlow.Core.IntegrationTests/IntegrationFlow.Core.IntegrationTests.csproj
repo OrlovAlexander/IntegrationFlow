@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\IntegrationFlow.Core\IntegrationFlow.Core.csproj" />
+    <ProjectReference Include="..\..\src\IntegrationFlow.EntityFrameworkCore\IntegrationFlow.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\IntegrationFlow.Testing\IntegrationFlow.Testing.csproj" />
   </ItemGroup>
 
 </Project>

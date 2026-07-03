@@ -2,7 +2,7 @@
 
 **Статус:** в работе  
 **Создан:** 2026-07-03 17:07 (UTC+3)  
-**Обновлён:** 2026-07-03 18:56 (UTC+3)  
+**Обновлён:** 2026-07-03 19:35 (UTC+3)  
 **Основание:** [`../2026-07-03_1706-delivery-guarantee-full-analysis.md`](../2026-07-03_1706-delivery-guarantee-full-analysis.md)  
 **Цель:** закрыть оставшиеся gaps тестового покрытия и мелкие code-fixes; довести решение до production-ready с точки зрения CI и E2E-валидации.
 
@@ -12,16 +12,19 @@
 
 **Этап 0 выполнен** (2026-07-03 18:56): промежуточное состояние зафиксировано в git, сборка и 74 теста зелёные.
 
-| Что уже есть (частично) | Этап плана | Статус |
-|-------------------------|------------|--------|
+**Этап 1 выполнен** (2026-07-03 19:35): shared `IntegrationFlow.Testing`, дубликаты удалены, `RabbitMqContainerFixture`, Core.IntegrationTests → Testing + EF.
+
+| Что уже есть | Этап плана | Статус |
+|--------------|------------|--------|
 | Анализ v2 + этот план в docs/sln | — | ✅ |
-| `IntegrationFlow.Testing` (каркас, 6 файлов) | 1 | ~50% |
+| `IntegrationFlow.Testing` в sln, shared helpers | 1 | ✅ |
 | `InternalsVisibleTo` для integration projects | 1 | ✅ |
-| EF.Tests → ссылка на Testing, `using IntegrationFlow.Testing` | 1 | ~50% (дубликаты DbContext ещё в EF.Tests) |
+| EF.Tests → `IntegrationFlow.Testing` (без дубликатов) | 1 | ✅ |
+| `RabbitMqContainerFixture` + refactor integration tests | 1 | ✅ |
 | Mandatory BasicReturn: `ManualResetEventSlim` + wait | 5 | ~60% (без unit-тестов) |
 | E2E / CI / PG claim tests | 2–4, 6 | ❌ |
 
-**Следующий шаг:** [Этап 1 — Test infrastructure](#этап-1--test-infrastructure-p1).
+**Следующий шаг:** [Этап 2 — Outbox relay E2E](#этап-2--outbox-relay-e2e-p1).
 
 ---
 
@@ -139,9 +142,11 @@ SQLite — для outbox relay E2E без второго контейнера Б
 
 ### Критерии готовности этапа 1
 
-- [ ] `InternalsVisibleTo` для integration test projects
-- [ ] `TempRabbitMqConfigWriter` + `RabbitMqContainerFixture`
-- [ ] Core.IntegrationTests ссылается на EntityFrameworkCore
+- [x] `InternalsVisibleTo` для integration test projects
+- [x] `TempRabbitMqConfigWriter` + `RabbitMqContainerFixture`
+- [x] Core.IntegrationTests ссылается на EntityFrameworkCore и Testing
+- [x] `IntegrationFlow.Testing` в sln, дубликаты DbContext удалены из EF.Tests
+- [x] 74 теста green
 
 ---
 
@@ -471,7 +476,7 @@ gantt
 ## Чеклист реализации
 
 - [x] **Этап 0:** checkpoint — commit, build/test green, статус плана
-- [ ] Этап 1: InternalsVisibleTo, fixtures, shared Testing project (частично: Testing создан, дубликаты не удалены, не в sln)
+- [x] **Этап 1:** InternalsVisibleTo, fixtures, shared Testing project, без дубликатов
 - [ ] Этап 2: Outbox relay E2E (≥ 2 теста)
 - [ ] Этап 3: Consumer handler E2E (≥ 3 теста)
 - [ ] Этап 4: PostgreSQL + SQL Server claim integration tests

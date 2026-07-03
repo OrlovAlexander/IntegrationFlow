@@ -1,6 +1,4 @@
 using IntegrationFlow.IntegrationTests.Infrastructure;
-using RabbitMQ.Client;
-using Testcontainers.RabbitMq;
 using Xunit;
 
 namespace IntegrationFlow.IntegrationTests;
@@ -8,50 +6,22 @@ namespace IntegrationFlow.IntegrationTests;
 [Trait("Category", "Integration")]
 public sealed class RabbitMqConnectivityTests : IAsyncLifetime
 {
-    private RabbitMqContainer? container;
-    private bool dockerAvailable;
+    private readonly RabbitMqContainerFixture rabbitMq = new();
 
-    public async Task InitializeAsync()
-    {
-        dockerAvailable = await DockerAvailability.IsAvailableAsync();
-        if (!dockerAvailable)
-        {
-            return;
-        }
+    public Task InitializeAsync() => rabbitMq.InitializeAsync();
 
-        container = new RabbitMqBuilder()
-            .WithImage("rabbitmq:3.13-management")
-            .Build();
-
-        await container.StartAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        if (container != null)
-        {
-            await container.DisposeAsync();
-        }
-    }
+    public Task DisposeAsync() => rabbitMq.DisposeAsync();
 
     [Fact]
     public async Task CanConnectAndDeclareQueue()
     {
-        if (!dockerAvailable || container == null)
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
         {
             return;
         }
 
-        var factory = new ConnectionFactory
-        {
-            HostName = container.Hostname,
-            Port = container.GetMappedPublicPort(5672),
-            UserName = "guest",
-            Password = "guest"
-        };
-
-        using var connection = factory.CreateConnection();
+        using var connection = rabbitMq.CreateConnectionFactory().CreateConnection();
         using var channel = connection.CreateModel();
-        channel.QueueDeclare("integration.test", durable: true, exclusive: false, autoDelete: true);
+        channel.QueueDeclare("integration.test", durable: true, exclusive: false, autoDelete: true, arguments: null);
     }
 }

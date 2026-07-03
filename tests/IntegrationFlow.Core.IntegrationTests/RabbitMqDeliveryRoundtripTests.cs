@@ -1,7 +1,6 @@
 using System.Text;
 using IntegrationFlow.IntegrationTests.Infrastructure;
 using RabbitMQ.Client;
-using Testcontainers.RabbitMq;
 using Xunit;
 
 namespace IntegrationFlow.IntegrationTests;
@@ -11,48 +10,28 @@ public sealed class RabbitMqDeliveryRoundtripTests : IAsyncLifetime
 {
     private const string QueueName = "integration.roundtrip";
 
-    private RabbitMqContainer? container;
-    private bool dockerAvailable;
+    private readonly RabbitMqContainerFixture rabbitMq = new();
 
-    public async Task InitializeAsync()
-    {
-        dockerAvailable = await DockerAvailability.IsAvailableAsync();
-        if (!dockerAvailable)
-        {
-            return;
-        }
+    public Task InitializeAsync() => rabbitMq.InitializeAsync();
 
-        container = new RabbitMqBuilder()
-            .WithImage("rabbitmq:3.13-management")
-            .Build();
-
-        await container.StartAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        if (container != null)
-        {
-            await container.DisposeAsync();
-        }
-    }
+    public Task DisposeAsync() => rabbitMq.DisposeAsync();
 
     [Fact]
     public async Task PublishAndConsumeMessage()
     {
-        if (!dockerAvailable || container == null)
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
         {
             return;
         }
 
-        var factory = CreateConnectionFactory();
+        var factory = rabbitMq.CreateConnectionFactory();
         var body = Encoding.UTF8.GetBytes("roundtrip-payload");
         var messageId = Guid.NewGuid().ToString("N");
 
         using (var publishConnection = factory.CreateConnection())
         using (var publishChannel = publishConnection.CreateModel())
         {
-            publishChannel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: true);
+            publishChannel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: true, arguments: null);
             var properties = publishChannel.CreateBasicProperties();
             properties.MessageId = messageId;
             properties.DeliveryMode = 2;
@@ -71,17 +50,17 @@ public sealed class RabbitMqDeliveryRoundtripTests : IAsyncLifetime
     [Fact]
     public async Task NackWithRequeue_RedeliversMessage()
     {
-        if (!dockerAvailable || container == null)
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
         {
             return;
         }
 
-        var factory = CreateConnectionFactory();
+        var factory = rabbitMq.CreateConnectionFactory();
         var body = Encoding.UTF8.GetBytes("requeue-payload");
 
         using var connection = factory.CreateConnection();
         using var channel = connection.CreateModel();
-        channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: true);
+        channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: true, arguments: null);
 
         channel.BasicPublish(string.Empty, QueueName, null, body);
 
@@ -97,17 +76,17 @@ public sealed class RabbitMqDeliveryRoundtripTests : IAsyncLifetime
     [Fact]
     public async Task DuplicateMessageId_CanBeDetectedByConsumer()
     {
-        if (!dockerAvailable || container == null)
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
         {
             return;
         }
 
-        var factory = CreateConnectionFactory();
+        var factory = rabbitMq.CreateConnectionFactory();
         var messageId = "duplicate-msg-id";
 
         using var connection = factory.CreateConnection();
         using var channel = connection.CreateModel();
-        channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: true);
+        channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: true, arguments: null);
 
         for (var index = 0; index < 2; index++)
         {
@@ -128,13 +107,4 @@ public sealed class RabbitMqDeliveryRoundtripTests : IAsyncLifetime
         Assert.True(processed.Add(firstDelivery.BasicProperties.MessageId!));
         Assert.False(processed.Add(secondDelivery.BasicProperties.MessageId!));
     }
-
-    private ConnectionFactory CreateConnectionFactory()
-        => new()
-        {
-            HostName = container!.Hostname,
-            Port = container.GetMappedPublicPort(5672),
-            UserName = "guest",
-            Password = "guest"
-        };
 }
