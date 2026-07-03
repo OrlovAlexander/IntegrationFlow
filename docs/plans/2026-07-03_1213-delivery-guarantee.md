@@ -1,7 +1,8 @@
 # План: гарантии доставки сообщений
 
 **Статус:** выполнено  
-**Дата:** 2026-07-03  
+**Создан:** 2026-07-03 12:13 (UTC+3)  
+**Обновлён:** 2026-07-03 13:21 (UTC+3)  
 **Цель:** устранить проблему «нет гарантии доставки» — обеспечить at-least-once семантику для SentAndForgot и ReceiveAndProcess через publisher confirms, корректный ack/nack, transactional outbox и идемпотентность.
 
 ---
@@ -35,7 +36,7 @@ flowchart LR
     end
 ```
 
-Документ [`rabbitmq-sentandforgot.md`](rabbitmq-sentandforgot.md) уже фиксирует риск at-least-once и перекладывает идемпотентность на consumer — но инфраструктуры для этого в коде нет.
+Документ [`2026-06-21_0952-rabbitmq-sentandforgot.md`](2026-06-21_0952-rabbitmq-sentandforgot.md) уже фиксирует риск at-least-once и перекладывает идемпотентность на consumer — но инфраструктуры для этого в коде нет.
 
 ---
 
@@ -282,9 +283,9 @@ flowchart TD
 - [x] `IOutboxStore` + relay worker публикуют pending-сообщения с retry
 - [x] `IMessageDeduplicationStore` предотвращает повторную обработку duplicate
 - [x] Unit-тесты на новые компоненты
-- [x] Обновлены [`README.md`](../../README.md) и [`brokers-for-integration-framework.md`](../brokers-for-integration-framework.md)
+- [x] Обновлены [`README.md`](../../README.md) и [`2026-06-20_2150-brokers-for-integration-framework.md`](../2026-06-20_2150-brokers-for-integration-framework.md)
 
-> **Анализ рисков:** см. [`delivery-guarantee-risk-analysis.md`](delivery-guarantee-risk-analysis.md).
+> **Анализ рисков:** см. [`2026-07-03_1321-delivery-guarantee-risk-analysis.md`](2026-07-03_1321-delivery-guarantee-risk-analysis.md).
 
 ---
 

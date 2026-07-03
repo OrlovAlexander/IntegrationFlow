@@ -232,7 +232,8 @@ services.AddIntegrationFlowEfDeduplication<MyDbContext>(options =>
 
 В `OnModelCreating`: `modelBuilder.ConfigureIntegrationFlow();`
 
-Подробнее: [`docs/plans/delivery-guarantee-hardening.md`](docs/plans/delivery-guarantee-hardening.md).
+Подробнее: [`docs/plans/2026-07-03_1523-delivery-guarantee-hardening.md`](docs/plans/2026-07-03_1523-delivery-guarantee-hardening.md).  
+Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Локализация
 

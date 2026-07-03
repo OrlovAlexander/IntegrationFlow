@@ -1,8 +1,9 @@
 # Анализ решения: гарантии доставки RabbitMQ
 
 **Статус:** актуально  
-**Дата:** 2026-07-03  
-**Связанный план:** [`delivery-guarantee.md`](delivery-guarantee.md)
+**Создан:** 2026-07-03 13:21 (UTC+3)  
+**Обновлён:** 2026-07-03 13:21 (UTC+3)  
+**Связанный план:** [`2026-07-03_1213-delivery-guarantee.md`](2026-07-03_1213-delivery-guarantee.md)
 
 Документ фиксирует оценку реализованного решения at-least-once для RabbitMQ-интеграций: что закрыто, какие риски остаются и что нужно для production.
 
@@ -18,7 +19,7 @@
 | **Идемпотентность** | `IMessageDeduplicationStore` в `ProcessorBase` |
 | **Конфигурация** | Именованные профили в `rabbitmq.json`, publish-конфиг |
 
-План [`delivery-guarantee.md`](delivery-guarantee.md) закрыт по чеклисту. Unit-тесты (38) проходят.
+План [`2026-07-03_1213-delivery-guarantee.md`](2026-07-03_1213-delivery-guarantee.md) закрыт по чеклисту. Unit-тесты (38) проходят.
 
 ---
 

@@ -1,12 +1,13 @@
 # Полный анализ решения IntegrationFlow и оценка рисков
 
 **Статус:** актуально  
-**Дата:** 2026-07-03  
-**Связанные документы:** [`plans/delivery-guarantee.md`](plans/delivery-guarantee.md), [`plans/delivery-guarantee-risk-analysis.md`](plans/delivery-guarantee-risk-analysis.md), [`plans/delivery-guarantee-hardening.md`](plans/delivery-guarantee-hardening.md)
+**Создан:** 2026-07-03 15:11 (UTC+3)  
+**Обновлён:** 2026-07-03 15:53 (UTC+3)  
+**Связанные документы:** [`plans/2026-07-03_1213-delivery-guarantee.md`](plans/2026-07-03_1213-delivery-guarantee.md), [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md), [`plans/2026-07-03_1523-delivery-guarantee-hardening.md`](plans/2026-07-03_1523-delivery-guarantee-hardening.md)
 
 Документ фиксирует оценку **текущего состояния кода** (включая коммит `7e17f12`) — at-least-once гарантии для RabbitMQ-интеграций: что закрыто, какие риски остаются, готовность к production.
 
-> **Примечание:** [`plans/delivery-guarantee-risk-analysis.md`](plans/delivery-guarantee-risk-analysis.md) частично устарел — три P0-риска из него закрыты в коммите `7e17f12` (dedup release, outbox claim, тесты policy).
+> **Примечание:** [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md) частично устарел — три P0-риска из него закрыты в коммите `7e17f12` (dedup release, outbox claim, тесты policy).
 
 ---
 
@@ -133,7 +134,7 @@ flowchart TB
 | 17 | Sync-over-async (`.GetAwaiter().GetResult()`) в `ProcessorBase` — риск deadlock в sync context |
 | 18 | DLQ не создаётся runtime — только документация (осознанно) |
 | 19 | Нет integration-тестов с Testcontainers (publish → consume → dedup roundtrip) |
-| 20 | Документ [`plans/delivery-guarantee-risk-analysis.md`](plans/delivery-guarantee-risk-analysis.md) не обновлён после коммита `7e17f12` |
+| 20 | Документ [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md) не обновлён после коммита `7e17f12` |
 
 ---
 
@@ -175,11 +176,11 @@ flowchart TB
 | **P0** | Prod `IMessageDeduplicationStore` (SQL/Redis с TTL) | ❌ |
 | **P1** | ProcessorBase cache key: включить side/profile | ❌ |
 | **P1** | Outbox relay: переисходование connection per profile | ❌ |
-| **P1** | Обновить [`plans/delivery-guarantee-risk-analysis.md`](plans/delivery-guarantee-risk-analysis.md) | ❌ |
+| **P1** | Обновить [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md) | ❌ |
 | **P2** | Integration tests: Testcontainers roundtrip | ❌ |
 | **P2** | Убрать `Thread.Abort()`, exponential backoff | ❌ |
 
-> **План реализации:** см. [`plans/delivery-guarantee-hardening.md`](plans/delivery-guarantee-hardening.md).
+> **План реализации:** см. [`plans/2026-07-03_1523-delivery-guarantee-hardening.md`](plans/2026-07-03_1523-delivery-guarantee-hardening.md).
 
 ---
 

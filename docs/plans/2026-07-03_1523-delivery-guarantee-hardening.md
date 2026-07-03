@@ -1,8 +1,10 @@
 # План: доработка гарантий доставки (hardening)
 
-**Статус:** выполнено (2026-07-03)  
-**Основание:** [`../delivery-guarantee-solution-analysis.md`](../delivery-guarantee-solution-analysis.md)  
-**Предыдущий план:** [`delivery-guarantee.md`](delivery-guarantee.md) (выполнен)
+**Статус:** выполнено  
+**Создан:** 2026-07-03 15:23 (UTC+3)  
+**Обновлён:** 2026-07-03 15:53 (UTC+3)  
+**Основание:** [`../2026-07-03_1511-delivery-guarantee-solution-analysis.md`](../2026-07-03_1511-delivery-guarantee-solution-analysis.md)  
+**Предыдущий план:** [`2026-07-03_1213-delivery-guarantee.md`](2026-07-03_1213-delivery-guarantee.md) (выполнен)
 
 **Цель:** закрыть оставшиеся риски at-least-once для production: тесты критического пути, prod store-реализации, hardening relay/consumer, технический долг.
 
@@ -10,7 +12,7 @@
 
 ## Контекст
 
-План [`delivery-guarantee.md`](delivery-guarantee.md) закрыл базовую семантику at-least-once. Коммит `7e17f12` устранил три P0-риска: dedup release, outbox claim, тесты `RabbitMqDeliveryPolicy`.
+План [`2026-07-03_1213-delivery-guarantee.md`](2026-07-03_1213-delivery-guarantee.md) закрыл базовую семантику at-least-once. Коммит `7e17f12` устранил три P0-риска: dedup release, outbox claim, тесты `RabbitMqDeliveryPolicy`.
 
 Остаётся **~10%** работы до production-ready состояния. Ниже — поэтапный план изменений кода с конкретными файлами, контрактами и критериями готовности.
 
@@ -359,8 +361,8 @@ tests/IntegrationFlow.Core.IntegrationTests/
 
 ### 6.4 Синхронизация документации
 
-- Обновить [`delivery-guarantee-risk-analysis.md`](delivery-guarantee-risk-analysis.md) — закрытые P0
-- Добавить ссылку на этот план в [`delivery-guarantee-solution-analysis.md`](../delivery-guarantee-solution-analysis.md)
+- Обновить [`2026-07-03_1321-delivery-guarantee-risk-analysis.md`](2026-07-03_1321-delivery-guarantee-risk-analysis.md) — закрытые P0
+- Добавить ссылку на этот план в [`2026-07-03_1511-delivery-guarantee-solution-analysis.md`](../2026-07-03_1511-delivery-guarantee-solution-analysis.md)
 - Добавить файл в `IntegrationFlow.sln` → Solution Items / docs
 
 ### Критерии готовности этапа 6
@@ -427,6 +429,6 @@ gantt
 
 ## Связанные документы
 
-- [`../delivery-guarantee-solution-analysis.md`](../delivery-guarantee-solution-analysis.md) — актуальный анализ рисков
-- [`delivery-guarantee.md`](delivery-guarantee.md) — выполненный базовый план
-- [`delivery-guarantee-risk-analysis.md`](delivery-guarantee-risk-analysis.md) — требует синхронизации после этапа 6
+- [`../2026-07-03_1511-delivery-guarantee-solution-analysis.md`](../2026-07-03_1511-delivery-guarantee-solution-analysis.md) — актуальный анализ рисков
+- [`2026-07-03_1213-delivery-guarantee.md`](2026-07-03_1213-delivery-guarantee.md) — выполненный базовый план
+- [`2026-07-03_1321-delivery-guarantee-risk-analysis.md`](2026-07-03_1321-delivery-guarantee-risk-analysis.md) — требует синхронизации после этапа 6

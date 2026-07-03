@@ -1,7 +1,8 @@
 # План: замена `EleWise.ELMA.SR.T` на локализацию в IntegrationFlow
 
-**Статус:** выполнено (этапы 1–4, T.1–T.3); этап 5 — частично  
-**Дата:** 2026-06-19 (обновлено 2026-06-20)  
+**Статус:** выполнено  
+**Создан:** 2026-06-19 22:47 (UTC+3)  
+**Обновлён:** 2026-06-20 16:29 (UTC+3)  
 **Цель:** убрать зависимость Core от ELMA SDK, сохранив совместимый API локализации и возможность подключения ELMA-переводов на стороне хоста.
 
 ---
@@ -80,7 +81,7 @@ Standalone host получает переводы из встроенных `.re
    SR.Configure(new ElmaLocalizationProvider());
    ```
 
-**Примечание:** ELMA host-проекта в репозитории нет — адаптер зафиксирован в `docs/examples/ElmaLocalizationProvider.cs.example`.
+**Примечание:** ELMA host-проекта в репозитории нет — адаптер зафиксирован в `docs/examples/2026-06-19_2247-ElmaLocalizationProvider.cs.example`.
 
 **Критерий готовности:** при запуске в ELMA переводы берутся из ELMA Translation; вне ELMA — fallback на исходный текст или `.resx`. — **выполнено (пример); ручная проверка в ELMA — не выполнена**
 
@@ -151,8 +152,8 @@ src/IntegrationFlow.Core/
     ServiceCollectionExtensions.cs   ← вызывает LocalizationBootstrap
 
 docs/
-  plans/localization-sr-replacement.md
-  examples/ElmaLocalizationProvider.cs.example
+  plans/2026-06-19_2247-localization-sr-replacement.md
+  examples/2026-06-19_2247-ElmaLocalizationProvider.cs.example
 
 tests/IntegrationFlow.Core.Tests/Localization/
   SRTests.cs
@@ -203,7 +204,7 @@ tests/IntegrationFlow.Core.Tests/Localization/
 - [x] **1.2** Создать `SR` с fallback
 - [x] **2.1** Заменить вызовы в `RESTSimpleTransmitter.cs`
 - [x] **2.2** Убедиться: 0 ссылок на `EleWise.ELMA.SR` в Core
-- [x] **3.1** Пример `ElmaLocalizationProvider` → `docs/examples/ElmaLocalizationProvider.cs.example`
+- [x] **3.1** Пример `ElmaLocalizationProvider` → `docs/examples/2026-06-19_2247-ElmaLocalizationProvider.cs.example`
 - [x] **4.1** `.resx` + `IntegrationFlowResources.en.resx` (61 ключ)
 - [x] **4.2** `ResourceLocalizationProvider`
 - [x] **4.3** `LocalizationBootstrap.UseEmbeddedResources()`

@@ -1,5 +1,8 @@
 # Брокеры для каркаса IntegrationFlow
 
+**Создан:** 2026-06-20 21:50 (UTC+3)  
+**Обновлён:** 2026-07-03 13:21 (UTC+3)
+
 Каркас **не привязан к конкретному брокеру** — он задаёт паттерны интеграции, а транспорт подключается через реализации. Сейчас готов **RabbitMQ** для сценариев **ReceiveAndProcess** (consumer) и **SentAndForgot** (publisher); для **SentAndWait** уже есть REST-транспорт, но не брокер.
 
 ## Как устроен каркас
@@ -122,4 +125,4 @@ REST уже покрывает синхронные интеграции; бро
 | **SentAndForgot (direct)** | Publisher confirms; `IntegrateWithResult()`; `MessageId` в AMQP properties |
 | **SentAndForgot (outbox)** | `IOutboxStore` + `OutboxRelayService` / `AddIntegrationFlowOutboxRelay()` |
 
-Целевая семантика: **at-least-once** + идемпотентные обработчики. План и детали: [`docs/plans/delivery-guarantee.md`](plans/delivery-guarantee.md). Анализ рисков: [`docs/plans/delivery-guarantee-risk-analysis.md`](plans/delivery-guarantee-risk-analysis.md).
+Целевая семантика: **at-least-once** + идемпотентные обработчики. План и детали: [`plans/2026-07-03_1213-delivery-guarantee.md`](plans/2026-07-03_1213-delivery-guarantee.md). Анализ рисков: [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md).

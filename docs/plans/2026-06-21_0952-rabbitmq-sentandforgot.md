@@ -1,7 +1,8 @@
 # План: RabbitMQ для SentAndForgot
 
 **Статус:** выполнено  
-**Дата:** 2026-06-21  
+**Создан:** 2026-06-21 09:52 (UTC+3)  
+**Обновлён:** 2026-06-21 09:52 (UTC+3)  
 **Цель:** реализовать исходящий RabbitMQ-транспорт для паттерна SentAndForgot — публикация в очередь или exchange с routing key, несколько именованных профилей подключения, загрузка из JSON по образцу ReceiveAndProcess.
 
 ---
@@ -363,7 +364,7 @@ flowchart LR
 
 - Добавить секцию `"RabbitMqPublish"` в [`rabbitmq.json`](../../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/ReceiveAndProcess/rabbitmq.json) (или sample-файл в `00Samples/SentAndForgot/` с `CopyToOutputDirectory`).
 - Sample provider + 2 opposite side (`OrdersOut`, `EventsOut`) демонстрируют queue vs exchange.
-- Обновить [`docs/brokers-for-integration-framework.md`](../brokers-for-integration-framework.md): SentAndForgot + RabbitMQ publish реализован.
+- Обновить [`2026-06-20_2150-brokers-for-integration-framework.md`](../2026-06-20_2150-brokers-for-integration-framework.md): SentAndForgot + RabbitMQ publish реализован.
 
 ---
 
