@@ -1,4 +1,5 @@
 using IntegrationFlow.Contexts.Integrations._03Domain;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using IntegrationFlow.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
