@@ -8,8 +8,10 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Dedu
     /// </summary>
     public interface IMessageDeduplicationStore
     {
-        Task<bool> TryBeginProcessingAsync(string messageId, CancellationToken cancellationToken = default);
+        Task<DeduplicationBeginResult> TryBeginProcessingAsync(string messageId, CancellationToken cancellationToken = default);
 
         Task MarkProcessedAsync(string messageId, CancellationToken cancellationToken = default);
+
+        Task ReleaseProcessingAsync(string messageId, CancellationToken cancellationToken = default);
     }
 }

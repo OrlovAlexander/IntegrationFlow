@@ -61,7 +61,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
         /// </summary>
         public void Integrate()
         {
-            IntegrateWithResult();
+            var result = IntegrateWithResult();
+            if (!result.Success && SentAndForgotIntegrationOptions.ThrowOnFailure)
+            {
+                throw new IntegrationFailedException(result.FailureReason);
+            }
         }
 
         /// <summary>

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 {
@@ -74,62 +75,81 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         {
             var deduplicationStore = IntegrationProcessorSide.GetMessageDeduplicationStore(Publisher, Configuration, Logger);
             var messageId = ExtractMessageId(message);
-            var skipProcessing = false;
+            var processingAcquired = false;
 
             if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
             {
-                skipProcessing = !deduplicationStore.TryBeginProcessingAsync(messageId, CancellationToken.None)
+                var beginResult = deduplicationStore.TryBeginProcessingAsync(messageId, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
-            }
 
-            if (skipProcessing)
-            {
-                Logger.LogInfo(SR.T("Сообщение '{0}' уже обработано, пропуск.", messageId));
-                return;
-            }
-
-            var inboxMessage = new InboxMessage(message);
-            var validator = IntegrationProcessorSide.GetValidator(Publisher, Configuration, Logger);
-            if (validator != null)
-            {
-                validator.Validate(inboxMessage);
-            }
-
-            var logging = IntegrationProcessorSide.GetLogging(Publisher, Configuration, Logger);
-            if (logging != null)
-            {
-                logging.LogInboxMessage(inboxMessage);
-            }
-
-            if (inboxMessage.IsFailed)
-            {
-                var failedProcessing = IntegrationProcessorSide.GetInboxMessageFailedProcessing(Publisher, Configuration, Logger);
-                if (failedProcessing != null)
+                switch (beginResult)
                 {
-                    failedProcessing.ProcessFailedInboxMessage(inboxMessage);
-                    return;
+                    case DeduplicationBeginResult.AlreadyProcessed:
+                        Logger.LogInfo(SR.T("Сообщение '{0}' уже обработано, пропуск.", messageId));
+                        return;
+                    case DeduplicationBeginResult.InProgress:
+                        throw new MessageProcessingInProgressException(messageId);
+                    case DeduplicationBeginResult.Acquired:
+                        processingAcquired = true;
+                        break;
                 }
-                throw new NotImplementedException(SR.T("Отсутствует обработка результата не прошедшего проверку."));
             }
 
-            var formatterInboxMessage = IntegrationProcessorSide.GetFormatterInboxMessage(Publisher, Configuration, Logger);
-            if (formatterInboxMessage != null)
+            try
             {
-                inboxMessage = formatterInboxMessage.FormatInboxMessage(inboxMessage);
+                var inboxMessage = new InboxMessage(message);
+                var validator = IntegrationProcessorSide.GetValidator(Publisher, Configuration, Logger);
+                if (validator != null)
+                {
+                    validator.Validate(inboxMessage);
+                }
+
+                var logging = IntegrationProcessorSide.GetLogging(Publisher, Configuration, Logger);
+                if (logging != null)
+                {
+                    logging.LogInboxMessage(inboxMessage);
+                }
+
+                if (inboxMessage.IsFailed)
+                {
+                    var failedProcessing = IntegrationProcessorSide.GetInboxMessageFailedProcessing(Publisher, Configuration, Logger);
+                    if (failedProcessing != null)
+                    {
+                        failedProcessing.ProcessFailedInboxMessage(inboxMessage);
+                        return;
+                    }
+                    throw new NotImplementedException(SR.T("Отсутствует обработка результата не прошедшего проверку."));
+                }
+
+                var formatterInboxMessage = IntegrationProcessorSide.GetFormatterInboxMessage(Publisher, Configuration, Logger);
+                if (formatterInboxMessage != null)
+                {
+                    inboxMessage = formatterInboxMessage.FormatInboxMessage(inboxMessage);
+                }
+
+                var inboxMessageProcessing = IntegrationProcessorSide.GetInboxMessageProcessing(Publisher, Configuration, Logger);
+                if (inboxMessageProcessing == null)
+                {
+                    throw new NotImplementedException(SR.T("Отсутствует обработка результата."));
+                }
+
+                inboxMessageProcessing.ProcessInboxMessage(inboxMessage);
+
+                if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
+                {
+                    deduplicationStore.MarkProcessedAsync(messageId, CancellationToken.None).GetAwaiter().GetResult();
+                    processingAcquired = false;
+                }
             }
-
-            var inboxMessageProcessing = IntegrationProcessorSide.GetInboxMessageProcessing(Publisher, Configuration, Logger);
-            if (inboxMessageProcessing == null)
+            finally
             {
-                throw new NotImplementedException(SR.T("Отсутствует обработка результата."));
-            }
-
-            inboxMessageProcessing.ProcessInboxMessage(inboxMessage);
-
-            if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
-            {
-                deduplicationStore.MarkProcessedAsync(messageId, CancellationToken.None).GetAwaiter().GetResult();
+                if (processingAcquired &&
+                    deduplicationStore != null &&
+                    !string.IsNullOrWhiteSpace(messageId))
+                {
+                    deduplicationStore.ReleaseProcessingAsync(messageId, CancellationToken.None).GetAwaiter().GetResult();
+                }
             }
         }
 

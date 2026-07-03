@@ -15,11 +15,14 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
     {
         private readonly IOutboxStore outboxStore;
         private readonly IIntegrationLogger logger;
+        private readonly OutboxRelayOptions options;
+        private readonly string workerId = Guid.NewGuid().ToString("N");
 
-        public OutboxRelayService(IOutboxStore outboxStore, IIntegrationLogger logger)
+        public OutboxRelayService(IOutboxStore outboxStore, IIntegrationLogger logger, OutboxRelayOptions options)
         {
             this.outboxStore = outboxStore ?? throw new ArgumentNullException(nameof(outboxStore));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         /// <summary>
@@ -27,10 +30,25 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
         /// </summary>
         public async Task RelayBatchAsync(int batchSize = 20, CancellationToken cancellationToken = default)
         {
-            var pending = await outboxStore.GetPendingAsync(batchSize, cancellationToken).ConfigureAwait(false);
-            foreach (var message in pending)
+            await outboxStore.ReleaseExpiredClaimsAsync(cancellationToken).ConfigureAwait(false);
+
+            var claimed = await outboxStore
+                .ClaimPendingAsync(batchSize, workerId, options.LockDuration, cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var message in claimed)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                if (message.AttemptCount >= options.MaxAttempts)
+                {
+                    await outboxStore
+                        .MarkAbandonedAsync(message.Id, workerId, "Max attempts exceeded.", cancellationToken)
+                        .ConfigureAwait(false);
+                    logger.LogWarn(
+                        $"Outbox relay. Message '{message.Id}' exceeded max attempts ({options.MaxAttempts}). Abandoned.");
+                    continue;
+                }
 
                 try
                 {
@@ -41,15 +59,24 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                         .WithCorrelationId(message.Id.ToString("N"));
 
                     transmitter.TransmitWithResult(transmitData);
-                    await outboxStore.MarkPublishedAsync(message.Id, cancellationToken).ConfigureAwait(false);
+                    await outboxStore.MarkPublishedAsync(message.Id, workerId, cancellationToken).ConfigureAwait(false);
                     logger.LogInfo($"Outbox relay. Message '{message.Id}' published via profile '{message.ProfileName}'.");
                 }
                 catch (Exception ex)
                 {
-                    await outboxStore.MarkFailedAsync(message.Id, ex.Message, cancellationToken).ConfigureAwait(false);
+                    var retryAfter = CalculateRetryDelay(message.AttemptCount);
+                    await outboxStore
+                        .MarkFailedAsync(message.Id, workerId, ex.Message, retryAfter, cancellationToken)
+                        .ConfigureAwait(false);
                     logger.LogException($"Outbox relay. Failed to publish message '{message.Id}'.", ex);
                 }
             }
+        }
+
+        private TimeSpan CalculateRetryDelay(int attemptCount)
+        {
+            var multiplier = Math.Max(1, attemptCount + 1);
+            return TimeSpan.FromTicks(options.RetryBackoffBase.Ticks * multiplier);
         }
     }
 }

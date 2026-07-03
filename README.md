@@ -171,7 +171,7 @@ internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherS
 
 **Гарантии доставки (consumer):** ack выполняется **после** завершения обработки (в том числе при `Asynchronously=true`). При ошибке — `BasicNack` с настраиваемым `RequeueOnFailure`. Для poison messages настройте DLQ на брокере (`x-dead-letter-exchange` на основной очереди).
 
-**Идемпотентность:** реализуйте `IMessageDeduplicationStore` и верните его из `IntegrationProcessorSideBase.GetMessageDeduplicationStore`. Sample: `InMemoryMessageDeduplicationStore`.
+**Идемпотентность:** реализуйте `IMessageDeduplicationStore` и верните его из `IntegrationProcessorSideBase.GetMessageDeduplicationStore`. Sample: `InMemoryMessageDeduplicationStore`. При сбое обработки lock снимается через `ReleaseProcessingAsync`; параллельная доставка того же `MessageId` получает nack requeue.
 
 ## RabbitMQ (SentAndForgot)
 
@@ -187,6 +187,10 @@ if (!result.Success)
 {
     // обработать ошибку publish/reconnect
 }
+
+// Опционально: Integrate() бросает IntegrationFailedException при ThrowOnFailure = true
+SentAndForgotIntegrationOptions.ThrowOnFailure = true;
+integration.Integrate();
 ```
 
 | Параметр (`RabbitMqPublish`) | По умолчанию | Описание |
@@ -207,8 +211,13 @@ services.AddIntegrationFlowOutboxRelay(options =>
 {
     options.BatchSize = 20;
     options.PollingInterval = TimeSpan.FromSeconds(5);
+    options.LockDuration = TimeSpan.FromSeconds(60);
+    options.MaxAttempts = 10;
+    options.RetryBackoffBase = TimeSpan.FromSeconds(5);
 });
 ```
+
+> **Direct publish после commit БД** — антипаттерн. Для атомарности используйте outbox в той же транзакции, что и бизнес-данные.
 
 Подробнее: [`docs/plans/delivery-guarantee.md`](docs/plans/delivery-guarantee.md).  
 Анализ рисков и готовности к production: [`docs/plans/delivery-guarantee-risk-analysis.md`](docs/plans/delivery-guarantee-risk-analysis.md).

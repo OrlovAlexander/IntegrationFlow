@@ -13,71 +13,147 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.Outbox
     /// </summary>
     public sealed class InMemoryOutboxStore : IOutboxStore
     {
-        private readonly ConcurrentDictionary<Guid, OutboxEntry> entries = new();
+        private const string LegacyWorkerId = "legacy";
+        private readonly ConcurrentDictionary<Guid, OutboxMessage> entries = new();
 
         public Task EnqueueAsync(OutboxMessage message, CancellationToken cancellationToken = default)
         {
-            entries[message.Id] = new OutboxEntry(message, OutboxEntryStatus.Pending);
+            entries[message.Id] = message;
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<OutboxMessage>> ClaimPendingAsync(
+            int batchSize,
+            string workerId,
+            TimeSpan lockDuration,
+            CancellationToken cancellationToken = default)
+        {
+            ReleaseExpiredClaimsAsync(cancellationToken).GetAwaiter().GetResult();
+
+            var now = DateTimeOffset.UtcNow;
+            var claimed = new List<OutboxMessage>();
+            var lockUntil = now.Add(lockDuration);
+
+            foreach (var pair in entries.OrderBy(entry => entry.Value.CreatedAt))
+            {
+                if (claimed.Count >= Math.Max(1, batchSize))
+                {
+                    break;
+                }
+
+                var message = pair.Value;
+                if (message.Status != OutboxMessageStatus.Pending)
+                {
+                    continue;
+                }
+
+                if (message.RetryAfter.HasValue && message.RetryAfter.Value > now)
+                {
+                    continue;
+                }
+
+                var claimedMessage = message.WithClaim(workerId, lockUntil);
+                if (entries.TryUpdate(pair.Key, claimedMessage, message))
+                {
+                    claimed.Add(claimedMessage);
+                }
+            }
+
+            return Task.FromResult((IReadOnlyList<OutboxMessage>)claimed);
+        }
+
+        public Task MarkPublishedAsync(Guid id, string workerId, CancellationToken cancellationToken = default)
+        {
+            if (entries.TryGetValue(id, out var message) && CanMark(message, workerId))
+            {
+                entries[id] = message.WithPublished();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task MarkFailedAsync(
+            Guid id,
+            string workerId,
+            string error,
+            TimeSpan retryAfter,
+            CancellationToken cancellationToken = default)
+        {
+            if (!entries.TryGetValue(id, out var message) || !CanMark(message, workerId))
+            {
+                return Task.CompletedTask;
+            }
+
+            var nextAttempt = message.AttemptCount + 1;
+            var retryAt = DateTimeOffset.UtcNow.Add(retryAfter);
+            entries[id] = message.WithPendingRetry(nextAttempt, retryAt, error);
+            return Task.CompletedTask;
+        }
+
+        public Task MarkAbandonedAsync(Guid id, string workerId, string reason, CancellationToken cancellationToken = default)
+        {
+            if (!entries.TryGetValue(id, out var message) || !CanMark(message, workerId))
+            {
+                return Task.CompletedTask;
+            }
+
+            entries[id] = message.WithFailedPermanently(message.AttemptCount, reason);
+            return Task.CompletedTask;
+        }
+
+        public Task ReleaseExpiredClaimsAsync(CancellationToken cancellationToken = default)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            foreach (var pair in entries.ToArray())
+            {
+                var message = pair.Value;
+                if (message.Status == OutboxMessageStatus.InFlight &&
+                    message.LockedUntil.HasValue &&
+                    message.LockedUntil.Value <= now)
+                {
+                    entries.TryUpdate(pair.Key, message.WithReleasedClaim(), message);
+                }
+            }
+
             return Task.CompletedTask;
         }
 
         public Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int batchSize, CancellationToken cancellationToken = default)
         {
+            var now = DateTimeOffset.UtcNow;
             var pending = entries.Values
-                .Where(entry => entry.Status == OutboxEntryStatus.Pending)
-                .OrderBy(entry => entry.Message.CreatedAt)
+                .Where(message => message.Status == OutboxMessageStatus.Pending)
+                .Where(message => !message.RetryAfter.HasValue || message.RetryAfter.Value <= now)
+                .OrderBy(message => message.CreatedAt)
                 .Take(Math.Max(1, batchSize))
-                .Select(entry => entry.Message)
                 .ToList();
 
             return Task.FromResult((IReadOnlyList<OutboxMessage>)pending);
         }
 
         public Task MarkPublishedAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            if (entries.TryGetValue(id, out var entry))
-            {
-                entries[id] = new OutboxEntry(entry.Message, OutboxEntryStatus.Published);
-            }
-
-            return Task.CompletedTask;
-        }
+            => MarkPublishedAsync(id, LegacyWorkerId, cancellationToken);
 
         public Task MarkFailedAsync(Guid id, string error, CancellationToken cancellationToken = default)
-        {
-            if (entries.TryGetValue(id, out var entry))
-            {
-                var updatedMessage = new OutboxMessage(
-                    entry.Message.Id,
-                    entry.Message.ProfileName,
-                    entry.Message.Payload,
-                    entry.Message.ContentType,
-                    entry.Message.CreatedAt,
-                    entry.Message.AttemptCount + 1);
+            => MarkFailedAsync(id, LegacyWorkerId, error, TimeSpan.Zero, cancellationToken);
 
-                entries[id] = new OutboxEntry(updatedMessage, OutboxEntryStatus.Pending);
+        private static bool CanMark(OutboxMessage message, string workerId)
+        {
+            if (message.Status == OutboxMessageStatus.Published)
+            {
+                return true;
             }
 
-            return Task.CompletedTask;
-        }
-
-        private enum OutboxEntryStatus
-        {
-            Pending,
-            Published
-        }
-
-        private sealed class OutboxEntry
-        {
-            public OutboxEntry(OutboxMessage message, OutboxEntryStatus status)
+            if (string.Equals(workerId, LegacyWorkerId, StringComparison.Ordinal))
             {
-                Message = message;
-                Status = status;
+                return message.Status == OutboxMessageStatus.Pending ||
+                       (message.Status == OutboxMessageStatus.InFlight &&
+                        string.Equals(message.LockedBy, workerId, StringComparison.Ordinal));
             }
 
-            public OutboxMessage Message { get; }
-
-            public OutboxEntryStatus Status { get; }
+            return message.Status == OutboxMessageStatus.InFlight &&
+                   string.Equals(message.LockedBy, workerId, StringComparison.Ordinal);
         }
     }
 }

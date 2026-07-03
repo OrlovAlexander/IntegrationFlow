@@ -13,19 +13,22 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess.Ded
         private readonly ConcurrentDictionary<string, byte> processing = new();
         private readonly ConcurrentDictionary<string, byte> processed = new();
 
-        public Task<bool> TryBeginProcessingAsync(string messageId, CancellationToken cancellationToken = default)
+        public Task<DeduplicationBeginResult> TryBeginProcessingAsync(string messageId, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(messageId))
             {
-                return Task.FromResult(true);
+                return Task.FromResult(DeduplicationBeginResult.Acquired);
             }
 
             if (processed.ContainsKey(messageId))
             {
-                return Task.FromResult(false);
+                return Task.FromResult(DeduplicationBeginResult.AlreadyProcessed);
             }
 
-            return Task.FromResult(processing.TryAdd(messageId, 0));
+            return Task.FromResult(
+                processing.TryAdd(messageId, 0)
+                    ? DeduplicationBeginResult.Acquired
+                    : DeduplicationBeginResult.InProgress);
         }
 
         public Task MarkProcessedAsync(string messageId, CancellationToken cancellationToken = default)
@@ -37,6 +40,17 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess.Ded
 
             processing.TryRemove(messageId, out _);
             processed.TryAdd(messageId, 0);
+            return Task.CompletedTask;
+        }
+
+        public Task ReleaseProcessingAsync(string messageId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(messageId))
+            {
+                return Task.CompletedTask;
+            }
+
+            processing.TryRemove(messageId, out _);
             return Task.CompletedTask;
         }
     }

@@ -9,6 +9,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -135,56 +136,28 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                 Acknowledge(receivedMessage.DeliveryTag);
                 Logger.Log(SR.T("RabbitMQ listener. Сообщение подтверждено. DeliveryTag='{0}'.", receivedMessage.DeliveryTag));
             }
+            catch (MessageProcessingInProgressException ex)
+            {
+                Logger.Log(SR.T(
+                    "RabbitMQ listener. Сообщение обрабатывается параллельно. DeliveryTag='{0}', MessageId='{1}'.",
+                    receivedMessage.DeliveryTag,
+                    ex.MessageId));
+
+                NegativeAcknowledge(receivedMessage.DeliveryTag, requeue: true);
+            }
             catch (Exception ex)
             {
                 Logger.LogException(
                     SR.T("RabbitMQ listener. Ошибка обработки сообщения. DeliveryTag='{0}'.", receivedMessage.DeliveryTag),
                     ex);
 
-                var requeue = ShouldRequeue(eventArgs, activeConfiguration);
+                var requeue = RabbitMqDeliveryPolicy.ShouldRequeue(activeConfiguration, eventArgs.BasicProperties?.Headers);
                 NegativeAcknowledge(receivedMessage.DeliveryTag, requeue);
                 Logger.Log(SR.T(
                     "RabbitMQ listener. Сообщение отклонено. DeliveryTag='{0}', Requeue='{1}'.",
                     receivedMessage.DeliveryTag,
                     requeue));
             }
-        }
-
-        private static bool ShouldRequeue(BasicDeliverEventArgs eventArgs, RabbitMqConfiguration configuration)
-        {
-            if (configuration == null)
-            {
-                return false;
-            }
-
-            if (configuration.MaxRetryCount > 0)
-            {
-                var deathCount = GetDeathCount(eventArgs.BasicProperties?.Headers);
-                if (deathCount >= configuration.MaxRetryCount)
-                {
-                    return false;
-                }
-            }
-
-            return configuration.RequeueOnFailure;
-        }
-
-        private static int GetDeathCount(IDictionary<string, object> headers)
-        {
-            if (headers == null || !headers.TryGetValue("x-death", out var deathHeader))
-            {
-                return 0;
-            }
-
-            if (deathHeader is IList deathList && deathList.Count > 0 && deathList[0] is IDictionary deathEntry)
-            {
-                if (deathEntry.Contains("count"))
-                {
-                    return Convert.ToInt32(Convert.ToInt64(deathEntry["count"]));
-                }
-            }
-
-            return 0;
         }
 
         private void Acknowledge(ulong deliveryTag)
