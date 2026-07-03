@@ -16,5 +16,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
         public int MaxAttempts { get; set; } = 10;
 
         public TimeSpan RetryBackoffBase { get; set; } = TimeSpan.FromSeconds(5);
+
+        public bool UseExponentialBackoff { get; set; } = true;
+
+        public double BackoffMultiplier { get; set; } = 2.0;
+
+        public TimeSpan MaxRetryDelay { get; set; } = TimeSpan.FromMinutes(15);
     }
 }

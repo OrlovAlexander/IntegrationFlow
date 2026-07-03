@@ -60,8 +60,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 basicProperties: properties,
                 body: body);
 
-            connection.EnsureNotUnroutable();
-
             if (configuration.PublisherConfirmsEnabled)
             {
                 var timeout = TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds));
@@ -71,6 +69,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                         $"RabbitMQ broker did not confirm publish within {configuration.ConfirmTimeoutSeconds} seconds.");
                 }
             }
+
+            connection.EnsureNotUnroutable();
 
             return TransmitResult.Create(messageId);
         }

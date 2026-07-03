@@ -219,8 +219,20 @@ services.AddIntegrationFlowOutboxRelay(options =>
 
 > **Direct publish после commit БД** — антипаттерн. Для атомарности используйте outbox в той же транзакции, что и бизнес-данные.
 
-Подробнее: [`docs/plans/delivery-guarantee.md`](docs/plans/delivery-guarantee.md).  
-Анализ рисков и готовности к production: [`docs/plans/delivery-guarantee-risk-analysis.md`](docs/plans/delivery-guarantee-risk-analysis.md).
+**EF Core store (production):** пакет `IntegrationFlow.EntityFrameworkCore`:
+
+```csharp
+services.AddDbContextFactory<MyDbContext>(...);
+services.AddIntegrationFlowEfOutbox<MyDbContext>();
+services.AddIntegrationFlowEfDeduplication<MyDbContext>(options =>
+{
+    options.ProcessedRetention = TimeSpan.FromDays(30);
+});
+```
+
+В `OnModelCreating`: `modelBuilder.ConfigureIntegrationFlow();`
+
+Подробнее: [`docs/plans/delivery-guarantee-hardening.md`](docs/plans/delivery-guarantee-hardening.md).
 
 ## Локализация
 

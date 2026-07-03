@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
@@ -9,7 +7,6 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
-using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -26,6 +23,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         private CancellationTokenSource cancellationTokenSource;
         private volatile bool listening;
         private RabbitMqConfiguration activeConfiguration;
+        private RabbitMqReceivedMessageHandler messageHandler;
 
         /// <inheritdoc />
         protected override void Listen(object configuration)
@@ -51,6 +49,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             {
                 listening = false;
                 activeConfiguration = null;
+                messageHandler = null;
             }
         }
 
@@ -63,6 +62,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             {
                 CloseChannelAndConnection();
                 listening = false;
+                messageHandler = null;
             }
         }
 
@@ -86,6 +86,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             var factory = RabbitMqConnectionFactory.Create(RabbitMqPublishConfiguration.ToConnectionSettings(configuration));
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
+
+            var acknowledgement = new RabbitMqChannelAcknowledgement(
+                channelSync,
+                () => channel,
+                Logger);
+
+            messageHandler = new RabbitMqReceivedMessageHandler(
+                ProcessMessageAsync,
+                acknowledgement,
+                Logger);
 
             channel.BasicQos(prefetchSize: 0, prefetchCount: configuration.PrefetchCount, global: false);
             channel.QueueDeclarePassive(configuration.QueueName);
@@ -116,13 +126,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             }
         }
 
-        private async Task HandleReceivedAsync(BasicDeliverEventArgs eventArgs, CancellationToken cancellationToken)
+        private Task HandleReceivedAsync(BasicDeliverEventArgs eventArgs, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-
             var receivedMessage = new RabbitMqReceivedMessage(
                 eventArgs.Body.ToArray(),
                 eventArgs.DeliveryTag,
@@ -130,62 +135,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                 eventArgs.BasicProperties?.MessageId,
                 eventArgs.BasicProperties?.CorrelationId);
 
-            try
-            {
-                await ProcessMessageAsync(receivedMessage).ConfigureAwait(false);
-                Acknowledge(receivedMessage.DeliveryTag);
-                Logger.Log(SR.T("RabbitMQ listener. Сообщение подтверждено. DeliveryTag='{0}'.", receivedMessage.DeliveryTag));
-            }
-            catch (MessageProcessingInProgressException ex)
-            {
-                Logger.Log(SR.T(
-                    "RabbitMQ listener. Сообщение обрабатывается параллельно. DeliveryTag='{0}', MessageId='{1}'.",
-                    receivedMessage.DeliveryTag,
-                    ex.MessageId));
-
-                NegativeAcknowledge(receivedMessage.DeliveryTag, requeue: true);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(
-                    SR.T("RabbitMQ listener. Ошибка обработки сообщения. DeliveryTag='{0}'.", receivedMessage.DeliveryTag),
-                    ex);
-
-                var requeue = RabbitMqDeliveryPolicy.ShouldRequeue(activeConfiguration, eventArgs.BasicProperties?.Headers);
-                NegativeAcknowledge(receivedMessage.DeliveryTag, requeue);
-                Logger.Log(SR.T(
-                    "RabbitMQ listener. Сообщение отклонено. DeliveryTag='{0}', Requeue='{1}'.",
-                    receivedMessage.DeliveryTag,
-                    requeue));
-            }
-        }
-
-        private void Acknowledge(ulong deliveryTag)
-        {
-            lock (channelSync)
-            {
-                if (channel == null || !channel.IsOpen)
-                {
-                    Logger.Log(SR.T("RabbitMQ listener. Канал недоступен для ack. DeliveryTag='{0}'.", deliveryTag));
-                    return;
-                }
-
-                channel.BasicAck(deliveryTag, multiple: false);
-            }
-        }
-
-        private void NegativeAcknowledge(ulong deliveryTag, bool requeue)
-        {
-            lock (channelSync)
-            {
-                if (channel == null || !channel.IsOpen)
-                {
-                    Logger.Log(SR.T("RabbitMQ listener. Канал недоступен для nack. DeliveryTag='{0}'.", deliveryTag));
-                    return;
-                }
-
-                channel.BasicNack(deliveryTag, multiple: false, requeue: requeue);
-            }
+            return messageHandler.HandleAsync(
+                receivedMessage,
+                activeConfiguration,
+                eventArgs.BasicProperties?.Headers,
+                cancellationToken);
         }
 
         private void CloseChannelAndConnection()

@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
@@ -29,7 +30,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <summary>
         /// Сторона обработчика входного сообщения, запроса и т.п.
         /// </summary>
-        protected  IntegrationProcessorSideBase IntegrationProcessorSide { get; private set; }
+        protected IntegrationProcessorSideBase IntegrationProcessorSide { get; private set; }
 
         /// <summary>
         /// Ctor
@@ -41,16 +42,20 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <summary>
         /// Создать обработчик входящего сообщения, запроса и т.п.
         /// </summary>
-        /// <typeparam name="TProcessor">Тип обработчика</typeparam>
-        /// <typeparam name="TIntegrationProcessorSide">Сторона обработчика входного сообщения, запроса и т.п.</typeparam>
-        /// <param name="publisher">Публикатор сообщений, запросов и т.п.</param>
-        /// <param name="configuration">Конфигурация публикатора, слушателя</param>
-        /// <param name="logger">Логгер в рамках интеграций</param>
-        public static ProcessorBase Create<TProcessor, TIntegrationProcessorSide>(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger)
+        public static ProcessorBase Create<TProcessor, TIntegrationProcessorSide>(
+            PublisherBase publisher,
+            IConfiguration configuration,
+            IIntegrationLogger logger,
+            string cacheKeySuffix = null)
             where TProcessor : ProcessorBase, new()
             where TIntegrationProcessorSide : IntegrationProcessorSideBase, new()
         {
-            var cacheKey = typeof(TProcessor).AssemblyQualifiedName ?? typeof(TProcessor).FullName ?? typeof(TProcessor).Name;
+            var sideKey = typeof(TIntegrationProcessorSide).AssemblyQualifiedName
+                ?? typeof(TIntegrationProcessorSide).FullName
+                ?? typeof(TIntegrationProcessorSide).Name;
+            var cacheKey = string.IsNullOrWhiteSpace(cacheKeySuffix)
+                ? $"{typeof(TProcessor).AssemblyQualifiedName}|{sideKey}"
+                : $"{typeof(TProcessor).AssemblyQualifiedName}|{sideKey}|{cacheKeySuffix}";
 
             return TypeCollection<TProcessor>.GetOrAdd(logger, cacheKey, () =>
             {
@@ -68,10 +73,23 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         }
 
         /// <summary>
+        /// Обработать входное сообщение для listener (internal entry point).
+        /// </summary>
+        internal Task ProcessMessageAsync(object message, CancellationToken cancellationToken = default)
+            => ProcessAsync(message, cancellationToken);
+
+        /// <summary>
         /// Обработать входное сообщение, запрос и т.п.
         /// </summary>
-        /// <param name="message">Входное сообщение, запрос и т.п.</param>
         protected internal virtual void Process(object message)
+        {
+            ProcessAsync(message, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Асинхронно обработать входное сообщение, запрос и т.п.
+        /// </summary>
+        protected internal virtual async Task ProcessAsync(object message, CancellationToken cancellationToken = default)
         {
             var deduplicationStore = IntegrationProcessorSide.GetMessageDeduplicationStore(Publisher, Configuration, Logger);
             var messageId = ExtractMessageId(message);
@@ -79,9 +97,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 
             if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
             {
-                var beginResult = deduplicationStore.TryBeginProcessingAsync(messageId, CancellationToken.None)
-                    .GetAwaiter()
-                    .GetResult();
+                var beginResult = await deduplicationStore
+                    .TryBeginProcessingAsync(messageId, cancellationToken)
+                    .ConfigureAwait(false);
 
                 switch (beginResult)
                 {
@@ -94,6 +112,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                         processingAcquired = true;
                         break;
                 }
+            }
+            else if (deduplicationStore != null && string.IsNullOrWhiteSpace(messageId))
+            {
+                Logger.LogWarn(SR.T(
+                    "Dedup store настроен, но MessageId отсутствует — идемпотентность пропущена."));
             }
 
             try
@@ -138,7 +161,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 
                 if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
                 {
-                    deduplicationStore.MarkProcessedAsync(messageId, CancellationToken.None).GetAwaiter().GetResult();
+                    await deduplicationStore
+                        .MarkProcessedAsync(messageId, cancellationToken)
+                        .ConfigureAwait(false);
                     processingAcquired = false;
                 }
             }
@@ -148,7 +173,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                     deduplicationStore != null &&
                     !string.IsNullOrWhiteSpace(messageId))
                 {
-                    deduplicationStore.ReleaseProcessingAsync(messageId, CancellationToken.None).GetAwaiter().GetResult();
+                    await deduplicationStore
+                        .ReleaseProcessingAsync(messageId, cancellationToken)
+                        .ConfigureAwait(false);
                 }
             }
         }

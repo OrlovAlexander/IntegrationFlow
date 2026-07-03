@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>IntegrationFlow.Tests</RootNamespace>
-    <AssemblyName>IntegrationFlow.Core.Tests</AssemblyName>
+    <RootNamespace>IntegrationFlow.IntegrationTests</RootNamespace>
+    <AssemblyName>IntegrationFlow.Core.IntegrationTests</AssemblyName>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Testcontainers.RabbitMq" Version="4.1.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <PrivateAssets>all</PrivateAssets>
@@ -21,13 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\IntegrationFlow.Core\IntegrationFlow.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\src\IntegrationFlow.Core\Contexts\Integrations\00Samples\ReceiveAndProcess\rabbitmq.json">
-      <Link>rabbitmq.json</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

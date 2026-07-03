@@ -60,7 +60,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
         /// <inheritdoc />
         public override ProcessorBase GetProcessor(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger)
-            => ProcessorBase.Create<RabbitMqProcessor, DefaultRabbitMqIntegrationProcessorSide>(publisher, configuration, logger);
+            => ProcessorBase.Create<RabbitMqProcessor, DefaultRabbitMqIntegrationProcessorSide>(
+                publisher,
+                configuration,
+                logger,
+                GetPublisherCacheKey());
     }
 
     /// <summary>

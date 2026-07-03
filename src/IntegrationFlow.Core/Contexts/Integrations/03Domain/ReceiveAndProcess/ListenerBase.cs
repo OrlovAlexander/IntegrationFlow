@@ -105,14 +105,18 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             try
             {
                 Dispose();
-                if (thread.ThreadState == ThreadState.Running)
+                if (thread != null && thread.IsAlive)
                 {
-                    thread.Abort();
-                    Logger.Log(SR.T("Поток запускающий слушателя находился в состоянии 'Running'. Был прерван '{0}'", thread.ManagedThreadId));
-                }
-                else
-                {
-                    Logger.Log(SR.T("Поток запускающий слушателя '{0}' находится в состоянии '{1}'. Не прерван.", thread.ManagedThreadId, thread.ThreadState));
+                    if (!thread.Join(TimeSpan.FromSeconds(30)))
+                    {
+                        Logger.LogWarn(SR.T(
+                            "Поток запускающий слушателя '{0}' не завершился за 30 секунд.",
+                            thread.ManagedThreadId));
+                    }
+                    else
+                    {
+                        Logger.Log(SR.T("Поток запускающий слушателя завершён '{0}'.", thread.ManagedThreadId));
+                    }
                 }
             }
             catch (Exception ex)
@@ -173,13 +177,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         protected virtual Task ProcessMessageAsync(object message)
         {
             var processor = IntegrationPublisherSide.GetProcessor(Publisher, Configuration, Logger);
-            if (Configuration.Asynchronously)
-            {
-                return Task.Run(() => processor.Process(message));
-            }
-
-            processor.Process(message);
-            return Task.CompletedTask;
+            return processor.ProcessMessageAsync(message, CancellationToken.None);
         }
 
         /// <summary>
