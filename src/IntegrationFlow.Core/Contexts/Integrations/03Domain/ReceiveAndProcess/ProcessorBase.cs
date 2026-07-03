@@ -73,6 +73,38 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         }
 
         /// <summary>
+        /// Creates processor wired to an explicit processor side instance (hosted listener).
+        /// </summary>
+        internal static TProcessor CreateWithProcessorSide<TProcessor>(
+            PublisherBase publisher,
+            IConfiguration configuration,
+            IIntegrationLogger logger,
+            IntegrationProcessorSideBase processorSide,
+            string cacheKeySuffix)
+            where TProcessor : ProcessorBase, new()
+        {
+            if (processorSide == null)
+            {
+                throw new ArgumentNullException(nameof(processorSide));
+            }
+
+            var cacheKey = string.IsNullOrWhiteSpace(cacheKeySuffix)
+                ? $"{typeof(TProcessor).AssemblyQualifiedName}|hosted|{processorSide.GetType().FullName}"
+                : $"{typeof(TProcessor).AssemblyQualifiedName}|hosted|{processorSide.GetType().FullName}|{cacheKeySuffix}";
+
+            return TypeCollection<TProcessor>.GetOrAdd(logger, cacheKey, () =>
+            {
+                var processor = new TProcessor();
+                processor.IntegrationProcessorSide = processorSide;
+                processor.Configuration = configuration;
+                processor.Logger = logger;
+                processor.Publisher = publisher;
+                processorSide.Processor = processor;
+                return processor;
+            });
+        }
+
+        /// <summary>
         /// Обработать входное сообщение для listener (internal entry point).
         /// </summary>
         internal Task ProcessMessageAsync(object message, CancellationToken cancellationToken = default)

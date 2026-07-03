@@ -1,5 +1,8 @@
+using System;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace IntegrationFlow.DependencyInjection;
@@ -11,20 +14,84 @@ public static partial class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">Service collection.</param>
     /// <param name="profileName">RabbitMQ profile name from rabbitmq.json.</param>
+    /// <param name="handleMessage">Business handler for incoming inbox messages.</param>
     public static IServiceCollection AddIntegrationFlowRabbitMqListener(
         this IServiceCollection services,
-        string profileName)
+        string profileName,
+        Action<InboxMessage> handleMessage)
+    {
+        if (handleMessage == null)
+        {
+            throw new ArgumentNullException(nameof(handleMessage));
+        }
+
+        return services.AddIntegrationFlowRabbitMqListener(
+            profileName,
+            _ => new DelegateInboxMessageProcessing(handleMessage));
+    }
+
+    /// <summary>
+    /// Registers a RabbitMQ ReceiveAndProcess listener as a hosted service (.NET 8+).
+    /// </summary>
+    /// <param name="services">Service collection.</param>
+    /// <param name="profileName">RabbitMQ profile name from rabbitmq.json.</param>
+    /// <param name="createProcessing">Factory for inbox message handler (supports DI).</param>
+    /// <param name="createDeduplicationStore">Optional deduplication store factory.</param>
+    public static IServiceCollection AddIntegrationFlowRabbitMqListener(
+        this IServiceCollection services,
+        string profileName,
+        Func<IServiceProvider, IInboxMessageProcessing> createProcessing,
+        Func<IServiceProvider, IMessageDeduplicationStore>? createDeduplicationStore = null)
     {
         if (string.IsNullOrWhiteSpace(profileName))
         {
-            throw new System.ArgumentException("Profile name is required.", nameof(profileName));
+            throw new ArgumentException("Profile name is required.", nameof(profileName));
+        }
+
+        if (createProcessing == null)
+        {
+            throw new ArgumentNullException(nameof(createProcessing));
         }
 
 #if NET8_0_OR_GREATER
         services.AddHostedService(sp =>
         {
             var logger = sp.GetRequiredService<IIntegrationLogger>();
-            var options = ReceiveAndProcessHostedServiceOptions.CreateForProfile(profileName, logger);
+            var processing = createProcessing(sp);
+            var deduplicationStore = createDeduplicationStore?.Invoke(sp);
+            var options = ReceiveAndProcessHostedServiceOptions.CreateForProfile(
+                profileName,
+                logger,
+                processing,
+                deduplicationStore);
+            return new ReceiveAndProcessHostedService(options, logger);
+        });
+#endif
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a RabbitMQ ReceiveAndProcess listener without a message handler.
+    /// </summary>
+    /// <remarks>Messages will be acknowledged without business processing (NoOp handler).</remarks>
+    [Obsolete("Use AddIntegrationFlowRabbitMqListener overload with message handler.")]
+    public static IServiceCollection AddIntegrationFlowRabbitMqListener(
+        this IServiceCollection services,
+        string profileName)
+    {
+        if (string.IsNullOrWhiteSpace(profileName))
+        {
+            throw new ArgumentException("Profile name is required.", nameof(profileName));
+        }
+
+#if NET8_0_OR_GREATER
+        services.AddHostedService(sp =>
+        {
+            var logger = sp.GetRequiredService<IIntegrationLogger>();
+            var options = ReceiveAndProcessHostedServiceOptions.Create(
+                new IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.NamedRabbitMqIntegrationPublisherSide(profileName),
+                logger);
             return new ReceiveAndProcessHostedService(options, logger);
         });
 #endif

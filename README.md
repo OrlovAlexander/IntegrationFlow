@@ -66,8 +66,11 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
         services.AddIntegrationFlow();
-        services.AddIntegrationFlowRabbitMqListener("Inbox");
-        // services.AddIntegrationFlowRabbitMqListener("Orders"); // несколько профилей
+        services.AddIntegrationFlowRabbitMqListener("Inbox", message =>
+        {
+            // обработка входящего сообщения
+        });
+        // services.AddIntegrationFlowRabbitMqListener("Orders", sp => sp.GetRequiredService<IOrdersInboxHandler>());
     })
     .Build();
 
@@ -263,7 +266,7 @@ dotnet test --filter "Category=Integration"
 ```
 
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-03_2010-delivery-guarantee-full-analysis.md`](docs/2026-07-03_2010-delivery-guarantee-full-analysis.md).  
+Полный анализ решения и рисков: [`docs/2026-07-03_2100-integrationflow-full-analysis.md`](docs/2026-07-03_2100-integrationflow-full-analysis.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Локализация

@@ -1,9 +1,11 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** актуально  
+**Статус:** superseded → см. [`2026-07-03_2100-integrationflow-full-analysis.md`](2026-07-03_2100-integrationflow-full-analysis.md)  
 **Создан:** 2026-07-03 20:10 (UTC+3)  
-**Обновлён:** 2026-07-03 20:15 (UTC+3)  
+**Обновлён:** 2026-07-03 21:00 (UTC+3)  
 **Связанные документы:** [`plans/2026-07-03_1213-delivery-guarantee.md`](plans/2026-07-03_1213-delivery-guarantee.md), [`2026-07-03_1706-delivery-guarantee-full-analysis.md`](2026-07-03_1706-delivery-guarantee-full-analysis.md) (superseded), [`plans/2026-07-03_1707-e2e-tests-and-remaining-gaps.md`](plans/2026-07-03_1707-e2e-tests-and-remaining-gaps.md)
+
+> **Примечание:** этот документ **устарел** — см. актуальную версию [`2026-07-03_2100-integrationflow-full-analysis.md`](2026-07-03_2100-integrationflow-full-analysis.md).
 
 Актуальная оценка **текущего кода** после hardening, production-readiness и E2E/CI (84 теста зелёные: 63 unit + 10 EF unit + 9 integration + 2 EF integration).
 

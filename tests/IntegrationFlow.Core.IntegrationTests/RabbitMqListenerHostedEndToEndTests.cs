@@ -1,5 +1,4 @@
-using IntegrationFlow.Contexts.Integrations._03Domain;
-using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
+using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using IntegrationFlow.DependencyInjection;
 using IntegrationFlow.IntegrationTests.Infrastructure;
 using IntegrationFlow.Testing;
@@ -123,14 +122,17 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
 
                 foreach (var profileName in profileNames)
                 {
-                    var capturedProfile = profileName;
-                    services.AddHostedService(sp =>
-                    {
-                        var logger = sp.GetRequiredService<IIntegrationLogger>();
-                        var side = new EndToEndRabbitMqPublisherSide(capturedProfile);
-                        var options = ReceiveAndProcessHostedServiceOptions.Create(side, logger);
-                        return new ReceiveAndProcessHostedService(options, logger);
-                    });
+                    services.AddIntegrationFlowRabbitMqListener(
+                        profileName,
+                        _ => new DelegateInboxMessageProcessing(_ =>
+                        {
+                            EndToEndProcessorSide.ProcessCallCount++;
+                            if (EndToEndProcessorSide.ShouldThrow)
+                            {
+                                throw new InvalidOperationException("processing failed");
+                            }
+                        }),
+                        sp => EndToEndProcessorSide.CurrentStore);
                 }
             })
             .Build();
