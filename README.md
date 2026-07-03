@@ -35,8 +35,11 @@ IntegrationFlow/
 
 ```bash
 dotnet build IntegrationFlow.sln
-dotnet test tests/IntegrationFlow.Core.Tests/IntegrationFlow.Core.Tests.csproj
+dotnet test IntegrationFlow.sln --filter "Category!=Integration"
+dotnet test IntegrationFlow.sln --filter "Category=Integration"
 ```
+
+> Integration-тесты требуют Docker (Testcontainers).
 
 ## Подключение через DI
 
@@ -151,9 +154,7 @@ internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherS
 }
 ```
 
-Для параллельного прослушивания нескольких очередей нужен **отдельный publisher на каждый профиль** (отдельный side-класс или `NamedRabbitMqIntegrationPublisherSide`).
-
-> **Ограничение v1:** `ProcessorBase` кешируется по типу. При `NoOpInboxMessageProcessing` это безопасно; при реальной бизнес-обработке per queue потребуется доработка кеширования processor-а.
+Для параллельного прослушивания нескольких очередей нужен **отдельный publisher на каждый профиль** (отдельный side-класс или `NamedRabbitMqIntegrationPublisherSide`). `ProcessorBase` кешируется с учётом profile/side через `GetPublisherCacheKey()`.
 
 | Параметр | По умолчанию | Описание |
 |----------|--------------|----------|

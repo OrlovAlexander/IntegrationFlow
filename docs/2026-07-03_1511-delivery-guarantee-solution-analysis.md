@@ -1,8 +1,8 @@
 # Полный анализ решения IntegrationFlow и оценка рисков
 
-**Статус:** актуально  
+**Статус:** superseded → см. [`2026-07-03_1706-delivery-guarantee-full-analysis.md`](2026-07-03_1706-delivery-guarantee-full-analysis.md)  
 **Создан:** 2026-07-03 15:11 (UTC+3)  
-**Обновлён:** 2026-07-03 15:53 (UTC+3)  
+**Обновлён:** 2026-07-03 19:40 (UTC+3)  
 **Связанные документы:** [`plans/2026-07-03_1213-delivery-guarantee.md`](plans/2026-07-03_1213-delivery-guarantee.md), [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md), [`plans/2026-07-03_1523-delivery-guarantee-hardening.md`](plans/2026-07-03_1523-delivery-guarantee-hardening.md)
 
 Документ фиксирует оценку **текущего состояния кода** (включая коммит `7e17f12`) — at-least-once гарантии для RabbitMQ-интеграций: что закрыто, какие риски остаются, готовность к production.

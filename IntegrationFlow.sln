@@ -44,6 +44,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationFlow.Core.Integr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationFlow.Testing", "tests\IntegrationFlow.Testing\IntegrationFlow.Testing.csproj", "{C09085FF-E056-43D8-8567-05AAAE77D278}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationFlow.EntityFrameworkCore.IntegrationTests", "tests\IntegrationFlow.EntityFrameworkCore.IntegrationTests\IntegrationFlow.EntityFrameworkCore.IntegrationTests.csproj", "{70395F07-2060-4821-9B59-E2DFB8492E05}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -126,6 +128,18 @@ Global
 		{C09085FF-E056-43D8-8567-05AAAE77D278}.Release|x64.Build.0 = Release|Any CPU
 		{C09085FF-E056-43D8-8567-05AAAE77D278}.Release|x86.ActiveCfg = Release|Any CPU
 		{C09085FF-E056-43D8-8567-05AAAE77D278}.Release|x86.Build.0 = Release|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Debug|x64.Build.0 = Debug|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Debug|x86.Build.0 = Debug|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Release|x64.ActiveCfg = Release|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Release|x64.Build.0 = Release|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Release|x86.ActiveCfg = Release|Any CPU
+		{70395F07-2060-4821-9B59-E2DFB8492E05}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -136,5 +150,6 @@ Global
 		{E37BF3F8-0ED0-49AB-A3E8-6DE2CBAEF87C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{AE6AB7BA-48F8-497F-8018-E3A7864E1817} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C09085FF-E056-43D8-8567-05AAAE77D278} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{70395F07-2060-4821-9B59-E2DFB8492E05} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

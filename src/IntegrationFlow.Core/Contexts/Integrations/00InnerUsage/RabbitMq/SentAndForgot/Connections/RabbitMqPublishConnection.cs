@@ -23,9 +23,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         private readonly ManualResetEventSlim unroutableSignal = new(initialState: false);
 
         public RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration)
+            : this(configuration, openConnection: true)
+        {
+        }
+
+        internal RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration, bool openConnection)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            Open();
+            if (openConnection)
+            {
+                Open();
+            }
         }
 
         internal IModel Channel => channel;
@@ -71,10 +79,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
 
         internal void EnsureNotUnroutable()
         {
-            if (unroutableMessageReceived)
+            if (configuration.Mandatory && unroutableMessageReceived)
             {
                 throw new UnroutableMessageException("RabbitMQ returned BasicReturn for mandatory publish.");
             }
+        }
+
+        internal void SimulateBasicReturnForTesting()
+        {
+            OnBasicReturn(this, null!);
         }
 
         private void Open()
@@ -96,6 +109,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
 
         private void OnBasicReturn(object sender, BasicReturnEventArgs eventArgs)
         {
+            if (!configuration.Mandatory)
+            {
+                return;
+            }
+
             unroutableMessageReceived = true;
             unroutableSignal.Set();
         }

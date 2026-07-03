@@ -1,8 +1,8 @@
 # План: E2E-тесты, claim integration tests и оставшиеся gaps
 
-**Статус:** в работе  
+**Статус:** выполнено  
 **Создан:** 2026-07-03 17:07 (UTC+3)  
-**Обновлён:** 2026-07-03 19:37 (UTC+3)  
+**Обновлён:** 2026-07-03 19:40 (UTC+3)  
 **Основание:** [`../2026-07-03_1706-delivery-guarantee-full-analysis.md`](../2026-07-03_1706-delivery-guarantee-full-analysis.md)  
 **Цель:** закрыть оставшиеся gaps тестового покрытия и мелкие code-fixes; довести решение до production-ready с точки зрения CI и E2E-валидации.
 
@@ -14,18 +14,21 @@
 
 **Этап 1 выполнен** (2026-07-03 19:35): shared `IntegrationFlow.Testing`, дубликаты удалены, `RabbitMqContainerFixture`, Core.IntegrationTests → Testing + EF.
 
-**Этап 2 выполнен** (2026-07-03 19:37): `OutboxRelayEndToEndTests` — relay через `OutboxRelayService` + `EfOutboxStore`, assert `MessageId = OutboxId`.
+**Этап 2 выполнен** (2026-07-03 19:37): `OutboxRelayEndToEndTests` — relay через `OutboxRelayService` + `EfOutboxStore`.
+
+**Этапы 3–7 выполнены** (2026-07-03 19:40): consumer E2E, PG/SQL claim, mandatory tests, CI, docs sync.
 
 | Что уже есть | Этап плана | Статус |
 |--------------|------------|--------|
-| Анализ v2 + этот план в docs/sln | — | ✅ |
-| `IntegrationFlow.Testing` в sln, shared helpers | 1 | ✅ |
-| `RabbitMqContainerFixture` + refactor integration tests | 1 | ✅ |
+| Test infrastructure + `IntegrationFlow.Testing` | 1 | ✅ |
 | Outbox relay E2E (2 теста) | 2 | ✅ |
-| Mandatory BasicReturn: `ManualResetEventSlim` + wait | 5 | ~60% (без unit-тестов) |
-| Consumer E2E / PG claim / CI | 3–4, 6 | ❌ |
+| Consumer handler E2E (3 теста) | 3 | ✅ |
+| PostgreSQL + SQL Server claim integration tests | 4 | ✅ |
+| Mandatory unit tests (3 теста) | 5 | ✅ |
+| GitHub Actions CI | 6 | ✅ |
+| Docs superseded + README | 7 | ✅ |
 
-**Следующий шаг:** [Этап 3 — Consumer handler E2E](#этап-3--consumer-handler-e2e-p1).
+**Итог:** 84 теста, E2E через каркас, CI workflow добавлен.
 
 ---
 
@@ -256,8 +259,8 @@ internal sealed class TestInboxMessageProcessing : IInboxMessageProcessing
 
 ### Критерии готовности этапа 3
 
-- [ ] ≥ 3 E2E-теста consumer path через `RabbitMqReceivedMessageHandler` + `ProcessorBase`
-- [ ] Dedup duplicate scenario с реальным RabbitMQ
+- [x] ≥ 3 E2E-теста consumer path через `RabbitMqReceivedMessageHandler` + `ProcessorBase`
+- [x] Dedup duplicate scenario с реальным RabbitMQ
 
 ---
 
@@ -317,9 +320,9 @@ internal static async Task<IDbContextFactory<TContext>> CreatePostgreSqlFactoryA
 
 ### Критерии готовности этапа 4
 
-- [ ] PostgreSQL concurrent claim integration test
-- [ ] SQL Server concurrent claim integration test (или nightly-only)
-- [ ] Skip без Docker — не fail
+- [x] PostgreSQL concurrent claim integration test
+- [x] SQL Server concurrent claim integration test (или nightly-only)
+- [x] Skip без Docker — не fail
 
 ---
 
@@ -365,9 +368,9 @@ else
 
 ### Критерии готовности этапа 5
 
-- [ ] `ManualResetEventSlim` или эквивалент в `RabbitMqPublishConnection`
-- [ ] ≥ 2 unit-теста mandatory path
-- [ ] Нет regression в existing `RabbitMqPublishTransmitterTests`
+- [x] `ManualResetEventSlim` или эквивалент в `RabbitMqPublishConnection`
+- [x] ≥ 2 unit-теста mandatory path
+- [x] Нет regression в existing `RabbitMqPublishTransmitterTests`
 
 ---
 
@@ -421,9 +424,9 @@ dotnet test --filter "Category=Integration"  # requires Docker
 
 ### Критерии готовности этапа 6
 
-- [ ] `.github/workflows/ci.yml` с unit + integration jobs
-- [ ] README обновлён
-- [ ] Integration job green на push
+- [x] `.github/workflows/ci.yml` с unit + integration jobs
+- [x] README обновлён
+- [x] Integration job green на push
 
 ---
 
@@ -479,11 +482,11 @@ gantt
 - [x] **Этап 0:** checkpoint — commit, build/test green, статус плана
 - [x] **Этап 1:** InternalsVisibleTo, fixtures, shared Testing project, без дубликатов
 - [x] **Этап 2:** Outbox relay E2E (2 теста)
-- [ ] Этап 3: Consumer handler E2E (≥ 3 теста)
-- [ ] Этап 4: PostgreSQL + SQL Server claim integration tests
-- [ ] Этап 5: Mandatory BasicReturn race fix + unit tests (частично: код без тестов)
-- [ ] Этап 6: GitHub Actions CI
-- [ ] Этап 7: Docs superseded + README
+- [x] **Этап 3:** Consumer handler E2E (3 теста)
+- [x] **Этап 4:** PostgreSQL + SQL Server claim integration tests
+- [x] **Этап 5:** Mandatory BasicReturn race fix + unit tests
+- [x] **Этап 6:** GitHub Actions CI
+- [x] **Этап 7:** Docs superseded + README
 
 **Ожидаемый итог:** ≥ 85 тестов (76 + ~9 новых), E2E покрытие framework path, CI green.
 
