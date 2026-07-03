@@ -138,6 +138,20 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.Outbox
         public Task MarkFailedAsync(Guid id, string error, CancellationToken cancellationToken = default)
             => MarkFailedAsync(id, LegacyWorkerId, error, TimeSpan.Zero, cancellationToken);
 
+        public Task<bool> ReplayAbandonedAsync(
+            Guid id,
+            bool resetAttemptCount = false,
+            CancellationToken cancellationToken = default)
+        {
+            if (!entries.TryGetValue(id, out var message) || message.Status != OutboxMessageStatus.Failed)
+            {
+                return Task.FromResult(false);
+            }
+
+            entries[id] = message.WithReplay(resetAttemptCount);
+            return Task.FromResult(true);
+        }
+
         private static bool CanMark(OutboxMessage message, string workerId)
         {
             if (message.Status == OutboxMessageStatus.Published)

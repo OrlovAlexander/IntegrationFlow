@@ -83,5 +83,11 @@ public sealed class OutboxRelayServiceTests
 
         public Task MarkFailedAsync(Guid id, string error, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
+
+        public Task<bool> ReplayAbandonedAsync(
+            Guid id,
+            bool resetAttemptCount = false,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
     }
 }

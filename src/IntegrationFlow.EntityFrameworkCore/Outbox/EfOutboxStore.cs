@@ -145,6 +145,32 @@ public sealed class EfOutboxStore<TContext> : IOutboxStore
     public Task MarkFailedAsync(Guid id, string error, CancellationToken cancellationToken = default)
         => MarkFailedAsync(id, "legacy", error, TimeSpan.Zero, cancellationToken);
 
+    public async Task<bool> ReplayAbandonedAsync(
+        Guid id,
+        bool resetAttemptCount = false,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var entity = await context.Set<OutboxMessageEntity>().FindAsync(new object[] { id }, cancellationToken).ConfigureAwait(false);
+        if (entity == null || entity.Status != OutboxMessageStatus.Failed)
+        {
+            return false;
+        }
+
+        entity.Status = OutboxMessageStatus.Pending;
+        entity.LockedBy = null;
+        entity.LockedUntil = null;
+        entity.RetryAfter = null;
+        entity.LastError = null;
+        if (resetAttemptCount)
+        {
+            entity.AttemptCount = 0;
+        }
+
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
     private static async Task ReleaseExpiredClaimsInternalAsync(
         DbSet<OutboxMessageEntity> set,
         DateTimeOffset now,

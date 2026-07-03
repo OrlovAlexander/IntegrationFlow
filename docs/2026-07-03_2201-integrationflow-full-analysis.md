@@ -1,17 +1,17 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** superseded → [`2026-07-03_2201-integrationflow-full-analysis.md`](2026-07-03_2201-integrationflow-full-analysis.md)  
-**Создан:** 2026-07-03 21:19 (UTC+3)  
-**Обновлён:** 2026-07-03 22:01 (UTC+3)  
-**Связанные документы:** [`2026-07-03_2100-integrationflow-full-analysis.md`](2026-07-03_2100-integrationflow-full-analysis.md) (superseded)
+**Статус:** актуально  
+**Создан:** 2026-07-03 22:01 (UTC+3)  
+**Обновлён:** 2026-07-03 22:16 (UTC+3)  
+**Связанные документы:** [`2026-07-03_2119-integrationflow-full-analysis.md`](2026-07-03_2119-integrationflow-full-analysis.md) (superseded)
 
-Актуальное состояние после коммитов `4ac9d0b` (обязательный business handler в `AddIntegrationFlowRabbitMqListener`) и `1a0c582` (unit-тесты регистрации). **89 тестов зелёные**, CI на GitHub Actions, ветка `master` синхронизирована с `origin/master`.
+Актуальное состояние после коммита `88766ec` (закрытие P0–P2: public API, metrics, NuGet и legacy E2E) и доработок P1/P2 (NoOp legacy processor, abandoned outbox replay). **103 теста зелёные**, CI на GitHub Actions, `dotnet pack` собирает пакеты `IntegrationFlow.Core` и `IntegrationFlow.EntityFrameworkCore` версии `1.0.0`.
 
 ---
 
 ## 1. Что это за проект
 
-**IntegrationFlow** — .NET-библиотека для построения интеграций между системами. Два пакета:
+**IntegrationFlow** — .NET-библиотека для построения интеграций между системами. Два NuGet-пакета:
 
 | Пакет | TFM | Назначение |
 |-------|-----|------------|
@@ -32,10 +32,11 @@
 IntegrationFlow/
 ├── src/IntegrationFlow.Core/                 # Домен, RabbitMQ, outbox, dedup
 ├── src/IntegrationFlow.EntityFrameworkCore/  # EF stores, SKIP LOCKED claim
-└── tests/                                    # 89 тестов (unit + integration)
-    ├── IntegrationFlow.Core.Tests                 (65)
-    ├── IntegrationFlow.Core.IntegrationTests        (12)
-    ├── IntegrationFlow.EntityFrameworkCore.Tests    (10)
+├── Directory.Build.props                     # NuGet metadata, Version 1.0.0
+└── tests/                                    # 94 теста (unit + integration)
+    ├── IntegrationFlow.Core.Tests                 (75)
+    ├── IntegrationFlow.Core.IntegrationTests        (14)
+    ├── IntegrationFlow.EntityFrameworkCore.Tests    (13)
     └── IntegrationFlow.EntityFrameworkCore.IntegrationTests (2)
 ```
 
@@ -70,6 +71,7 @@ flowchart TB
 - [`OutboxRelayService`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/Outbox/OutboxRelayService.cs)
 - [`RabbitMqListenerWorker`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Workers/RabbitMqListenerWorker.cs)
 - [`ReceiveAndProcessHostedService`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/ReceiveAndProcess/ReceiveAndProcessHostedService.cs)
+- [`IIntegrationFlowMetrics`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/Metrics/IIntegrationFlowMetrics.cs)
 - [`EfOutboxStore`](../src/IntegrationFlow.EntityFrameworkCore/Outbox/EfOutboxStore.cs)
 - [`EfMessageDeduplicationStore`](../src/IntegrationFlow.EntityFrameworkCore/Deduplication/EfMessageDeduplicationStore.cs)
 
@@ -85,6 +87,7 @@ flowchart TB
 - **`ReceiveAndProcessHostedService`** + `AddIntegrationFlowRabbitMqListener()` — graceful shutdown через `IHost`
 - Убран `Thread` / `Thread.Abort` (техдолг #17 закрыт)
 - Manual ack, prefetch, requeue policy, MaxRetryCount → DLQ
+- **`AddIntegrationFlowRabbitMqListener` требует handler** — overload без handler удалён (`88766ec`)
 
 ### Producer (SentAndForgot)
 
@@ -98,9 +101,21 @@ flowchart TB
 - `EfMessageDeduplicationStore` с processing lock expiry
 - Concurrent claim integration tests на PostgreSQL и SQL Server
 
+### Public API и распространение (`88766ec`)
+
+- Открыты: `PublisherBase`, `RabbitMqPublisher`, `RabbitMqIntegrationPublisherSideBase`, `IntegrationProcessorSideBase`
+- NuGet packaging: `PackageId`, `IsPackable`, `Directory.Build.props` с `Version 1.0.0`
+- `dotnet pack` собирает оба пакета
+
+### Observability (`88766ec`)
+
+- `IIntegrationFlowMetrics` — hooks для duration обработки, outbox relay published/failed/abandoned/pending
+- `NullIntegrationFlowMetrics` по умолчанию; реализация подключается через DI
+
 ### Тесты и CI
 
-- E2E: outbox relay, consumer handler, hosted listener
+- E2E: outbox relay, consumer handler, hosted listener, **legacy `BeginReceiving()`**
+- Unit: public API extension, metrics wiring
 - GitHub Actions: unit + integration (Testcontainers) — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 
 ### Документация
@@ -126,37 +141,38 @@ flowchart TB
 
 | # | Риск | Статус | Комментарий |
 |---|------|--------|-------------|
-| **A** | **NoOp handler — сообщения ack без обработки** | **Частично закрыт** | Основной API теперь **требует handler** (`4ac9d0b`). Overload без handler помечен `[Obsolete]`, но всё ещё существует |
-| **B** | **Ограниченный public API** | **Открыт** | `PublisherBase`, `RabbitMqIntegrationPublisherSideBase`, `IntegrationProcessorSideBase` — internal. Внешним приложениям сложно расширять без copy-paste из samples |
+| **A** | **NoOp handler — сообщения ack без обработки** | **Закрыт (hosted)** | Overload без handler **удалён** (`88766ec`). Hosted API требует `handleMessage` или `createProcessing` |
+| **A′** | **Legacy default NoOp processor** | **Закрыт** | `DefaultRabbitMqIntegrationProcessorSide` возвращает `null` для `GetInboxMessageProcessing` → `ProcessorBase` бросает `NotImplementedException`; сообщение не ack'ится |
+| **B** | **Ограниченный public API** | **Закрыт** | `PublisherBase`, `RabbitMqPublisher`, `RabbitMqIntegrationPublisherSideBase`, `IntegrationProcessorSideBase` — public (`88766ec`). Internal остаются `RabbitMqListenerWorker`, `HostedRabbitMqIntegrationProcessorSide` |
 
 ### Средний приоритет
 
-| # | Риск | Кратко |
-|---|------|--------|
-| 5 | Prefetch > 1 + concurrent consumer | Race в non-thread-safe handlers |
-| 6 | Outbox/listener hosted worker только net8.0 | netstandard2.0 — manual `RunAsync` / `RelayBatchAsync` |
-| 7 | EF dedup — отдельный DbContext на операцию | Не атомарен с business TX (by design) |
-| 8 | InMemory stores в samples | Copy-paste в prod → потеря данных |
-| 9 | Mandatory timeout 100ms | Теоретический silent loss при misconfigured topology |
-| 10 | Abandoned outbox | Нужен мониторинг + runbook replay |
-| 11 | Legacy `BeginReceiving()` без dedicated E2E | Hosted path покрыт; legacy launcher — нет |
-| 12 | SQLite vs PG/SQL claim | Unit-тесты на SQLite; prod SQL — только integration |
-| 13 | Custom processor side через hosted API | Только через factory `createProcessing` / `createDeduplicationStore` |
-| 14 | EF dedup DI (Scoped) vs background listener | Dedup wire через `createDeduplicationStore` в DI |
+| # | Риск | Статус | Кратко |
+|---|------|--------|--------|
+| 5 | Prefetch > 1 + concurrent consumer | Открыт | Race в non-thread-safe handlers |
+| 6 | Outbox/listener hosted worker только net8.0 | Открыт | netstandard2.0 — manual `RunAsync` / `RelayBatchAsync` |
+| 7 | EF dedup — отдельный DbContext на операцию | By design | Не атомарен с business TX |
+| 8 | InMemory stores в samples | Открыт | Copy-paste в prod → потеря данных |
+| 9 | Mandatory timeout 100ms | Открыт | Теоретический silent loss при misconfigured topology |
+| 10 | Abandoned outbox | **Закрыт (ops)** | `IOutboxStore.ReplayAbandonedAsync` + runbook [`runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
+| 11 | ~~Legacy `BeginReceiving()` без E2E~~ | **Закрыт** | `RabbitMqListenerLegacyEndToEndTests` (`88766ec`) |
+| 12 | SQLite vs PG/SQL claim | Открыт | Unit-тесты на SQLite; prod SQL — только integration |
+| 13 | Custom processor side через hosted API | Открыт | Только через factory `createProcessing` / `createDeduplicationStore` |
+| 14 | EF dedup DI (Scoped) vs background listener | Открыт | Dedup wire через `createDeduplicationStore` в DI |
 
-Подробная детализация рисков 5–12 — в [`2026-07-03_2010-delivery-guarantee-full-analysis.md`](2026-07-03_2010-delivery-guarantee-full-analysis.md), раздел 4.
+Подробная детализация рисков 5–14 — в [`2026-07-03_2010-delivery-guarantee-full-analysis.md`](2026-07-03_2010-delivery-guarantee-full-analysis.md), раздел 4.
 
 ### Низкий приоритет / техдолг
 
 | # | Риск | Статус |
 |---|------|--------|
-| 15 | Sync-over-async в legacy paths | Остаётся (`ProcessorBase.Process`, `OutboxTransmitter`, `InMemoryOutboxStore`) |
+| 15 | Sync-over-async в legacy paths | Остаётся (`ProcessorBase.Process`, `OutboxTransmitter`, `InMemoryOutboxStore`, `ListenerBase.Stop`) |
 | 16 | DLQ не создаётся runtime | Осознанно — ops responsibility |
 | 17 | ~~Listener на Thread~~ | **Закрыто** (`7a0bf77`) |
 | 18 | `SentAndWait` неполный | REST sample, без delivery guarantees |
-| 19 | `IntegrationScheduler` | Dead code |
-| 20 | Нет metrics/tracing | Только logging через `IIntegrationLogger` |
-| 21 | Нет NuGet packaging | Нет `.nuspec`, `PackageId`, versioning — библиотека не готова к публикации как пакет |
+| 19 | `IntegrationScheduler` | Dead code (internal, не используется) |
+| 20 | ~~Нет metrics/tracing~~ | **Частично закрыто** | `IIntegrationFlowMetrics` есть; готовой реализации (Prometheus/OpenTelemetry) нет |
+| 21 | ~~Нет NuGet packaging~~ | **Закрыто** | `PackageId`, `Version 1.0.0`, `dotnet pack` работает; CI publish pipeline нет |
 
 ### Безопасность
 
@@ -175,11 +191,11 @@ flowchart TB
 | **Архитектура** | **8/10** | Правильные паттерны (outbox, dedup, confirms), разделение Core/EF |
 | **Delivery guarantees** | **~98%** | Критические баги закрыты; inherent at-least-once остаётся |
 | **Production readiness (RabbitMQ path)** | **Да, при правильном adoption** | Outbox TX + EF stores + идемпотентные handlers + DLQ |
-| **Public API / ergonomics** | **5/10** | Handler API улучшен, но много internal types |
-| **Тестовое покрытие** | **8/10** | 89 тестов, E2E critical path, CI |
+| **Public API / ergonomics** | **7/10** | Базовые классы открыты; legacy path требует знания архитектуры |
+| **Тестовое покрытие** | **8/10** | 103 теста, E2E critical path + legacy, CI |
 | **Документация** | **8/10** | Актуализируется по мере изменений |
-| **Observability** | **3/10** | Нет метрик outbox pending/abandoned, consumer lag |
-| **Распространение** | **4/10** | Нет NuGet packaging, versioning |
+| **Observability** | **5/10** | Hooks есть (`IIntegrationFlowMetrics`); готовой реализации нет |
+| **Распространение** | **6/10** | NuGet packaging есть; CI publish нет |
 | **SentAndWait** | **2/10** | Out of scope |
 
 ---
@@ -190,36 +206,35 @@ flowchart TB
 2. **EF stores** — не InMemory
 3. **Идемпотентные handlers** + **`MessageId`** на всех сообщениях
 4. **DLQ на брокере** для poison messages
-5. **Явный business handler** — не использовать obsolete overload без handler
-6. **Мониторинг**: outbox pending/abandoned, consumer unacked count, relay failures
+5. **Явный business handler** — hosted: `AddIntegrationFlowRabbitMqListener`; legacy: свой `IntegrationProcessorSideBase`, не default NoOp
+6. **Мониторинг**: outbox pending/abandoned, consumer unacked count, relay failures (через `IIntegrationFlowMetrics`)
 7. **Secrets management** — не хранить пароли RabbitMQ в plain JSON
 
 ---
 
 ## 7. Рекомендуемые следующие шаги
 
-| P | Задача | Закрывает |
-|---|--------|-----------|
-| **P0** | Удалить obsolete NoOp overload (или сделать throw) | Риск A полностью |
-| **P1** | Public base class для publisher/processor side | Риск B |
-| **P1** | NuGet packaging + semver | Distribution |
-| **P2** | Metrics hooks (outbox pending, relay errors, process duration) | Observability |
-| **P2** | E2E legacy `BeginReceiving()` path | Gap #11 |
-| **P3** | `SentAndWait` или явно пометить out-of-scope | Clarity |
+| P | Задача | Статус |
+|---|--------|--------|
+| **P1** | Убрать NoOp из `DefaultRabbitMqIntegrationProcessorSide` (throw вместо silent ack) | ✅ |
+| **P1** | Reference implementation `IIntegrationFlowMetrics` (Prometheus/OpenTelemetry) | Открыт |
+| **P2** | CI job `dotnet pack` + publish to NuGet.org | Открыт |
+| **P2** | Runbook для abandoned outbox replay | ✅ [`runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
+| **P3** | `SentAndWait` или явно пометить out-of-scope | Открыт |
 
 ---
 
 ## 8. Итоговый вывод
 
-Проект **архитектурно зрелый** для RabbitMQ at-least-once интеграций. За последние итерации закрыты все критические баги (async ack, dedup-on-failure, outbox claim, listener Thread) и добавлено solid test/CI покрытие.
+Проект **архитектурно зрелый** для RabbitMQ at-least-once интеграций. За последние итерации закрыты критические баги (async ack, dedup-on-failure, outbox claim, listener Thread) и P0–P2 gaps: NoOp hosted overload, public base classes, metrics hooks, NuGet packaging, legacy E2E.
 
 **Blockers для production сняты** на уровне delivery semantics. Главные **оставшиеся риски — adoption и operations**, не корректность каркаса:
 
 | Категория | Главный риск |
 |-----------|--------------|
-| Adoption | Ограниченный public API — сложно расширять без copy-paste |
-| Operations | Нет metrics/tracing, abandoned outbox без runbook |
-| Distribution | Нет NuGet packaging |
+| Adoption | Legacy path требует явного `IntegrationProcessorSideBase`; идемпотентность и MessageId — на стороне приложения |
+| Operations | Нет готовых метрик/dashboards; abandoned outbox replay — runbook + `ReplayAbandonedAsync` |
+| Distribution | NuGet собирается, но нет автопубликации в CI |
 | Security | Credentials в JSON, нет TLS samples |
 
 Direct publish без outbox и отсутствие `MessageId` — **осознанные anti-patterns**, не дефекты библиотеки.

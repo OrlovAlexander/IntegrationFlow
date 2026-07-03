@@ -266,7 +266,7 @@ dotnet test --filter "Category=Integration"
 ```
 
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-03_2119-integrationflow-full-analysis.md`](docs/2026-07-03_2119-integrationflow-full-analysis.md).  
+Полный анализ решения и рисков: [`docs/2026-07-03_2201-integrationflow-full-analysis.md`](docs/2026-07-03_2201-integrationflow-full-analysis.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Локализация

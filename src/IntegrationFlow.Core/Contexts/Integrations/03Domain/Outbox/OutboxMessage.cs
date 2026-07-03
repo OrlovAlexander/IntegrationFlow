@@ -146,5 +146,19 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                 lockedUntil: null,
                 RetryAfter,
                 LastError);
+
+        internal OutboxMessage WithReplay(bool resetAttemptCount)
+            => new(
+                Id,
+                ProfileName,
+                Payload,
+                ContentType,
+                CreatedAt,
+                resetAttemptCount ? 0 : AttemptCount,
+                OutboxMessageStatus.Pending,
+                lockedBy: null,
+                lockedUntil: null,
+                retryAfter: null,
+                lastError: null);
     }
 }

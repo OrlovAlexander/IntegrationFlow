@@ -1,6 +1,5 @@
 using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.InboxMessageProcessing;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Processors;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Publishers;
@@ -33,7 +32,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
         /// <inheritdoc />
         public override IInboxMessageProcessing GetInboxMessageProcessing(PublisherBase publisher, IConfiguration configuration, IIntegrationLogger logger)
-            => NoOpInboxMessageProcessing.Instance;
+            => null;
     }
 
     /// <summary>

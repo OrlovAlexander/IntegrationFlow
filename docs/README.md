@@ -21,4 +21,6 @@
 | 2026-07-03 20:10 | 2026-07-03 21:00 | [Полный анализ решения и рисков (v3, superseded)](2026-07-03_2010-delivery-guarantee-full-analysis.md) |
 | 2026-07-03 20:46 | 2026-07-03 21:00 | [План: listener → IHostedService (выполнено)](plans/2026-07-03_2046-listener-hosted-service.md) |
 | 2026-07-03 21:00 | 2026-07-03 21:19 | [Полный анализ IntegrationFlow и рисков (v4, superseded)](2026-07-03_2100-integrationflow-full-analysis.md) |
-| 2026-07-03 21:19 | 2026-07-03 21:19 | [Полный анализ IntegrationFlow и рисков (v5, актуально)](2026-07-03_2119-integrationflow-full-analysis.md) |
+| 2026-07-03 21:19 | 2026-07-03 22:01 | [Полный анализ IntegrationFlow и рисков (v5, superseded)](2026-07-03_2119-integrationflow-full-analysis.md) |
+| 2026-07-03 22:01 | 2026-07-03 22:16 | [Полный анализ IntegrationFlow и рисков (v6, актуально)](2026-07-03_2201-integrationflow-full-analysis.md) |
+| 2026-07-03 22:16 | 2026-07-03 22:16 | [Runbook: replay abandoned outbox](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
