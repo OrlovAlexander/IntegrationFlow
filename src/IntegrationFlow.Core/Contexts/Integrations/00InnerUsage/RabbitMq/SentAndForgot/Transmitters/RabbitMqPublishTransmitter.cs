@@ -70,6 +70,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 }
             }
 
+            if (configuration.Mandatory)
+            {
+                connection.WaitForUnroutableProcessing(TimeSpan.FromMilliseconds(100));
+            }
+
             connection.EnsureNotUnroutable();
 
             return TransmitResult.Create(messageId);

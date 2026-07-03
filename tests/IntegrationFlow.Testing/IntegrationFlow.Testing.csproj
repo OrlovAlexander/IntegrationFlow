@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>IntegrationFlow.Testing</RootNamespace>
+    <AssemblyName>IntegrationFlow.Testing</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IntegrationFlow.Core\IntegrationFlow.Core.csproj" />
+    <ProjectReference Include="..\..\src\IntegrationFlow.EntityFrameworkCore\IntegrationFlow.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>

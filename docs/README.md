@@ -16,3 +16,5 @@
 | 2026-07-03 15:23 | 2026-07-03 15:53 | [План: hardening](plans/2026-07-03_1523-delivery-guarantee-hardening.md) |
 | 2026-07-03 16:39 | 2026-07-03 16:47 | [План: production-readiness](plans/2026-07-03_1639-production-readiness.md) |
 | 2026-07-03 16:39 | 2026-07-03 16:47 | [Пример: outbox в TX](examples/2026-07-03_1639-ef-outbox-transaction.md) |
+| 2026-07-03 17:06 | 2026-07-03 17:06 | [Полный анализ решения и рисков (v2)](2026-07-03_1706-delivery-guarantee-full-analysis.md) |
+| 2026-07-03 17:07 | 2026-07-03 17:07 | [План: E2E-тесты и оставшиеся gaps](plans/2026-07-03_1707-e2e-tests-and-remaining-gaps.md) |

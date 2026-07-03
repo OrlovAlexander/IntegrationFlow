@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
@@ -19,6 +20,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         private readonly RabbitMqPublishConfiguration configuration;
         private bool disposed;
         private volatile bool unroutableMessageReceived;
+        private readonly ManualResetEventSlim unroutableSignal = new(initialState: false);
 
         public RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration)
         {
@@ -54,6 +56,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         internal void ResetUnroutableFlag()
         {
             unroutableMessageReceived = false;
+            unroutableSignal.Reset();
+        }
+
+        internal void WaitForUnroutableProcessing(TimeSpan timeout)
+        {
+            if (!configuration.Mandatory)
+            {
+                return;
+            }
+
+            unroutableSignal.Wait(timeout);
         }
 
         internal void EnsureNotUnroutable()
@@ -84,6 +97,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         private void OnBasicReturn(object sender, BasicReturnEventArgs eventArgs)
         {
             unroutableMessageReceived = true;
+            unroutableSignal.Set();
         }
 
         private void DisposeInternal()
