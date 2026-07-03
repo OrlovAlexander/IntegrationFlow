@@ -1,3 +1,4 @@
+using IntegrationFlow.IntegrationTests.Infrastructure;
 using RabbitMQ.Client;
 using Testcontainers.RabbitMq;
 using Xunit;
@@ -8,10 +9,12 @@ namespace IntegrationFlow.IntegrationTests;
 public sealed class RabbitMqConnectivityTests : IAsyncLifetime
 {
     private RabbitMqContainer? container;
+    private bool dockerAvailable;
 
     public async Task InitializeAsync()
     {
-        if (!IsDockerAvailable())
+        dockerAvailable = await DockerAvailability.IsAvailableAsync();
+        if (!dockerAvailable)
         {
             return;
         }
@@ -34,7 +37,7 @@ public sealed class RabbitMqConnectivityTests : IAsyncLifetime
     [Fact]
     public async Task CanConnectAndDeclareQueue()
     {
-        if (container == null)
+        if (!dockerAvailable || container == null)
         {
             return;
         }
@@ -50,19 +53,5 @@ public sealed class RabbitMqConnectivityTests : IAsyncLifetime
         using var connection = factory.CreateConnection();
         using var channel = connection.CreateModel();
         channel.QueueDeclare("integration.test", durable: true, exclusive: false, autoDelete: true);
-    }
-
-    private static bool IsDockerAvailable()
-    {
-        try
-        {
-            return Environment.GetEnvironmentVariable("DOCKER_HOST") != null ||
-                   File.Exists("/var/run/docker.sock") ||
-                   OperatingSystem.IsWindows();
-        }
-        catch
-        {
-            return false;
-        }
     }
 }

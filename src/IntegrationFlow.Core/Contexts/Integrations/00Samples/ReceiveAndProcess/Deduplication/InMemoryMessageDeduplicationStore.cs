@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,8 +11,19 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess.Ded
     /// </summary>
     public sealed class InMemoryMessageDeduplicationStore : IMessageDeduplicationStore
     {
-        private readonly ConcurrentDictionary<string, byte> processing = new();
+        private readonly MessageDeduplicationOptions options;
+        private readonly ConcurrentDictionary<string, DateTimeOffset> processing = new();
         private readonly ConcurrentDictionary<string, byte> processed = new();
+
+        public InMemoryMessageDeduplicationStore()
+            : this(null)
+        {
+        }
+
+        public InMemoryMessageDeduplicationStore(MessageDeduplicationOptions options)
+        {
+            this.options = options ?? new MessageDeduplicationOptions();
+        }
 
         public Task<DeduplicationBeginResult> TryBeginProcessingAsync(string messageId, CancellationToken cancellationToken = default)
         {
@@ -25,8 +37,18 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess.Ded
                 return Task.FromResult(DeduplicationBeginResult.AlreadyProcessed);
             }
 
+            if (processing.TryGetValue(messageId, out var startedAt))
+            {
+                if (startedAt.Add(options.ProcessingLockDuration) > DateTimeOffset.UtcNow)
+                {
+                    return Task.FromResult(DeduplicationBeginResult.InProgress);
+                }
+
+                processing.TryRemove(messageId, out _);
+            }
+
             return Task.FromResult(
-                processing.TryAdd(messageId, 0)
+                processing.TryAdd(messageId, DateTimeOffset.UtcNow)
                     ? DeduplicationBeginResult.Acquired
                     : DeduplicationBeginResult.InProgress);
         }

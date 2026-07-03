@@ -14,10 +14,22 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
     internal abstract class OutboxSentAndForgotIntegrationOppositeSideBase : SentAndForgotIntegrationOppositeSide
     {
         private readonly IOutboxStore outboxStore;
+        private readonly IOutboxEnqueue outboxEnqueue;
 
         protected OutboxSentAndForgotIntegrationOppositeSideBase(IOutboxStore outboxStore)
+            : this(outboxStore, null)
+        {
+        }
+
+        protected OutboxSentAndForgotIntegrationOppositeSideBase(IOutboxStore outboxStore, IOutboxEnqueue outboxEnqueue)
         {
             this.outboxStore = outboxStore;
+            this.outboxEnqueue = outboxEnqueue;
+        }
+
+        protected OutboxSentAndForgotIntegrationOppositeSideBase(IOutboxEnqueue outboxEnqueue)
+        {
+            this.outboxEnqueue = outboxEnqueue;
         }
 
         protected abstract string ProfileName { get; }
@@ -32,7 +44,14 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
             => NullSentAndForgotConnection.Instance;
 
         public override ITransmitter GetTransmitter(IConfiguration configuration, IConnection connection, IIntegrationLogger logger)
-            => new OutboxTransmitter(outboxStore, ProfileName, ContentType);
+        {
+            if (outboxEnqueue != null)
+            {
+                return new OutboxTransmitter(outboxEnqueue, ProfileName, ContentType);
+            }
+
+            return new OutboxTransmitter(outboxStore, ProfileName, ContentType);
+        }
 
         public override ILogging GetLogging(IIntegrationLogger logger) => null;
 

@@ -13,11 +13,37 @@ namespace IntegrationFlow.EntityFrameworkCore.DependencyInjection;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Регистрирует relay store (factory-based) для outbox worker.
+    /// </summary>
+    public static IServiceCollection AddIntegrationFlowEfOutboxRelayStore<TContext>(
+        this IServiceCollection services)
+        where TContext : DbContext
+    {
+        services.TryAddSingleton<IOutboxStore, EfOutboxStore<TContext>>();
+        return services;
+    }
+
+    /// <summary>
+    /// Регистрирует scoped staging outbox для записи в TX приложения.
+    /// </summary>
+    public static IServiceCollection AddIntegrationFlowEfOutboxEnqueue<TContext>(
+        this IServiceCollection services)
+        where TContext : DbContext
+    {
+        services.TryAddScoped<IOutboxEnqueue, EfOutboxEnqueue<TContext>>();
+        return services;
+    }
+
+    /// <summary>
+    /// Регистрирует relay store и scoped enqueue.
+    /// </summary>
     public static IServiceCollection AddIntegrationFlowEfOutbox<TContext>(
         this IServiceCollection services)
         where TContext : DbContext
     {
-        services.TryAddScoped<IOutboxStore, EfOutboxStore<TContext>>();
+        services.AddIntegrationFlowEfOutboxRelayStore<TContext>();
+        services.AddIntegrationFlowEfOutboxEnqueue<TContext>();
         return services;
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00Samples.Outbox;
@@ -148,6 +149,25 @@ public sealed class OutboxTransmitterTests
         var pending = await store.GetPendingAsync(10);
         Assert.Single(pending);
         Assert.Equal("OrdersOut", pending[0].ProfileName);
+    }
+
+    [Fact]
+    public void TransmitWithResult_StagesWithoutPersisting()
+    {
+        var enqueue = new CapturingOutboxEnqueue();
+        var transmitter = new OutboxTransmitter(enqueue, "OrdersOut");
+        var result = transmitter.TransmitWithResult(new TransmitData("payload"));
+
+        Assert.False(string.IsNullOrWhiteSpace(result.MessageId));
+        Assert.Single(enqueue.Staged);
+        Assert.Equal("OrdersOut", enqueue.Staged[0].ProfileName);
+    }
+
+    private sealed class CapturingOutboxEnqueue : IOutboxEnqueue
+    {
+        public List<OutboxMessage> Staged { get; } = new();
+
+        public void Stage(OutboxMessage message) => Staged.Add(message);
     }
 }
 

@@ -47,7 +47,13 @@ public sealed class EfMessageDeduplicationStore<TContext> : IMessageDeduplicatio
 
             if (existing.State == ProcessedMessageState.Processing)
             {
-                return DeduplicationBeginResult.InProgress;
+                if (existing.CreatedAt.Add(options.ProcessingLockDuration) > now)
+                {
+                    return DeduplicationBeginResult.InProgress;
+                }
+
+                set.Remove(existing);
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -71,9 +77,18 @@ public sealed class EfMessageDeduplicationStore<TContext> : IMessageDeduplicatio
                 throw;
             }
 
-            return retry.State == ProcessedMessageState.Processed
-                ? DeduplicationBeginResult.AlreadyProcessed
-                : DeduplicationBeginResult.InProgress;
+            if (retry.State == ProcessedMessageState.Processed)
+            {
+                return DeduplicationBeginResult.AlreadyProcessed;
+            }
+
+            if (retry.State == ProcessedMessageState.Processing &&
+                retry.CreatedAt.Add(options.ProcessingLockDuration) > now)
+            {
+                return DeduplicationBeginResult.InProgress;
+            }
+
+            return DeduplicationBeginResult.Acquired;
         }
     }
 

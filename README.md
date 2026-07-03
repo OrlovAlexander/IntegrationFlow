@@ -202,11 +202,11 @@ integration.Integrate();
 
 ### Transactional Outbox
 
-Для атомарности «БД + сообщение» используйте `IOutboxStore` и `OutboxSentAndForgotIntegrationOppositeSideBase`. Relay worker:
+Для атомарности «БД + сообщение» используйте outbox и relay worker. **Enqueue в prod** — через `IOutboxEnqueue` или `DbContext.EnqueueOutboxMessage()` в той же TX, что и бизнес-данные (см. [пример](docs/examples/2026-07-03_1639-ef-outbox-transaction.md)).
 
 ```csharp
 services.AddIntegrationFlow();
-services.AddSingleton<IOutboxStore, InMemoryOutboxStore>(); // или EF-реализация приложения
+services.AddSingleton<IOutboxStore, InMemoryOutboxStore>(); // relay worker
 services.AddIntegrationFlowOutboxRelay(options =>
 {
     options.BatchSize = 20;
@@ -222,17 +222,25 @@ services.AddIntegrationFlowOutboxRelay(options =>
 **EF Core store (production):** пакет `IntegrationFlow.EntityFrameworkCore`:
 
 ```csharp
-services.AddDbContextFactory<MyDbContext>(...);
+services.AddDbContext<MyDbContext>(...);           // scoped — для IOutboxEnqueue
+services.AddDbContextFactory<MyDbContext>(...);    // factory — для relay IOutboxStore
 services.AddIntegrationFlowEfOutbox<MyDbContext>();
 services.AddIntegrationFlowEfDeduplication<MyDbContext>(options =>
 {
     options.ProcessedRetention = TimeSpan.FromDays(30);
+    options.ProcessingLockDuration = TimeSpan.FromMinutes(15);
 });
 ```
 
 В `OnModelCreating`: `modelBuilder.ConfigureIntegrationFlow();`
 
-Подробнее: [`docs/plans/2026-07-03_1523-delivery-guarantee-hardening.md`](docs/plans/2026-07-03_1523-delivery-guarantee-hardening.md).  
+**Integration tests** (требуют Docker):
+
+```bash
+dotnet test --filter "Category=Integration"
+```
+
+Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Локализация

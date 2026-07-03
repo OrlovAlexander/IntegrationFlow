@@ -5,12 +5,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._03Domain.Outbox;
+using IntegrationFlow.EntityFrameworkCore.Outbox.Claim;
 using Microsoft.EntityFrameworkCore;
 
 namespace IntegrationFlow.EntityFrameworkCore.Outbox;
 
 /// <summary>
-/// EF Core реализация <see cref="IOutboxStore"/>.
+/// EF Core реализация <see cref="IOutboxStore"/> для relay worker (claim/mark).
+/// Для enqueue в TX приложения используйте <see cref="IOutboxEnqueue"/> или <see cref="DbContextOutboxExtensions"/>.
 /// </summary>
 public sealed class EfOutboxStore<TContext> : IOutboxStore
     where TContext : DbContext
@@ -22,10 +24,15 @@ public sealed class EfOutboxStore<TContext> : IOutboxStore
         this.contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Создаёт отдельный DbContext и commit. Для атомарности с бизнес-данными используйте
+    /// <see cref="IOutboxEnqueue.Stage"/> или <see cref="DbContextOutboxExtensions.EnqueueOutboxMessage"/>.
+    /// </remarks>
     public async Task EnqueueAsync(OutboxMessage message, CancellationToken cancellationToken = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        context.Set<OutboxMessageEntity>().Add(ToEntity(message));
+        context.Set<OutboxMessageEntity>().Add(EfOutboxMapper.ToEntity(message));
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -37,7 +44,7 @@ public sealed class EfOutboxStore<TContext> : IOutboxStore
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         await using var transaction = await context.Database
-            .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+            .BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
             .ConfigureAwait(false);
 
         var now = DateTimeOffset.UtcNow;
@@ -46,19 +53,15 @@ public sealed class EfOutboxStore<TContext> : IOutboxStore
 
         await ReleaseExpiredClaimsInternalAsync(set, now, cancellationToken).ConfigureAwait(false);
 
-        var candidates = await SelectClaimCandidatesAsync(set, batchSize, now, cancellationToken).ConfigureAwait(false);
-
-        foreach (var candidate in candidates)
-        {
-            candidate.Status = OutboxMessageStatus.InFlight;
-            candidate.LockedBy = workerId;
-            candidate.LockedUntil = lockUntil;
-        }
+        var strategy = OutboxClaimStrategyResolver.Resolve(context);
+        var claimed = await strategy
+            .ClaimAsync(context, set, batchSize, workerId, lockUntil, now, cancellationToken)
+            .ConfigureAwait(false);
 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        return candidates.Select(ToDomain).ToList();
+        return claimed.Select(EfOutboxMapper.ToDomain).ToList();
     }
 
     public async Task MarkPublishedAsync(Guid id, string workerId, CancellationToken cancellationToken = default)
@@ -129,28 +132,11 @@ public sealed class EfOutboxStore<TContext> : IOutboxStore
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
         var now = DateTimeOffset.UtcNow;
-        var pending = await SelectClaimCandidatesAsync(context.Set<OutboxMessageEntity>(), batchSize, now, cancellationToken)
+        var pending = await OutboxClaimHelper
+            .SelectPendingCandidatesAsync(context.Set<OutboxMessageEntity>(), batchSize, now, cancellationToken)
             .ConfigureAwait(false);
 
-        return pending.Select(ToDomain).ToList();
-    }
-
-    private static async Task<List<OutboxMessageEntity>> SelectClaimCandidatesAsync(
-        DbSet<OutboxMessageEntity> set,
-        int batchSize,
-        DateTimeOffset now,
-        CancellationToken cancellationToken)
-    {
-        var pending = await set
-            .Where(message => message.Status == OutboxMessageStatus.Pending)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return pending
-            .Where(message => message.RetryAfter == null || message.RetryAfter <= now)
-            .OrderBy(message => message.CreatedAt)
-            .Take(Math.Max(1, batchSize))
-            .ToList();
+        return pending.Select(EfOutboxMapper.ToDomain).ToList();
     }
 
     public Task MarkPublishedAsync(Guid id, CancellationToken cancellationToken = default)
@@ -197,34 +183,4 @@ public sealed class EfOutboxStore<TContext> : IOutboxStore
         return entity.Status == OutboxMessageStatus.InFlight &&
                string.Equals(entity.LockedBy, workerId, StringComparison.Ordinal);
     }
-
-    private static OutboxMessageEntity ToEntity(OutboxMessage message)
-        => new()
-        {
-            Id = message.Id,
-            ProfileName = message.ProfileName,
-            Payload = message.Payload,
-            ContentType = message.ContentType,
-            CreatedAt = message.CreatedAt,
-            AttemptCount = message.AttemptCount,
-            Status = message.Status,
-            LockedBy = message.LockedBy,
-            LockedUntil = message.LockedUntil,
-            RetryAfter = message.RetryAfter,
-            LastError = message.LastError
-        };
-
-    private static OutboxMessage ToDomain(OutboxMessageEntity entity)
-        => new(
-            entity.Id,
-            entity.ProfileName,
-            entity.Payload,
-            entity.ContentType,
-            entity.CreatedAt,
-            entity.AttemptCount,
-            entity.Status,
-            entity.LockedBy,
-            entity.LockedUntil,
-            entity.RetryAfter,
-            entity.LastError);
 }
