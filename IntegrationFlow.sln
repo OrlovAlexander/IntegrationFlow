@@ -27,6 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D0C5F001-8
 		docs\plans\2026-07-03_1639-production-readiness.md = docs\plans\2026-07-03_1639-production-readiness.md
 		docs\examples\2026-07-03_1639-ef-outbox-transaction.md = docs\examples\2026-07-03_1639-ef-outbox-transaction.md
 		docs\2026-07-03_1706-delivery-guarantee-full-analysis.md = docs\2026-07-03_1706-delivery-guarantee-full-analysis.md
+		docs\2026-07-03_2010-delivery-guarantee-full-analysis.md = docs\2026-07-03_2010-delivery-guarantee-full-analysis.md
 		docs\plans\2026-07-03_1707-e2e-tests-and-remaining-gaps.md = docs\plans\2026-07-03_1707-e2e-tests-and-remaining-gaps.md
 	EndProjectSection
 EndProject

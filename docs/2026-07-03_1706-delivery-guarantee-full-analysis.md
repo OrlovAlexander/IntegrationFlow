@@ -1,13 +1,15 @@
 # Полный анализ решения IntegrationFlow и оценка рисков
 
-**Статус:** актуально  
+**Статус:** superseded → см. [`2026-07-03_2010-delivery-guarantee-full-analysis.md`](2026-07-03_2010-delivery-guarantee-full-analysis.md)  
 **Создан:** 2026-07-03 17:06 (UTC+3)  
-**Обновлён:** 2026-07-03 17:06 (UTC+3)  
+**Обновлён:** 2026-07-03 20:10 (UTC+3)  
 **Связанные документы:** [`plans/2026-07-03_1213-delivery-guarantee.md`](plans/2026-07-03_1213-delivery-guarantee.md), [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md), [`2026-07-03_1511-delivery-guarantee-solution-analysis.md`](2026-07-03_1511-delivery-guarantee-solution-analysis.md), [`plans/2026-07-03_1523-delivery-guarantee-hardening.md`](plans/2026-07-03_1523-delivery-guarantee-hardening.md), [`plans/2026-07-03_1639-production-readiness.md`](plans/2026-07-03_1639-production-readiness.md)
+
+> **Примечание:** этот документ **устарел** — см. актуальную версию [`2026-07-03_2010-delivery-guarantee-full-analysis.md`](2026-07-03_2010-delivery-guarantee-full-analysis.md).
 
 Документ фиксирует оценку **текущего состояния кода** после hardening и production-readiness (коммиты `990d890`, `820689f`): at-least-once гарантии для RabbitMQ-интеграций — что закрыто, какие риски остаются, готовность к production.
 
-> **Примечание:** [`2026-07-03_1511-delivery-guarantee-solution-analysis.md`](2026-07-03_1511-delivery-guarantee-solution-analysis.md) и [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md) **устарели** — большинство P0-рисков из них закрыты в hardening и production-readiness. Актуальная оценка — **этот документ**.
+> **Примечание:** [`2026-07-03_1511-delivery-guarantee-solution-analysis.md`](2026-07-03_1511-delivery-guarantee-solution-analysis.md) и [`plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md`](plans/2026-07-03_1321-delivery-guarantee-risk-analysis.md) **устарели** — большинство P0-рисков из них закрыты в hardening и production-readiness.
 
 ---
 
