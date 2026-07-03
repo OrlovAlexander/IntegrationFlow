@@ -2,7 +2,7 @@ using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
 {
-    internal abstract class IntegrationPublisherSideBase
+    public abstract class IntegrationPublisherSideBase
     {
         /// <summary>
         /// Публикатор сообщений, запросов и т.п.
@@ -19,8 +19,13 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// <summary>
         /// Ключ кеша publisher-а для данной стороны интеграции.
         /// </summary>
-        internal virtual string GetPublisherCacheKey()
+        public virtual string GetPublisherCacheKey()
             => GetType().AssemblyQualifiedName ?? GetType().FullName ?? GetType().Name;
+
+        /// <summary>
+        /// Имя профиля для метрик и диагностики.
+        /// </summary>
+        public virtual string GetProfileName() => GetPublisherCacheKey();
 
         /// <summary>
         /// Возвращает конфигурацию публикатора, слушателя

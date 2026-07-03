@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 
@@ -10,7 +12,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
     /// <summary>
     /// Обработчик входного сообщения, запроса и т.п.
     /// </summary>
-    internal class ProcessorBase
+    public class ProcessorBase
     {
         /// <summary>
         /// Конфигурация публикатора, слушателя
@@ -189,7 +191,19 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                     throw new NotImplementedException(SR.T("Отсутствует обработка результата."));
                 }
 
-                inboxMessageProcessing.ProcessInboxMessage(inboxMessage);
+                var stopwatch = Stopwatch.StartNew();
+                var profileName = Publisher.IntegrationPublisherSide.GetProfileName();
+                var metrics = Publisher.Metrics;
+                try
+                {
+                    inboxMessageProcessing.ProcessInboxMessage(inboxMessage);
+                    metrics?.RecordMessageProcessed(profileName, stopwatch.Elapsed, success: true);
+                }
+                catch
+                {
+                    metrics?.RecordMessageProcessed(profileName, stopwatch.Elapsed, success: false);
+                    throw;
+                }
 
                 if (deduplicationStore != null && !string.IsNullOrWhiteSpace(messageId))
                 {

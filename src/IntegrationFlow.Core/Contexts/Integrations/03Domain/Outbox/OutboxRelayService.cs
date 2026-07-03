@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
@@ -17,13 +18,19 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
         private readonly IOutboxStore outboxStore;
         private readonly IIntegrationLogger logger;
         private readonly OutboxRelayOptions options;
+        private readonly IIntegrationFlowMetrics? metrics;
         private readonly string workerId = Guid.NewGuid().ToString("N");
 
-        public OutboxRelayService(IOutboxStore outboxStore, IIntegrationLogger logger, OutboxRelayOptions options)
+        public OutboxRelayService(
+            IOutboxStore outboxStore,
+            IIntegrationLogger logger,
+            OutboxRelayOptions options,
+            IIntegrationFlowMetrics? metrics = null)
         {
             this.outboxStore = outboxStore ?? throw new ArgumentNullException(nameof(outboxStore));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.metrics = metrics;
         }
 
         /// <summary>
@@ -37,11 +44,28 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                 .ClaimPendingAsync(batchSize, workerId, options.LockDuration, cancellationToken)
                 .ConfigureAwait(false);
 
+            var publishedCount = 0;
+            var failedCount = 0;
+            var abandonedCount = 0;
+
             foreach (var profileGroup in claimed.GroupBy(message => message.ProfileName))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await RelayProfileGroupAsync(profileGroup.Key, profileGroup, cancellationToken).ConfigureAwait(false);
+                var result = await RelayProfileGroupAsync(profileGroup.Key, profileGroup, cancellationToken)
+                    .ConfigureAwait(false);
+                publishedCount += result.Published;
+                failedCount += result.Failed;
+                abandonedCount += result.Abandoned;
             }
+
+            metrics?.RecordOutboxRelayPublished(publishedCount);
+            metrics?.RecordOutboxRelayFailed(failedCount);
+            metrics?.RecordOutboxRelayAbandoned(abandonedCount);
+
+            var pending = await outboxStore
+                .GetPendingAsync(int.MaxValue, cancellationToken)
+                .ConfigureAwait(false);
+            metrics?.RecordOutboxPending(pending.Count);
         }
 
         internal TimeSpan CalculateRetryDelay(int attemptCount)
@@ -56,7 +80,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
             return delay > options.MaxRetryDelay ? options.MaxRetryDelay : delay;
         }
 
-        private async Task RelayProfileGroupAsync(
+        private async Task<RelayProfileGroupResult> RelayProfileGroupAsync(
             string profileName,
             System.Collections.Generic.IEnumerable<OutboxMessage> messages,
             CancellationToken cancellationToken)
@@ -64,6 +88,9 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
             RabbitMqPublishConfiguration configuration = null;
             RabbitMqPublishConnection connection = null;
             RabbitMqPublishTransmitter transmitter = null;
+            var published = 0;
+            var failed = 0;
+            var abandoned = 0;
 
             try
             {
@@ -78,6 +105,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                             .ConfigureAwait(false);
                         logger.LogWarn(
                             $"Outbox relay. Message '{message.Id}' exceeded max attempts ({options.MaxAttempts}). Abandoned.");
+                        abandoned++;
                         continue;
                     }
 
@@ -97,6 +125,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                         transmitter!.TransmitWithResult(transmitData);
                         await outboxStore.MarkPublishedAsync(message.Id, workerId, cancellationToken).ConfigureAwait(false);
                         logger.LogInfo($"Outbox relay. Message '{message.Id}' published via profile '{profileName}'.");
+                        published++;
                     }
                     catch (Exception ex)
                     {
@@ -105,6 +134,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                             .MarkFailedAsync(message.Id, workerId, ex.Message, retryAfter, cancellationToken)
                             .ConfigureAwait(false);
                         logger.LogException($"Outbox relay. Failed to publish message '{message.Id}'.", ex);
+                        failed++;
                     }
                 }
             }
@@ -112,6 +142,24 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
             {
                 connection?.Dispose();
             }
+
+            return new RelayProfileGroupResult(published, failed, abandoned);
+        }
+
+        private readonly struct RelayProfileGroupResult
+        {
+            public RelayProfileGroupResult(int published, int failed, int abandoned)
+            {
+                Published = published;
+                Failed = failed;
+                Abandoned = abandoned;
+            }
+
+            public int Published { get; }
+
+            public int Failed { get; }
+
+            public int Abandoned { get; }
         }
     }
 }

@@ -9,6 +9,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageId>IntegrationFlow.Core</PackageId>
+    <Title>IntegrationFlow Core</Title>
+    <Description>Integration framework for RabbitMQ consumers and transactional outbox producers.</Description>
   </PropertyGroup>
 
   <ItemGroup>

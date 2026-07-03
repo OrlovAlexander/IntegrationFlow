@@ -5,7 +5,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// <summary>
     /// Публикатор для интеграции прослушивания очереди RabbitMQ.
     /// </summary>
-    internal sealed class RabbitMqPublisher : PublisherBase
+    public sealed class RabbitMqPublisher : PublisherBase
     {
     }
 }

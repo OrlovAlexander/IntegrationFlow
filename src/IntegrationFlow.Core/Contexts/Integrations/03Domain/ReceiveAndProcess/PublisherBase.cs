@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.Services.ObjectsComparerService;
 
@@ -9,7 +10,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
     /// <summary>
     /// Публикатор сообщений, запросов и т.п.
     /// </summary>
-    internal abstract class PublisherBase
+    public abstract class PublisherBase
     {
         /// <summary>
         /// Сторона публикатора сообщений, запросов и т.п.
@@ -20,6 +21,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
         /// Логгер в рамках интеграций
         /// </summary>
         protected IIntegrationLogger Logger { get; private set; }
+
+        /// <summary>
+        /// Optional metrics hooks for message processing.
+        /// </summary>
+        public IIntegrationFlowMetrics? Metrics { get; set; }
 
         /// <summary>
         /// Конфигурация слушателя публикатора
@@ -176,6 +182,22 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
             catch (Exception ex)
             {
                 Logger.LogException(SR.T("ReceiveAndProcess.PublisherBase - BeginReceiving - Запуск/перезапуск слушателя."), ex);
+            }
+        }
+
+        /// <summary>
+        /// Остановить прослушивание входящих сообщений (legacy path).
+        /// </summary>
+        public virtual void StopReceiving()
+        {
+            try
+            {
+                Listener?.Stop();
+                Listener = null;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(SR.T("ReceiveAndProcess.PublisherBase - StopReceiving - Остановка слушателя."), ex);
             }
         }
 

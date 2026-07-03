@@ -5,6 +5,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndPro
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Processors;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Publishers;
 using IntegrationFlow.Contexts.Integrations._03Domain;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 
@@ -23,7 +24,8 @@ internal sealed class ReceiveAndProcessHostedServiceOptions
         string profileName,
         IIntegrationLogger logger,
         IInboxMessageProcessing inboxMessageProcessing,
-        IMessageDeduplicationStore? deduplicationStore = null)
+        IMessageDeduplicationStore? deduplicationStore = null,
+        IIntegrationFlowMetrics? metrics = null)
     {
         if (string.IsNullOrWhiteSpace(profileName))
         {
@@ -36,48 +38,18 @@ internal sealed class ReceiveAndProcessHostedServiceOptions
         }
 
         var publisherSide = new NamedRabbitMqIntegrationPublisherSide(profileName);
-        return CreateHosted(publisherSide, logger, inboxMessageProcessing, deduplicationStore);
-    }
-
-    internal static ReceiveAndProcessHostedServiceOptions Create(
-        IntegrationPublisherSideBase side,
-        IIntegrationLogger logger)
-    {
-        if (side == null)
-        {
-            throw new ArgumentNullException(nameof(side));
-        }
-
-        if (logger == null)
-        {
-            throw new ArgumentNullException(nameof(logger));
-        }
-
-        var publisher = PublisherBase.Create<RabbitMqPublisher>(logger, side);
-        var configuration = side.GetConfiguration(publisher, logger);
-
-        if (configuration is not RabbitMqConfiguration rabbitMqConfiguration)
-        {
-            throw new InvalidOperationException(
-                $"Expected {nameof(RabbitMqConfiguration)} for profile listener registration.");
-        }
-
-        var processor = side.GetProcessor(publisher, configuration, logger);
-
-        return new ReceiveAndProcessHostedServiceOptions
-        {
-            Configuration = rabbitMqConfiguration,
-            ProcessMessageAsync = message => processor.ProcessMessageAsync(message)
-        };
+        return CreateHosted(publisherSide, logger, inboxMessageProcessing, deduplicationStore, metrics);
     }
 
     private static ReceiveAndProcessHostedServiceOptions CreateHosted(
         NamedRabbitMqIntegrationPublisherSide publisherSide,
         IIntegrationLogger logger,
         IInboxMessageProcessing inboxMessageProcessing,
-        IMessageDeduplicationStore? deduplicationStore)
+        IMessageDeduplicationStore? deduplicationStore,
+        IIntegrationFlowMetrics? metrics)
     {
         var publisher = PublisherBase.Create<RabbitMqPublisher>(logger, publisherSide);
+        publisher.Metrics = metrics;
         var configuration = publisherSide.GetConfiguration(publisher, logger);
 
         if (configuration is not RabbitMqConfiguration rabbitMqConfiguration)

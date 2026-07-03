@@ -39,7 +39,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// <summary>
     /// Базовая сторона публикатора для интеграции прослушивания очереди RabbitMQ.
     /// </summary>
-    internal abstract class RabbitMqIntegrationPublisherSideBase : IntegrationPublisherSideBase
+    public abstract class RabbitMqIntegrationPublisherSideBase : IntegrationPublisherSideBase
     {
         /// <summary>
         /// Имя профиля в rabbitmq.json.
@@ -47,8 +47,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         protected abstract string ConfigurationName { get; }
 
         /// <inheritdoc />
-        internal override string GetPublisherCacheKey()
+        public override string GetPublisherCacheKey()
             => $"{GetType().AssemblyQualifiedName}|{ConfigurationName}";
+
+        /// <inheritdoc />
+        public override string GetProfileName() => ConfigurationName;
 
         /// <inheritdoc />
         public override IConfiguration GetConfiguration(PublisherBase publisher, IIntegrationLogger logger)
@@ -70,7 +73,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// <summary>
     /// Сторона публикатора RabbitMQ с динамическим именем профиля конфигурации.
     /// </summary>
-    internal sealed class NamedRabbitMqIntegrationPublisherSide : RabbitMqIntegrationPublisherSideBase
+    public sealed class NamedRabbitMqIntegrationPublisherSide : RabbitMqIntegrationPublisherSideBase
     {
         private readonly string configurationName;
 

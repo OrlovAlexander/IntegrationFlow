@@ -9,6 +9,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>true</IsPackable>
+    <PackageId>IntegrationFlow.EntityFrameworkCore</PackageId>
+    <Title>IntegrationFlow Entity Framework Core</Title>
+    <Description>EF Core stores for IntegrationFlow transactional outbox and message deduplication.</Description>
   </PropertyGroup>
 
   <ItemGroup>

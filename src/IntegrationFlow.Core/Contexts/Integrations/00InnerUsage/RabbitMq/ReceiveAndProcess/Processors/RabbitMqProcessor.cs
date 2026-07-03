@@ -5,7 +5,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// <summary>
     /// Обработчик входящих сообщений RabbitMQ.
     /// </summary>
-    internal sealed class RabbitMqProcessor : ProcessorBase
+    public sealed class RabbitMqProcessor : ProcessorBase
     {
     }
 }

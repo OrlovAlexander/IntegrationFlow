@@ -10,7 +10,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
     /// <summary>
     /// Сторона обработчика входного сообщения, запроса и т.п.
     /// </summary>
-    internal abstract class IntegrationProcessorSideBase
+    public abstract class IntegrationProcessorSideBase
     {
         /// <summary>
         /// Обработчик входного сообщения, запроса и т.п.

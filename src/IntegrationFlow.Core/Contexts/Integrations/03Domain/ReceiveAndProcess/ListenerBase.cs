@@ -9,7 +9,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
     /// <summary>
     /// Слушатель входящих сообщений, запросов и т.д.
     /// </summary>
-    internal abstract class ListenerBase
+    public abstract class ListenerBase
     {
         private bool disposed;
         private CancellationTokenSource? runCts;

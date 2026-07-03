@@ -2,6 +2,7 @@ using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._02Application;
 using IntegrationFlow.Contexts.Integrations._03Domain;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -32,6 +33,7 @@ public static partial class ServiceCollectionExtensions
             return new MicrosoftExtensionsIntegrationLogger(
                 loggerFactory.CreateLogger("IntegrationFlow"));
         });
+        services.TryAddSingleton<IIntegrationFlowMetrics, NullIntegrationFlowMetrics>();
 
         return services;
     }
