@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
@@ -19,11 +20,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     internal sealed class RabbitMqRpcResponseCorrelationHostedService : BackgroundService
     {
         private readonly IRpcPendingStore pendingStore;
+        private readonly IIntegrationFlowMetrics? metrics;
         private readonly IReadOnlyList<RabbitMqRequestReplyConfiguration> profiles;
 
-        public RabbitMqRpcResponseCorrelationHostedService(IRpcPendingStore pendingStore)
+        public RabbitMqRpcResponseCorrelationHostedService(
+            IRpcPendingStore pendingStore,
+            IIntegrationFlowMetrics? metrics = null)
         {
             this.pendingStore = pendingStore ?? throw new ArgumentNullException(nameof(pendingStore));
+            this.metrics = metrics;
             profiles = LoadAsyncOutboxProfiles();
         }
 
@@ -62,9 +67,22 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                         return;
                     }
 
+                    var pending = await pendingStore
+                        .GetByIdAsync(pendingId, stoppingToken)
+                        .ConfigureAwait(false);
+
                     await pendingStore
                         .CompleteAsync(pendingId, eventArgs.Body.ToArray(), stoppingToken)
                         .ConfigureAwait(false);
+
+                    if (pending != null)
+                    {
+                        metrics?.RecordRpcPendingCompleted(
+                            pending.ProfileName,
+                            DateTimeOffset.UtcNow - pending.CreatedAt,
+                            success: true);
+                    }
+
                     channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
                 }
                 catch

@@ -2,10 +2,10 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:01 (UTC+3)  
-**Обновлён:** 2026-07-04 23:01 (UTC+3)  
+**Обновлён:** 2026-07-04 23:20 (UTC+3)  
 **Связанные документы:** [`plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md), [`plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md)
 
-Итог реализации по плану [`2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md). **117 unit-тестов** зелёные (Release); integration-тесты RPC — при наличии Docker.
+Итог реализации по плану [`2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md). **121+ unit-тестов** зелёные (Release); integration-тесты RPC — при наличии Docker.
 
 ---
 
@@ -52,7 +52,7 @@ DI: `AddIntegrationFlowEfRequestReplyResponseCache<TContext>()`.
 
 ---
 
-## 2. Фаза 2 — Async Request-Response + Outbox (MVP каркас) ✅
+## 2. Фаза 2 — Async Request-Response + Outbox ✅ (MVP + P1 backlog)
 
 Основное решение для **critical flows**: request staged в TX → relay → response queue → correlation.
 
@@ -62,7 +62,8 @@ DI: `AddIntegrationFlowEfRequestReplyResponseCache<TContext>()`.
 |-----------|------|
 | `RpcPendingRequest`, `RpcPendingStatus` | [`03Domain/RpcPending/`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/) |
 | `IRpcPendingStore`, `IRpcPendingEnqueue` | там же |
-| `RpcPendingRelayService` | [`RpcPendingRelayService.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/RpcPendingRelayService.cs) |
+| `InMemoryRpcPendingStore` (tests/samples) | [`00Samples/RpcPending/InMemoryRpcPendingStore.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/RpcPending/InMemoryRpcPendingStore.cs) |
+| `RpcPendingRelayService` | [`RpcPendingRelayService.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/RpcPendingRelayService.cs) — metrics + injectable config loader |
 | `RpcPendingWaitExtensions.WaitForCompletionAsync` | [`RpcPendingWaitExtensions.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/RpcPendingWaitExtensions.cs) |
 
 ### Transport и конфиг
@@ -80,7 +81,7 @@ DI: `AddIntegrationFlowEfRequestReplyResponseCache<TContext>()`.
 | Worker | Назначение |
 |--------|------------|
 | `RpcPendingRelayBackgroundService` | Claim pending → publish на request queue |
-| `RabbitMqRpcResponseCorrelationHostedService` | Consume response queue → `CompleteAsync` |
+| `RabbitMqRpcResponseCorrelationHostedService` | Consume response queue → `CompleteAsync` + metrics |
 
 ### EF
 
@@ -90,6 +91,19 @@ DI: `AddIntegrationFlowEfRequestReplyResponseCache<TContext>()`.
 | Store + enqueue | [`EfRpcPendingStore.cs`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/EfRpcPendingStore.cs), [`EfRpcPendingEnqueue.cs`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/EfRpcPendingEnqueue.cs) |
 | Extension | [`DbContextRpcPendingExtensions.EnqueueRpcRequest()`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/DbContextRpcPendingExtensions.cs) |
 | Model | `ConfigureIntegrationFlow()` — таблица `IntegrationFlowRpcPendingRequests` |
+
+### Metrics (AsyncOutbox)
+
+| Instrument | Описание |
+|------------|----------|
+| `integrationflow.rpc.pending.relay.published` | Counter — relay published |
+| `integrationflow.rpc.pending.relay.failed` | Counter — relay failures |
+| `integrationflow.rpc.pending.relay.abandoned` | Counter — abandoned after max attempts |
+| `integrationflow.rpc.pending.awaiting` | Gauge — awaiting response |
+| `integrationflow.rpc.pending.completed` | Counter — terminal completion (`profile`, `success`, `timeout`) |
+| `integrationflow.rpc.pending.duration` | Histogram — round-trip от `CreatedAt` (секунды) |
+
+Runbook abandoned replay: [`runbooks/2026-07-04_2315-rpc-pending-replay.md`](runbooks/2026-07-04_2315-rpc-pending-replay.md).
 
 ### DI
 
@@ -128,27 +142,29 @@ var result = await pendingStore.WaitForCompletionAsync(
     cancellationToken);
 ```
 
-### Тесты (фаза 2 MVP)
+### Тесты (фаза 2)
 
 | Тест | Файл |
 |------|------|
 | Stage → complete | `tests/IntegrationFlow.EntityFrameworkCore.Tests/EfRpcPendingStoreTests.cs` |
 | `WaitForCompletionAsync` | там же |
+| E2E AsyncOutbox relay + response | `tests/IntegrationFlow.Core.IntegrationTests/RabbitMqRpcPendingAsyncOutboxEndToEndTests.cs` |
+| Rpc pending metrics | `tests/IntegrationFlow.Metrics.OpenTelemetry.Tests/OpenTelemetryIntegrationFlowMetricsTests.cs` |
 
-**DoD фазы 2 (полный):** не выполнен — E2E AsyncOutbox, runbook, SKIP LOCKED для PostgreSQL в backlog.
+**DoD фазы 2 (полный):** частично — E2E, runbook, metrics ✅; PostgreSQL SKIP LOCKED и high-level API в backlog.
 
 ---
 
 ## 3. Backlog (фаза 2–3)
 
-| # | Задача | Приоритет |
-|---|--------|-----------|
-| 1 | E2E integration test AsyncOutbox (Docker) | P1 |
-| 2 | Runbook abandoned pending replay | P1 |
-| 3 | PostgreSQL SKIP LOCKED claim для RpcPending | P2 |
-| 4 | `CreateSentAndWaitAsyncOutboxIntegration` — high-level API | P2 |
-| 5 | Metrics: `rpc.pending.count`, `rpc.pending.duration` | P2 |
-| 6 | Фаза 3: `IRpcCompensationHandler`, cleanup jobs | P3 |
+| # | Задача | Приоритет | Статус |
+|---|--------|-----------|--------|
+| 1 | E2E integration test AsyncOutbox (Docker) | P1 | ✅ |
+| 2 | Runbook abandoned pending replay | P1 | ✅ |
+| 3 | PostgreSQL SKIP LOCKED claim для RpcPending | P2 | ⏳ |
+| 4 | `CreateSentAndWaitAsyncOutboxIntegration` — high-level API | P2 | ⏳ |
+| 5 | Metrics: `rpc.pending.*` | P2 | ✅ |
+| 6 | Фаза 3: `IRpcCompensationHandler`, cleanup jobs | P3 | ⏳ |
 
 ---
 
@@ -181,4 +197,4 @@ dotnet test IntegrationFlow.sln -c Release --filter "Category!=Integration"
 dotnet test IntegrationFlow.sln -c Release --filter "Category=Integration"  # Docker
 ```
 
-Ожидаемо unit: **117** тестов (90 Core + 11 Metrics + 16 EF).
+Ожидаемо unit: **121+** тестов (Core + Metrics + EF).

@@ -9,6 +9,8 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndPro
 using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.Outbox;
+using IntegrationFlow.Contexts.Integrations._00Samples.RpcPending;
+using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using Xunit;
@@ -59,6 +61,26 @@ public sealed class IntegrationFlowMetricsTests
         Assert.Equal(0, metrics.FailedCount);
         Assert.Equal(0, metrics.AbandonedCount);
         Assert.Equal(0, metrics.LastPendingCount);
+    }
+
+    [Fact]
+    public async Task RpcPendingRelayService_RecordsAwaitingCountOnEmptyBatch()
+    {
+        var store = new InMemoryRpcPendingStore();
+        var metrics = new TestMetrics();
+        var service = new RpcPendingRelayService(
+            store,
+            NullIntegrationLogger.Instance,
+            new RpcPendingRelayOptions(),
+            configurationLoader: null,
+            metrics);
+
+        await service.RelayBatchAsync();
+
+        Assert.Equal(0, metrics.RpcPendingPublishedCount);
+        Assert.Equal(0, metrics.RpcPendingFailedCount);
+        Assert.Equal(0, metrics.RpcPendingAbandonedCount);
+        Assert.Equal(0, metrics.LastRpcPendingAwaitingCount);
     }
 
     /// <summary>
@@ -169,6 +191,26 @@ public sealed class IntegrationFlowMetricsTests
         {
             RequestReplyRetryCount++;
             LastProfileName = profileName;
+        }
+
+        public int RpcPendingPublishedCount { get; private set; }
+
+        public int RpcPendingFailedCount { get; private set; }
+
+        public int RpcPendingAbandonedCount { get; private set; }
+
+        public int LastRpcPendingAwaitingCount { get; private set; }
+
+        public void RecordRpcPendingRelayPublished(int count) => RpcPendingPublishedCount += count;
+
+        public void RecordRpcPendingRelayFailed(int count) => RpcPendingFailedCount += count;
+
+        public void RecordRpcPendingRelayAbandoned(int count) => RpcPendingAbandonedCount += count;
+
+        public void RecordRpcPendingAwaiting(int count) => LastRpcPendingAwaitingCount = count;
+
+        public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        {
         }
     }
 

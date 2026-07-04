@@ -306,6 +306,12 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.requestreply.completed` | Counter | Завершённые RPC-запросы (`profile`, `success`, `timeout`) |
 | `integrationflow.requestreply.retry_after_timeout` | Counter | Retry RPC после timeout (`profile`) |
 | `integrationflow.requestreply.duration` | Histogram | Длительность RPC round-trip (секунды) |
+| `integrationflow.rpc.pending.relay.published` | Counter | AsyncOutbox: успешно relayed pending requests |
+| `integrationflow.rpc.pending.relay.failed` | Counter | AsyncOutbox: ошибки relay |
+| `integrationflow.rpc.pending.relay.abandoned` | Counter | AsyncOutbox: abandoned после max attempts |
+| `integrationflow.rpc.pending.awaiting` | Gauge | AsyncOutbox: awaiting response |
+| `integrationflow.rpc.pending.completed` | Counter | AsyncOutbox: завершённые pending (`profile`, `success`, `timeout`) |
+| `integrationflow.rpc.pending.duration` | Histogram | AsyncOutbox: round-trip от staging (секунды) |
 
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
 

@@ -46,4 +46,29 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     public void RecordRequestReplyRetryAfterTimeout(string profileName)
     {
     }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingRelayPublished(int count)
+    {
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingRelayFailed(int count)
+    {
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingRelayAbandoned(int count)
+    {
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingAwaiting(int count)
+    {
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+    {
+    }
 }

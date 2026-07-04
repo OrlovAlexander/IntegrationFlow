@@ -192,6 +192,14 @@ public sealed class EfRpcPendingStore<TContext> : IRpcPendingStore
         return true;
     }
 
+    public async Task<int> GetAwaitingResponseCountAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await context.Set<RpcPendingRequestEntity>()
+            .CountAsync(request => request.Status == RpcPendingStatus.AwaitingResponse, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private static async Task ReleaseExpiredClaimsInternalAsync(
         DbSet<RpcPendingRequestEntity> set,
         DateTimeOffset now,

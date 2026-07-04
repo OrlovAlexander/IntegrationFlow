@@ -108,6 +108,47 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         Assert.Equal(1, collector.GetCounterSum("integrationflow.requestreply.retry_after_timeout"));
     }
 
+    [Fact]
+    public void RecordRpcPendingRelay_IncrementsBatchCounters()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRpcPendingRelayPublished(2);
+        metrics.RecordRpcPendingRelayFailed(1);
+        metrics.RecordRpcPendingRelayAbandoned(1);
+        collector.Collect();
+
+        Assert.Equal(2, collector.GetCounterSum("integrationflow.rpc.pending.relay.published"));
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.rpc.pending.relay.failed"));
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.rpc.pending.relay.abandoned"));
+    }
+
+    [Fact]
+    public void RecordRpcPendingAwaiting_UpdatesGauge()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRpcPendingAwaiting(7);
+        collector.Collect();
+
+        Assert.Equal(7, collector.GetGaugeValue("integrationflow.rpc.pending.awaiting"));
+    }
+
+    [Fact]
+    public void RecordRpcPendingCompleted_IncrementsCounterAndHistogram()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRpcPendingCompleted("OrdersRpcAsync", TimeSpan.FromMilliseconds(350), success: true);
+        collector.Collect();
+
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.rpc.pending.completed"));
+        Assert.True(collector.GetHistogramCount("integrationflow.rpc.pending.duration") >= 1);
+    }
+
     [Theory]
     [InlineData("Orders.Inbox", "orders_inbox")]
     [InlineData("", "unknown")]

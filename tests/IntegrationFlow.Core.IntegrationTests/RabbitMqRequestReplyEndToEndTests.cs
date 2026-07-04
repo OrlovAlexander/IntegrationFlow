@@ -299,6 +299,26 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
         }
 
         public void RecordRequestReplyRetryAfterTimeout(string profileName) => RetryCount++;
+
+        public void RecordRpcPendingRelayPublished(int count)
+        {
+        }
+
+        public void RecordRpcPendingRelayFailed(int count)
+        {
+        }
+
+        public void RecordRpcPendingRelayAbandoned(int count)
+        {
+        }
+
+        public void RecordRpcPendingAwaiting(int count)
+        {
+        }
+
+        public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        {
+        }
     }
 
     private void ServeOneRequestAndReply()

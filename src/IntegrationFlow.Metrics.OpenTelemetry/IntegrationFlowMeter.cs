@@ -6,6 +6,7 @@ internal sealed class IntegrationFlowMeter : IDisposable
 {
     private readonly Meter meter;
     private long pendingCount;
+    private long rpcPendingAwaitingCount;
 
     public IntegrationFlowMeter(string meterName)
     {
@@ -40,6 +41,26 @@ internal sealed class IntegrationFlowMeter : IDisposable
         RequestReplyRetryAfterTimeout = meter.CreateCounter<long>(
             "integrationflow.requestreply.retry_after_timeout",
             description: "SentAndWait request-reply retries after timeout.");
+        RpcPendingRelayPublished = meter.CreateCounter<long>(
+            "integrationflow.rpc.pending.relay.published",
+            description: "Async RPC pending requests successfully relayed to the broker.");
+        RpcPendingRelayFailed = meter.CreateCounter<long>(
+            "integrationflow.rpc.pending.relay.failed",
+            description: "Async RPC pending relay publish failures.");
+        RpcPendingRelayAbandoned = meter.CreateCounter<long>(
+            "integrationflow.rpc.pending.relay.abandoned",
+            description: "Async RPC pending requests abandoned after max relay attempts.");
+        meter.CreateObservableGauge(
+            "integrationflow.rpc.pending.awaiting",
+            ObserveRpcPendingAwaitingCount,
+            description: "Current async RPC pending requests awaiting response.");
+        RpcPendingCompleted = meter.CreateCounter<long>(
+            "integrationflow.rpc.pending.completed",
+            description: "Async RPC pending requests reaching terminal state.");
+        RpcPendingDuration = meter.CreateHistogram<double>(
+            "integrationflow.rpc.pending.duration",
+            unit: "s",
+            description: "Async RPC pending round-trip duration in seconds.");
     }
 
     public Counter<long> MessagesProcessed { get; }
@@ -58,9 +79,24 @@ internal sealed class IntegrationFlowMeter : IDisposable
 
     public Counter<long> RequestReplyRetryAfterTimeout { get; }
 
+    public Counter<long> RpcPendingRelayPublished { get; }
+
+    public Counter<long> RpcPendingRelayFailed { get; }
+
+    public Counter<long> RpcPendingRelayAbandoned { get; }
+
+    public Counter<long> RpcPendingCompleted { get; }
+
+    public Histogram<double> RpcPendingDuration { get; }
+
     public void SetPendingCount(int count)
     {
         Interlocked.Exchange(ref pendingCount, count);
+    }
+
+    public void SetRpcPendingAwaitingCount(int count)
+    {
+        Interlocked.Exchange(ref rpcPendingAwaitingCount, count);
     }
 
     public void Dispose()
@@ -70,4 +106,7 @@ internal sealed class IntegrationFlowMeter : IDisposable
 
     private Measurement<long> ObservePendingCount()
         => new(Interlocked.Read(ref pendingCount));
+
+    private Measurement<long> ObserveRpcPendingAwaitingCount()
+        => new(Interlocked.Read(ref rpcPendingAwaitingCount));
 }

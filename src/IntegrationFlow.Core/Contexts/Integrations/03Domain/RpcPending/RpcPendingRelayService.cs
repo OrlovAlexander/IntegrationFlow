@@ -6,6 +6,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using RabbitMQ.Client;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
@@ -18,16 +19,22 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
         private readonly IRpcPendingStore pendingStore;
         private readonly IIntegrationLogger logger;
         private readonly RpcPendingRelayOptions options;
+        private readonly IIntegrationFlowMetrics? metrics;
+        private readonly Func<string, RabbitMqRequestReplyConfiguration> configurationLoader;
         private readonly string workerId = Guid.NewGuid().ToString("N");
 
         public RpcPendingRelayService(
             IRpcPendingStore pendingStore,
             IIntegrationLogger logger,
-            RpcPendingRelayOptions options)
+            RpcPendingRelayOptions options,
+            Func<string, RabbitMqRequestReplyConfiguration>? configurationLoader = null,
+            IIntegrationFlowMetrics? metrics = null)
         {
             this.pendingStore = pendingStore ?? throw new ArgumentNullException(nameof(pendingStore));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.configurationLoader = configurationLoader ?? RabbitMqRequestReplyConfigurationLoader.LoadProfile;
+            this.metrics = metrics;
         }
 
         public async Task RelayBatchAsync(int batchSize = 20, CancellationToken cancellationToken = default)
@@ -38,11 +45,25 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                 .ClaimPendingAsync(batchSize, workerId, options.LockDuration, cancellationToken)
                 .ConfigureAwait(false);
 
+            var publishedCount = 0;
+            var failedCount = 0;
+            var abandonedCount = 0;
+
             foreach (var profileGroup in claimed.GroupBy(request => request.ProfileName))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await RelayProfileGroupAsync(profileGroup.Key, profileGroup, cancellationToken).ConfigureAwait(false);
+                var result = await RelayProfileGroupAsync(profileGroup.Key, profileGroup, cancellationToken)
+                    .ConfigureAwait(false);
+                publishedCount += result.Published;
+                failedCount += result.Failed;
+                abandonedCount += result.Abandoned;
             }
+
+            metrics?.RecordRpcPendingRelayPublished(publishedCount);
+            metrics?.RecordRpcPendingRelayFailed(failedCount);
+            metrics?.RecordRpcPendingRelayAbandoned(abandonedCount);
+            var awaiting = await pendingStore.GetAwaitingResponseCountAsync(cancellationToken).ConfigureAwait(false);
+            metrics?.RecordRpcPendingAwaiting(awaiting);
         }
 
         internal TimeSpan CalculateRetryDelay(int attemptCount)
@@ -57,13 +78,16 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             return delay > options.MaxRetryDelay ? options.MaxRetryDelay : delay;
         }
 
-        private async Task RelayProfileGroupAsync(
+        private async Task<RelayProfileGroupResult> RelayProfileGroupAsync(
             string profileName,
             System.Collections.Generic.IEnumerable<RpcPendingRequest> requests,
             CancellationToken cancellationToken)
         {
             RabbitMqRequestReplyConfiguration? configuration = null;
             RabbitMqRequestReplyConnection? connection = null;
+            var published = 0;
+            var failed = 0;
+            var abandoned = 0;
 
             try
             {
@@ -78,6 +102,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                             .ConfigureAwait(false);
                         logger.LogWarn(
                             $"Rpc pending relay. Request '{request.Id}' exceeded max attempts ({options.MaxAttempts}). Abandoned.");
+                        abandoned++;
                         continue;
                     }
 
@@ -86,7 +111,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                         if (connection == null || connection.NeedReconnect())
                         {
                             connection?.Dispose();
-                            configuration = RabbitMqRequestReplyConfigurationLoader.LoadProfile(profileName);
+                            configuration = configurationLoader(profileName);
                             EnsureAsyncOutboxConfiguration(configuration);
                             connection = new RabbitMqRequestReplyConnection(configuration);
                         }
@@ -96,6 +121,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                             .MarkAwaitingResponseAsync(request.Id, workerId, cancellationToken)
                             .ConfigureAwait(false);
                         logger.LogInfo($"Rpc pending relay. Request '{request.Id}' published via profile '{profileName}'.");
+                        published++;
                     }
                     catch (Exception ex)
                     {
@@ -104,6 +130,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                             .MarkFailedAsync(request.Id, workerId, ex.Message, retryAfter, cancellationToken)
                             .ConfigureAwait(false);
                         logger.LogException($"Rpc pending relay. Failed to publish request '{request.Id}'.", ex);
+                        failed++;
                     }
                 }
             }
@@ -111,6 +138,24 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             {
                 connection?.Dispose();
             }
+
+            return new RelayProfileGroupResult(published, failed, abandoned);
+        }
+
+        private readonly struct RelayProfileGroupResult
+        {
+            public RelayProfileGroupResult(int published, int failed, int abandoned)
+            {
+                Published = published;
+                Failed = failed;
+                Abandoned = abandoned;
+            }
+
+            public int Published { get; }
+
+            public int Failed { get; }
+
+            public int Abandoned { get; }
         }
 
         private static void EnsureAsyncOutboxConfiguration(RabbitMqRequestReplyConfiguration configuration)

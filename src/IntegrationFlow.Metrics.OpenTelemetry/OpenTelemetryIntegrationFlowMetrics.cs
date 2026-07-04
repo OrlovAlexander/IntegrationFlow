@@ -106,6 +106,54 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
     }
 
     /// <inheritdoc />
+    public void RecordRpcPendingRelayPublished(int count)
+    {
+        if (count > 0)
+        {
+            meter.RpcPendingRelayPublished.Add(count);
+        }
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingRelayFailed(int count)
+    {
+        if (count > 0)
+        {
+            meter.RpcPendingRelayFailed.Add(count);
+        }
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingRelayAbandoned(int count)
+    {
+        if (count > 0)
+        {
+            meter.RpcPendingRelayAbandoned.Add(count);
+        }
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingAwaiting(int count)
+    {
+        meter.SetRpcPendingAwaitingCount(count);
+    }
+
+    /// <inheritdoc />
+    public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+    {
+        var profile = SanitizeProfile(profileName);
+        var tags = new[]
+        {
+            new KeyValuePair<string, object?>("profile", profile),
+            new KeyValuePair<string, object?>("success", success ? "true" : "false"),
+            new KeyValuePair<string, object?>("timeout", timedOut ? "true" : "false"),
+        };
+
+        meter.RpcPendingCompleted.Add(1, tags);
+        meter.RpcPendingDuration.Record(duration.TotalSeconds, tags);
+    }
+
+    /// <inheritdoc />
     public void Dispose()
     {
         meter.Dispose();

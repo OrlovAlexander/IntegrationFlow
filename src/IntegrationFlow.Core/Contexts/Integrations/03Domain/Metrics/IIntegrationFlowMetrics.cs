@@ -48,4 +48,29 @@ public interface IIntegrationFlowMetrics
     /// Records a request-reply retry after timeout (same MessageId, new CorrelationId).
     /// </summary>
     void RecordRequestReplyRetryAfterTimeout(string profileName);
+
+    /// <summary>
+    /// Records successfully relayed async RPC pending requests in a batch.
+    /// </summary>
+    void RecordRpcPendingRelayPublished(int count);
+
+    /// <summary>
+    /// Records async RPC pending relay publish failures in a batch.
+    /// </summary>
+    void RecordRpcPendingRelayFailed(int count);
+
+    /// <summary>
+    /// Records async RPC pending requests abandoned after max attempts.
+    /// </summary>
+    void RecordRpcPendingRelayAbandoned(int count);
+
+    /// <summary>
+    /// Records current awaiting-response async RPC pending count.
+    /// </summary>
+    void RecordRpcPendingAwaiting(int count);
+
+    /// <summary>
+    /// Records async RPC pending round-trip duration and outcome.
+    /// </summary>
+    void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false);
 }

@@ -41,5 +41,10 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             Guid id,
             bool resetAttemptCount = false,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Returns count of requests waiting for RPC response.
+        /// </summary>
+        Task<int> GetAwaitingResponseCountAsync(CancellationToken cancellationToken = default);
     }
 }
