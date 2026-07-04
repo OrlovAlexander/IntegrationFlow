@@ -1,8 +1,8 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** актуально  
+**Статус:** superseded → см. [`2026-07-04_0901-integrationflow-full-analysis.md`](2026-07-04_0901-integrationflow-full-analysis.md)  
 **Создан:** 2026-07-03 22:01 (UTC+3)  
-**Обновлён:** 2026-07-03 22:16 (UTC+3)  
+**Обновлён:** 2026-07-04 09:01 (UTC+3)  
 **Связанные документы:** [`2026-07-03_2119-integrationflow-full-analysis.md`](2026-07-03_2119-integrationflow-full-analysis.md) (superseded)
 
 Актуальное состояние после коммита `88766ec` (закрытие P0–P2: public API, metrics, NuGet и legacy E2E) и доработок P1/P2 (NoOp legacy processor, abandoned outbox replay). **103 теста зелёные**, CI на GitHub Actions, `dotnet pack` собирает пакеты `IntegrationFlow.Core` и `IntegrationFlow.EntityFrameworkCore` версии `1.0.0`.

@@ -22,8 +22,10 @@
 | 2026-07-03 20:46 | 2026-07-03 21:00 | [План: listener → IHostedService (выполнено)](plans/2026-07-03_2046-listener-hosted-service.md) |
 | 2026-07-03 21:00 | 2026-07-03 21:19 | [Полный анализ IntegrationFlow и рисков (v4, superseded)](2026-07-03_2100-integrationflow-full-analysis.md) |
 | 2026-07-03 21:19 | 2026-07-03 22:01 | [Полный анализ IntegrationFlow и рисков (v5, superseded)](2026-07-03_2119-integrationflow-full-analysis.md) |
-| 2026-07-03 22:01 | 2026-07-03 22:16 | [Полный анализ IntegrationFlow и рисков (v6, актуально)](2026-07-03_2201-integrationflow-full-analysis.md) |
+| 2026-07-03 22:01 | 2026-07-04 09:01 | [Полный анализ IntegrationFlow и рисков (v6, superseded)](2026-07-03_2201-integrationflow-full-analysis.md) |
+| 2026-07-04 09:01 | 2026-07-04 09:01 | [Полный анализ IntegrationFlow и рисков (v7, актуально)](2026-07-04_0901-integrationflow-full-analysis.md) |
 | 2026-07-03 22:16 | 2026-07-03 22:16 | [Runbook: replay abandoned outbox](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | 2026-07-04 08:36 | 2026-07-04 08:36 | [План: P1 metrics + P2 NuGet publish (выполнено)](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md) |
 | 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: metrics and alerting](runbooks/2026-07-04_0845-metrics-and-alerting.md) |
 | 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: NuGet release](runbooks/2026-07-04_0845-nuget-release.md) |
+| 2026-07-04 09:04 | 2026-07-04 09:04 | [План: RabbitMQ SentAndWait (request-reply)](plans/2026-07-04_0904-rabbitmq-sentandwait.md) |

@@ -85,7 +85,8 @@ internal sealed class RabbitMqListenerWorker
                         eventArgs.DeliveryTag,
                         eventArgs.RoutingKey,
                         eventArgs.BasicProperties?.MessageId,
-                        eventArgs.BasicProperties?.CorrelationId);
+                        eventArgs.BasicProperties?.CorrelationId,
+                        eventArgs.BasicProperties?.ReplyTo);
 
                     await messageHandler.HandleAsync(
                             receivedMessage,

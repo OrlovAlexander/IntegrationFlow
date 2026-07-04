@@ -119,7 +119,8 @@ public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
             delivery.DeliveryTag,
             delivery.RoutingKey,
             delivery.BasicProperties?.MessageId,
-            delivery.BasicProperties?.CorrelationId);
+            delivery.BasicProperties?.CorrelationId,
+            delivery.BasicProperties?.ReplyTo);
 
         await handler.HandleAsync(receivedMessage, configuration, delivery.BasicProperties?.Headers, CancellationToken.None);
     }

@@ -268,7 +268,8 @@ dotnet test --filter "Category=Integration"
 ```
 
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-03_2201-integrationflow-full-analysis.md`](docs/2026-07-03_2201-integrationflow-full-analysis.md).  
+Полный анализ решения и рисков: [`docs/2026-07-04_0901-integrationflow-full-analysis.md`](docs/2026-07-04_0901-integrationflow-full-analysis.md).  
+План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Observability
@@ -308,6 +309,27 @@ dotnet pack IntegrationFlow.sln -c Release
 
 Пакеты: `IntegrationFlow.Core`, `IntegrationFlow.EntityFrameworkCore`, `IntegrationFlow.Metrics.OpenTelemetry`.  
 Release process: [`docs/runbooks/2026-07-04_0845-nuget-release.md`](docs/runbooks/2026-07-04_0845-nuget-release.md).
+
+## RabbitMQ (SentAndWait)
+
+Синхронный request-reply через RabbitMQ (`ReplyTo` + `CorrelationId`, по умолчанию `DirectReplyTo`):
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+
+services.AddIntegrationFlow();
+
+var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRabbitMqSentAndWaitProvider>(
+    oppositeSideCode: "OrdersRpc",
+    srcData: new { OrderId = 42 });
+
+var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWaitProvider>("OrdersRpc");
+integration.Integrate(handler);
+```
+
+Секция конфигурации в `rabbitmq.json` — `RabbitMqRequestReply`. На стороне сервера используйте `RabbitMqReplyPublisher` для ответа на `RabbitMqReceivedMessage.ReplyTo`.
+
+План реализации: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).
 
 ## Локализация
 

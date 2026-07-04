@@ -51,5 +51,22 @@
       "Persistent": true,
       "ClientProvidedName": "IntegrationFlow.EventsPublisher"
     }
+  },
+  "RabbitMqRequestReply": {
+    "OrdersRpc": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "RequestTarget": "Queue",
+      "QueueName": "orders.rpc.requests",
+      "ContentType": "application/json",
+      "Persistent": true,
+      "ReplyMode": "DirectReplyTo",
+      "ResponseTimeoutSeconds": 30,
+      "ValidateTopology": true,
+      "ClientProvidedName": "IntegrationFlow.OrdersRpcClient"
+    }
   }
 }

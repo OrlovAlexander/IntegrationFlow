@@ -33,10 +33,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D0C5F001-8
 		docs\2026-07-03_2100-integrationflow-full-analysis.md = docs\2026-07-03_2100-integrationflow-full-analysis.md
 		docs\2026-07-03_2119-integrationflow-full-analysis.md = docs\2026-07-03_2119-integrationflow-full-analysis.md
 		docs\2026-07-03_2201-integrationflow-full-analysis.md = docs\2026-07-03_2201-integrationflow-full-analysis.md
+		docs\2026-07-04_0901-integrationflow-full-analysis.md = docs\2026-07-04_0901-integrationflow-full-analysis.md
 		docs\runbooks\2026-07-03_2216-abandoned-outbox-replay.md = docs\runbooks\2026-07-03_2216-abandoned-outbox-replay.md
 		docs\plans\2026-07-03_1707-e2e-tests-and-remaining-gaps.md = docs\plans\2026-07-03_1707-e2e-tests-and-remaining-gaps.md
 		docs\plans\2026-07-03_2046-listener-hosted-service.md = docs\plans\2026-07-03_2046-listener-hosted-service.md
 		docs\plans\2026-07-04_0836-p1-p2-metrics-and-nuget.md = docs\plans\2026-07-04_0836-p1-p2-metrics-and-nuget.md
+		docs\plans\2026-07-04_0904-rabbitmq-sentandwait.md = docs\plans\2026-07-04_0904-rabbitmq-sentandwait.md
 		docs\runbooks\2026-07-04_0845-metrics-and-alerting.md = docs\runbooks\2026-07-04_0845-metrics-and-alerting.md
 		docs\runbooks\2026-07-04_0845-nuget-release.md = docs\runbooks\2026-07-04_0845-nuget-release.md
 	EndProjectSection

@@ -1,0 +1,169 @@
+using System;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
+
+namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations
+{
+    /// <summary>
+    /// Конфигурация request-reply через RabbitMQ для SentAndWait.
+    /// </summary>
+    public sealed class RabbitMqRequestReplyConfiguration : IConfiguration
+    {
+        /// <summary>
+        /// Имя профиля подключения в rabbitmq.json.
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Хост брокера RabbitMQ.
+        /// </summary>
+        public string HostName { get; set; } = "localhost";
+
+        /// <summary>
+        /// Порт брокера RabbitMQ.
+        /// </summary>
+        public int Port { get; set; } = 5672;
+
+        /// <summary>
+        /// Имя пользователя.
+        /// </summary>
+        public string UserName { get; set; } = "guest";
+
+        /// <summary>
+        /// Пароль.
+        /// </summary>
+        public string Password { get; set; } = "guest";
+
+        /// <summary>
+        /// Виртуальный хост.
+        /// </summary>
+        public string VirtualHost { get; set; } = "/";
+
+        /// <summary>
+        /// Автоматическое восстановление соединения при разрыве.
+        /// </summary>
+        public bool AutomaticRecoveryEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Имя клиента для идентификации подключения на стороне брокера.
+        /// </summary>
+        public string ClientProvidedName { get; set; } = "IntegrationFlow.RabbitMqRpcClient";
+
+        /// <summary>
+        /// Цель RPC-запроса: очередь или exchange.
+        /// </summary>
+        public RabbitMqRequestReplyTarget RequestTarget { get; set; } = RabbitMqRequestReplyTarget.Queue;
+
+        /// <summary>
+        /// Имя очереди запросов (обязательно при <see cref="RequestTarget"/> = Queue).
+        /// </summary>
+        public string QueueName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Имя exchange (обязательно при <see cref="RequestTarget"/> = Exchange).
+        /// </summary>
+        public string Exchange { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Ключ маршрутизации для direct/topic exchange.
+        /// </summary>
+        public string RoutingKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Режим ожидания ответа.
+        /// </summary>
+        public RabbitMqReplyMode ReplyMode { get; set; } = RabbitMqReplyMode.DirectReplyTo;
+
+        /// <summary>
+        /// Таймаут ожидания ответа (секунды).
+        /// </summary>
+        public int ResponseTimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// MIME-тип тела сообщения.
+        /// </summary>
+        public string ContentType { get; set; } = "application/json";
+
+        /// <summary>
+        /// Сохранять request на диск (DeliveryMode = 2).
+        /// </summary>
+        public bool Persistent { get; set; } = true;
+
+        /// <summary>
+        /// Флаг mandatory для BasicPublish request.
+        /// </summary>
+        public bool Mandatory { get; set; }
+
+        /// <summary>
+        /// Проверять существование очереди/exchange перед publish (passive declare).
+        /// </summary>
+        public bool ValidateTopology { get; set; } = true;
+
+        /// <summary>
+        /// Проверяет корректность конфигурации.
+        /// </summary>
+        public void Validate()
+        {
+            if (string.IsNullOrWhiteSpace(HostName))
+            {
+                throw new InvalidOperationException("Не задан HostName для RabbitMQ request-reply.");
+            }
+
+            if (ResponseTimeoutSeconds <= 0)
+            {
+                throw new InvalidOperationException("ResponseTimeoutSeconds должен быть больше 0.");
+            }
+
+            if (RequestTarget == RabbitMqRequestReplyTarget.Queue)
+            {
+                if (string.IsNullOrWhiteSpace(QueueName))
+                {
+                    throw new InvalidOperationException("Не задано имя очереди RabbitMQ для RequestTarget=Queue.");
+                }
+            }
+            else if (RequestTarget == RabbitMqRequestReplyTarget.Exchange)
+            {
+                if (string.IsNullOrWhiteSpace(Exchange))
+                {
+                    throw new InvalidOperationException("Не задан exchange RabbitMQ для RequestTarget=Exchange.");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Неизвестный RequestTarget: {RequestTarget}.");
+            }
+        }
+
+        internal string GetRequestExchange()
+        {
+            return RequestTarget == RabbitMqRequestReplyTarget.Queue
+                ? string.Empty
+                : Exchange;
+        }
+
+        internal string GetRequestRoutingKey()
+        {
+            return RequestTarget == RabbitMqRequestReplyTarget.Queue
+                ? QueueName
+                : RoutingKey ?? string.Empty;
+        }
+
+        internal RabbitMqConnectionSettings ToConnectionSettings()
+        {
+            return new RabbitMqConnectionSettings
+            {
+                HostName = HostName,
+                Port = Port,
+                UserName = UserName,
+                Password = Password,
+                VirtualHost = VirtualHost,
+                AutomaticRecoveryEnabled = AutomaticRecoveryEnabled,
+                ClientProvidedName = ClientProvidedName,
+                DispatchConsumersAsync = false
+            };
+        }
+
+        internal TimeSpan GetResponseTimeout()
+            => TimeSpan.FromSeconds(Math.Max(1, ResponseTimeoutSeconds));
+    }
+}

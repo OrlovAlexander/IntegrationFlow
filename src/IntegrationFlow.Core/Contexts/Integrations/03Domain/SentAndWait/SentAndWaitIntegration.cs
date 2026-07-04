@@ -221,6 +221,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
             catch (Exception ex)
             {
                 logger.LogException(SR.T("SendAndWait - '{0}'", sideCode), ex);
+
+                if (SentAndWaitIntegrationOptions.ThrowOnFailure)
+                {
+                    throw;
+                }
             }
             finally
             {

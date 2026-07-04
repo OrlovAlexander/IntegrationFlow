@@ -34,6 +34,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         public string CorrelationId { get; }
 
         /// <summary>
+        /// Адрес очереди для ответа из AMQP properties (request-reply).
+        /// </summary>
+        public string ReplyTo { get; }
+
+        /// <summary>
+        /// Сообщение является RPC-запросом с ожиданием ответа.
+        /// </summary>
+        public bool IsRequestReply => !string.IsNullOrWhiteSpace(ReplyTo);
+
+        /// <summary>
         /// Тег доставки для подтверждения на стороне брокера.
         /// </summary>
         internal ulong DeliveryTag { get; }
@@ -43,13 +53,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             ulong deliveryTag,
             string routingKey,
             string messageId,
-            string correlationId)
+            string correlationId,
+            string replyTo = "")
         {
             Body = body;
             DeliveryTag = deliveryTag;
             RoutingKey = routingKey ?? string.Empty;
             MessageId = messageId ?? string.Empty;
             CorrelationId = correlationId ?? string.Empty;
+            ReplyTo = replyTo ?? string.Empty;
         }
     }
 }
