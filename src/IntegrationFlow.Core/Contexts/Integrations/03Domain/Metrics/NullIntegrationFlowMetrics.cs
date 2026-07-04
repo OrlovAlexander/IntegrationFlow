@@ -36,4 +36,9 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     public void RecordOutboxPending(int count)
     {
     }
+
+    /// <inheritdoc />
+    public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+    {
+    }
 }

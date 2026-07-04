@@ -1,11 +1,11 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** superseded → см. [`2026-07-04_2128-integrationflow-full-analysis.md`](2026-07-04_2128-integrationflow-full-analysis.md)  
-**Создан:** 2026-07-04 21:02 (UTC+3)  
+**Статус:** актуально  
+**Создан:** 2026-07-04 21:28 (UTC+3)  
 **Обновлён:** 2026-07-04 21:28 (UTC+3)  
-**Связанные документы:** [`2026-07-04_0929-integrationflow-full-analysis.md`](2026-07-04_0929-integrationflow-full-analysis.md) (superseded), [`2026-07-04_2128-integrationflow-full-analysis.md`](2026-07-04_2128-integrationflow-full-analysis.md) (актуально, v10), [`plans/2026-07-04_0904-rabbitmq-sentandwait.md`](plans/2026-07-04_0904-rabbitmq-sentandwait.md) (MVP выполнен), [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) (следующие шаги)
+**Связанные документы:** [`2026-07-04_2102-integrationflow-full-analysis.md`](2026-07-04_2102-integrationflow-full-analysis.md) (superseded, v9), [`plans/2026-07-04_2104-sentandwait-async-execution.md`](plans/2026-07-04_2104-sentandwait-async-execution.md) (выполнено), [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) (следующие шаги)
 
-Актуальное состояние после коммита `85b0a45` (fix flaky metrics test + SentAndWait MVP). Локально **121 тест** (82 + 8 + 13 + 16 + 2) — все зелёные в Release, CI на GitHub Actions (unit → integration → pack).
+Актуальное состояние после коммита `eee98f8` (async SentAndWait + `IntegrateWithResult`). Локально **128 тестов** (86 + 8 + 13 + 2 + 19) — все зелёные в Release, CI на GitHub Actions (unit → integration → pack).
 
 ---
 
@@ -25,7 +25,7 @@
 |---------|--------|------------------|
 | **ReceiveAndProcess** (consumer) | Высокая | Да, при правильном adoption |
 | **SentAndForgot** (producer + outbox) | Высокая | Да, с outbox + EF |
-| **SentAndWait** (RabbitMQ RPC) | Средняя (MVP) | Условно — sync RPC, без outbox |
+| **SentAndWait** (RabbitMQ RPC) | Средняя–высокая (MVP + async) | Условно — не для critical TX |
 | **SentAndWait** (REST sample) | Низкая | Нет — без гарантий |
 
 ### Структура
@@ -36,14 +36,14 @@ IntegrationFlow/
 │   └── 00InnerUsage/RabbitMq/
 │       ├── ReceiveAndProcess/     # consumer
 │       ├── SentAndForgot/         # publisher + outbox relay
-│       └── SentAndWait/           # request-reply RPC
+│       └── SentAndWait/           # request-reply RPC (sync + async)
 ├── src/IntegrationFlow.EntityFrameworkCore/
 ├── src/IntegrationFlow.Metrics.OpenTelemetry/
-└── tests/                         # 121 тест (unit + integration)
-    ├── IntegrationFlow.Core.Tests                 (82)
+└── tests/                         # 128 тестов (unit + integration)
+    ├── IntegrationFlow.Core.Tests                 (86)
     ├── IntegrationFlow.Metrics.OpenTelemetry.Tests (8)
     ├── IntegrationFlow.EntityFrameworkCore.Tests  (13)
-    ├── IntegrationFlow.Core.IntegrationTests        (16)
+    ├── IntegrationFlow.Core.IntegrationTests        (19)
     └── IntegrationFlow.EntityFrameworkCore.IntegrationTests (2)
 ```
 
@@ -84,15 +84,17 @@ flowchart TB
 |----------|----------|-------------|
 | ReceiveAndProcess | **At-least-once** | Ack после обработки, dedup |
 | SentAndForgot + outbox | **At-least-once** | Outbox TX + relay + confirms |
-| SentAndWait RPC | **At-most-once** | Sync wait; timeout = unknown state |
+| SentAndWait RPC | **At-most-once** | Timeout = unknown state; outbox не поддерживается |
 
 Ключевые компоненты:
 
 - [`OutboxRelayService`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/Outbox/OutboxRelayService.cs)
 - [`RabbitMqListenerWorker`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Workers/RabbitMqListenerWorker.cs)
 - [`RabbitMqRequestReplyTransmitter`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/SentAndWait/Transmitters/RabbitMqRequestReplyTransmitter.cs)
+- [`RabbitMqRequestReplyConnection`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/SentAndWait/Connections/RabbitMqRequestReplyConnection.cs)
+- [`RabbitMqRequestReplyConnectionPool`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/SentAndWait/Connections/RabbitMqRequestReplyConnectionPool.cs)
+- [`SentAndWaitIntegration`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/SentAndWait/SentAndWaitIntegration.cs)
 - [`RabbitMqReplyPublisher`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/SentAndWait/Reply/RabbitMqReplyPublisher.cs)
-- [`RabbitMqReceivedMessage`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Messages/RabbitMqReceivedMessage.cs) — `ReplyTo`, `IsRequestReply`
 - [`EfOutboxStore`](../src/IntegrationFlow.EntityFrameworkCore/Outbox/EfOutboxStore.cs)
 - [`OpenTelemetryIntegrationFlowMetrics`](../src/IntegrationFlow.Metrics.OpenTelemetry/OpenTelemetryIntegrationFlowMetrics.cs)
 
@@ -102,7 +104,7 @@ flowchart TB
 
 ### Consumer (ReceiveAndProcess)
 
-- Ack **после** завершения обработки
+- Ack **после** завершения обработки (включая async path)
 - Dedup с `ReleaseProcessingAsync`, lock expiry, `InProgress` → nack requeue
 - `ReceiveAndProcessHostedService` + graceful shutdown
 - Overload без handler удалён; legacy NoOp → nack
@@ -113,14 +115,15 @@ flowchart TB
 - Transactional outbox + EF SKIP LOCKED claim
 - `ReplayAbandonedAsync` + runbook
 
-### SentAndWait RabbitMQ
+### SentAndWait RabbitMQ (после async)
 
-- `RabbitMqRequestReplyTransmitter` — publish + wait с timeout
+- `IntegrateAsync()` / `IntegrateWithResultAsync()` с `CancellationToken`
+- `IntegrateWithResult()` — typed result вместо только callback
+- Concurrent RPC: `MaxConcurrentRequests` (default `1`, `0` = без лимита)
+- Connection reuse: `ReuseConnection` + internal pool per profile
 - `DirectReplyTo` (default) + `ExclusiveQueue` fallback
 - `RabbitMqReplyPublisher` — server-side reply на `ReplyTo`
-- `RabbitMqRequestReplyConfigurationLoader` — секция `RabbitMqRequestReply`
-- `SentAndWaitIntegrationOptions.ThrowOnFailure`
-- Unit + E2E тесты (roundtrip + timeout)
+- Unit + E2E тесты (roundtrip, timeout, parallel requests)
 
 ### Observability и distribution
 
@@ -129,7 +132,7 @@ flowchart TB
 
 ### Тесты и CI
 
-- **121 тест**, E2E critical path + legacy + RPC roundtrip
+- **128 тестов**, E2E critical path + legacy + RPC roundtrip + parallel async
 
 ---
 
@@ -155,7 +158,7 @@ flowchart TB
 | **A** | NoOp handler — ack без обработки | **Закрыт (hosted)** | Overload без handler удалён |
 | **A′** | Legacy default NoOp processor | **Закрыт** | `GetInboxMessageProcessing` → null → nack |
 | **B** | Ограниченный public API | **Закрыт** | RPC: public `RabbitMqReplyPublisher` |
-| **R3** | Exception глотается без `ThrowOnFailure` | **Открыт** | По умолчанию `false` |
+| **R3** | Exception глотается без `ThrowOnFailure` | **Частично закрыт** | Есть `IntegrateWithResult()`, но default `ThrowOnFailure=false` |
 | **R4** | Server ack до reply | **Открыт** | Handler должен reply **до** return из Process |
 
 ### Средний приоритет
@@ -168,12 +171,14 @@ flowchart TB
 | 8 | InMemory stores в samples | Открыт | Copy-paste в prod → потеря данных |
 | 9 | Mandatory timeout 100ms | Открыт | SentAndForgot topology misconfig |
 | 10 | Abandoned outbox | **Закрыт (ops)** | `ReplayAbandonedAsync` + runbook |
-| **R5** | Один in-flight RPC на transmitter | Открыт | `lock(transmitSync)` в transmitter |
-| **R6** | ReplyPublisher — новое соединение на reply | Открыт | Overhead при высокой нагрузке |
-| **R7** | Нет metrics для RPC | Открыт | `IIntegrationFlowMetrics` не покрывает SentAndWait |
-| **R8** | Нет `IntegrateWithResult()` для SentAndWait | Открыт | Только sync `Integrate()` |
+| **R5** | Один in-flight RPC на transmitter | **Закрыт (opt-in)** | `MaxConcurrentRequests` + correlation map |
+| **R6** | ReplyPublisher — новое соединение на reply | **Закрыт (opt-in)** | `ReuseReplyConnection` + pool |
+| **R7** | Нет metrics для RPC | **Закрыт** | `RecordRequestReply` + runbook |
+| **R8** | Нет `IntegrateWithResult()` для SentAndWait | **Закрыт** | Реализовано в `eee98f8` |
 | **R9** | DirectReplyTo требует RabbitMQ ≥ 3.4 | By design | Fallback: `ExclusiveQueue` |
-| 15 | Release без integration tests | Открыт | `release.yml` — только unit |
+| **A3** | Sync-over-async в `Integrate()` | Открыт | Runbook; использовать `IntegrateAsync` |
+| **A5** | Connection pool без eviction | **Закрыт** | Health check + `ForceDispose` в pool |
+| 15 | Release без integration tests | **Закрыт** | `release.yml` — integration gate |
 | 21 | NuGet не опубликован | Открыт | Workflow готов; нужен tag + API key |
 
 ### Низкий приоритет / техдолг
@@ -201,15 +206,15 @@ flowchart TB
 
 | Критерий | Оценка | Комментарий |
 |----------|--------|-------------|
-| **Архитектура** | **8/10** | Outbox, dedup, RPC; sync RPC без outbox — by design |
+| **Архитектура** | **8/10** | Outbox, dedup, async RPC; RPC без outbox — by design |
 | **Delivery guarantees (async paths)** | **~98%** | ReceiveAndProcess + SentAndForgot зрелые |
 | **Production readiness (ReceiveAndProcess)** | **Да, при adoption** | Outbox TX + EF + dedup + DLQ |
 | **Production readiness (SentAndForgot)** | **Да, при adoption** | Outbox + EF + confirms |
-| **Production readiness (SentAndWait RPC)** | **Условно** | MVP sync RPC; не для critical TX |
-| **Public API / ergonomics** | **7/10** | RPC transmitter internal; public reply publisher |
-| **Тестовое покрытие** | **8/10** | 121 тест, E2E + RPC roundtrip |
-| **Документация** | **8/10** | README, plans, runbooks, analysis v9 |
-| **Observability** | **7/10** | Metrics для consumer/outbox; RPC не покрыт |
+| **Production readiness (SentAndWait RPC)** | **Условно** | Async API + runbooks; не для critical TX |
+| **Public API / ergonomics** | **8/10** | Async + `IntegrateWithResult`; RPC metrics |
+| **Тестовое покрытие** | **8/10** | 128 тестов, E2E + parallel RPC |
+| **Документация** | **8/10** | README, plans, runbooks, analysis v10 |
+| **Observability** | **9/10** | Metrics consumer/outbox/RPC; runbook алертов |
 | **Распространение** | **7/10** | CI pack работает; NuGet publish не выполнен |
 
 ---
@@ -228,11 +233,13 @@ flowchart TB
 
 ### SentAndWait RPC (дополнительно)
 
-1. **`SentAndWaitIntegrationOptions.ThrowOnFailure = true`**
+1. **`SentAndWaitIntegrationOptions.ThrowOnFailure = true`** или явная обработка `IntegrateWithResult().TimedOut`
 2. **Идемпотентный server handler** — retry клиента после timeout
 3. **Reply до return из Process** — иначе ack без ответа
 4. **`ResponseTimeoutSeconds`** с запасом под p99 latency
-5. **Не использовать RPC для critical transactional flows** — outbox не поддерживается
+5. В ASP.NET Core — **`IntegrateAsync()`**, не sync `Integrate()`
+6. Для нагрузки: `ReuseConnection=true`, `MaxConcurrentRequests` > 1
+7. **Не использовать RPC для critical transactional flows** — outbox не поддерживается
 
 ---
 
@@ -240,33 +247,37 @@ flowchart TB
 
 | P | Задача | Статус |
 |---|--------|--------|
-| **P3** | RPC metrics (`RecordRequestReply`) | Открыт — [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) волна 2 |
-| **P3** | `IntegrateWithResult()` для SentAndWait | Открыт — [`plans/2026-07-04_2104-sentandwait-async-execution.md`](plans/2026-07-04_2104-sentandwait-async-execution.md) фаза 1 |
-| **P3** | Async `IntegrateAsync()` + concurrent RPC | Открыт — [`plans/2026-07-04_2104-sentandwait-async-execution.md`](plans/2026-07-04_2104-sentandwait-async-execution.md) |
-| **P3** | Integration tests в `release.yml` | Открыт — roadmap волна 1 |
-| **P3** | NuGet publish (`NUGET_API_KEY` + tag) | Открыт — roadmap волна 1 |
-| **P3** | Distributed tracing | Открыт — roadmap волна 4 (optional) |
+| **P3** | Закрытие главных оставшихся рисков (v1.0) | **В работе** — код/docs готовы; NuGet publish — ops |
+| **P3** | RPC metrics (`RecordRequestReply`) | **Закрыт** |
+| **P3** | `IntegrateWithResult()` для SentAndWait | **Закрыт** |
+| **P3** | Async `IntegrateAsync()` + concurrent RPC | **Закрыт** |
+| **P3** | ReplyPublisher connection reuse | **Закрыт** |
+| **P3** | Integration tests в `release.yml` | **Закрыт** |
+| **P3** | Runbooks adoption | **Закрыт** — [`runbooks/2026-07-04_2130-*.md`](runbooks/) |
+| **P3** | NuGet publish (`NUGET_API_KEY` + tag) | Открыт — ops |
+| **P3** | Distributed tracing | Открыт — optional |
 
 ---
 
 ## 8. Итоговый вывод
 
-Проект **архитектурно зрелый** для RabbitMQ интеграций. После `85b0a45` закрыт главный gap — **SentAndWait через RabbitMQ** (sync request-reply MVP) и стабилизированы metrics-тесты.
+Проект **архитектурно зрелый** для RabbitMQ-интеграций. После `eee98f8` закрыты главные технические gaps SentAndWait: async API, concurrent RPC, typed result, connection reuse.
 
 **Blockers сняты** для всех трёх RabbitMQ-сценариев на уровне базовой функциональности. Главные **оставшиеся риски**:
 
 | Категория | Главный риск | Severity |
 |-----------|--------------|----------|
-| **SentAndWait RPC** | At-most-once при timeout; нет outbox; один in-flight на connection | Высокий для critical flows |
+| **SentAndWait RPC** | At-most-once при timeout; нет outbox | Высокий для critical flows |
 | **Adoption** | `ThrowOnFailure=false` по умолчанию; server должен reply до ack | Высокий |
 | **Operations** | NuGet не опубликован; release без integration tests; нет RPC metrics | Средний |
-| **Performance (RPC)** | Serial lock + новое connection на reply | Средний при нагрузке |
+| **Performance (RPC server)** | Новое TCP-соединение на каждый reply | Средний при нагрузке |
+| **Async adoption** | Sync `Integrate()` в ASP.NET → thread pool starvation | Средний |
 | **Security** | Plain credentials, нет TLS samples | Средний |
 
 **Рекомендация:**
 
 - **Critical async flows** → SentAndForgot + outbox + EF
-- **Sync query/command** → SentAndWait RPC + идемпотентный server + `ThrowOnFailure`
+- **Sync query/command, read-only** → SentAndWait RPC + идемпотентный server + `IntegrateAsync`
 - **Не смешивать** RPC и transactional outbox для одной business operation
 
 Direct publish без outbox, отсутствие `MessageId` и RPC без идемпотентного server — **осознанные anti-patterns**, не дефекты каркаса.

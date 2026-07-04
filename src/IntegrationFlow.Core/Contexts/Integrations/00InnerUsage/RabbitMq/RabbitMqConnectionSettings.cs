@@ -20,5 +20,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq
         public string ClientProvidedName { get; set; } = string.Empty;
 
         public bool DispatchConsumersAsync { get; set; }
+
+        public bool SslEnabled { get; set; }
+
+        public string SslServerName { get; set; } = string.Empty;
     }
 }

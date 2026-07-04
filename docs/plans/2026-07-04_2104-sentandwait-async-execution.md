@@ -2,8 +2,8 @@
 
 **Статус:** выполнено  
 **Создан:** 2026-07-04 21:04 (UTC+3)  
-**Обновлён:** 2026-07-04 21:10 (UTC+3)  
-**Основание:** [`../2026-07-04_2102-integrationflow-full-analysis.md`](../2026-07-04_2102-integrationflow-full-analysis.md) (риски R5, R8; SentAndWait 6/10), [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md) (волна 3 — concurrent RPC)  
+**Обновлён:** 2026-07-04 21:28 (UTC+3)  
+**Основание:** [`../2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md) (риски R5, R8; SentAndWait 7/10), [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md) (волна 3 — concurrent RPC)  
 **Цель:** неблокирующий async API для SentAndWait (домен + RabbitMQ transport) с поддержкой `CancellationToken`, параллельных in-flight запросов и обратной совместимости sync `Integrate()`  
 **Оценка суммарно:** ~4–6 рабочих дней (MVP async + concurrent opt-in + tests + docs)
 
@@ -463,15 +463,15 @@ Async API **не добавляет** transactional guarantees. RPC остаёт
 
 ## Definition of Done
 
-- [ ] `IntegrateWithResultAsync(CancellationToken)` + `IntegrateAsync`
-- [ ] `IntegrateWithResult()` sync (typed result, closes R3/R8)
-- [ ] `ITransmitterAsync` + RabbitMQ implementation
-- [ ] Нет `ManualResetEventSlim.Wait` на async path
-- [ ] `MaxConcurrentRequests` configurable; default `1`
-- [ ] Connection reuse opt-in (`ReuseConnection`)
-- [ ] Unit + integration tests (async roundtrip, parallel, cancel, sync regression)
-- [ ] README + sample updated
-- [ ] Analysis v9 updated (SentAndWait observability-ready for async)
+- [x] `IntegrateWithResultAsync(CancellationToken)` + `IntegrateAsync`
+- [x] `IntegrateWithResult()` sync (typed result, closes R3/R8)
+- [x] `ITransmitterAsync` + RabbitMQ implementation
+- [x] Нет `ManualResetEventSlim.Wait` на async path
+- [x] `MaxConcurrentRequests` configurable; default `1`
+- [x] Connection reuse opt-in (`ReuseConnection`)
+- [x] Unit + integration tests (async roundtrip, parallel, cancel, sync regression)
+- [x] README + sample updated
+- [x] Analysis v10 updated (SentAndWait observability-ready for async)
 
 ---
 
@@ -507,6 +507,6 @@ Async API **не добавляет** transactional guarantees. RPC остаёт
 
 | Документ | Связь |
 |----------|-------|
-| [`2026-07-04_2102-integrationflow-full-analysis.md`](../2026-07-04_2102-integrationflow-full-analysis.md) | Риски R5, R8; baseline |
+| [`2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md) | Риски R5, R8; baseline |
 | [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md) | R1, R2, wave 4 IntegrateAsync |
 | [`2026-07-04_0904-rabbitmq-sentandwait.md`](2026-07-04_0904-rabbitmq-sentandwait.md) | Sync MVP выполнен; async — extension |

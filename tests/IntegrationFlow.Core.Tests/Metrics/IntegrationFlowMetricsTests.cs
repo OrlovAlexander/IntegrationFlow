@@ -148,6 +148,20 @@ public sealed class IntegrationFlowMetricsTests
         public void RecordOutboxRelayAbandoned(int count) => AbandonedCount += count;
 
         public void RecordOutboxPending(int count) => LastPendingCount = count;
+
+        public int RequestReplyCount { get; private set; }
+
+        public bool LastRequestReplySuccess { get; private set; }
+
+        public bool LastRequestReplyTimedOut { get; private set; }
+
+        public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        {
+            RequestReplyCount++;
+            LastProfileName = profileName;
+            LastRequestReplySuccess = success;
+            LastRequestReplyTimedOut = timedOut;
+        }
     }
 
     private sealed class MetricsOutboxStore : IOutboxStore

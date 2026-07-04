@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Connection;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Transmitter;
@@ -17,15 +18,18 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
         private readonly SentAndWaitIntegrationOppositeSide oppositeSide;
         private readonly object srcData;
         private readonly IIntegrationLogger logger;
+        private readonly IIntegrationFlowMetrics metrics;
 
         internal SentAndWaitIntegration(
             SentAndWaitIntegrationOppositeSide integrationOppositeSide,
             object srcData,
-            IIntegrationLogger logger)
+            IIntegrationLogger logger,
+            IIntegrationFlowMetrics? metrics = null)
         {
             oppositeSide = integrationOppositeSide;
             this.srcData = srcData;
             this.logger = logger;
+            this.metrics = metrics ?? NullIntegrationFlowMetrics.Instance;
         }
 
         /// <summary>
@@ -167,6 +171,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                     {
                         logger.LogInfo(SR.T("SendAndWait - '{0}' - Передатчик для обмена данными не предоставлен", sideCode));
                         return SentAndWaitIntegrationResult.Failed("Transmitter was not provided.");
+                    }
+
+                    if (transmitter is IMetricsAwareTransmitter metricsAwareTransmitter)
+                    {
+                        metricsAwareTransmitter.Metrics = metrics;
                     }
 
                     var result = await TransmitAsync(transmitter, destinationData, cancellationToken).ConfigureAwait(false);

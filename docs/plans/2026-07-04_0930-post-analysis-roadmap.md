@@ -1,9 +1,9 @@
 # План: post-analysis roadmap (P3 — production hardening)
 
-**Статус:** открыт  
+**Статус:** открыт (детализация → [`2026-07-04_2130-remaining-risks-mitigation.md`](2026-07-04_2130-remaining-risks-mitigation.md))  
 **Создан:** 2026-07-04 09:30 (UTC+3)  
-**Обновлён:** 2026-07-04 09:30 (UTC+3)  
-**Основание:** [`../2026-07-04_2102-integrationflow-full-analysis.md`](../2026-07-04_2102-integrationflow-full-analysis.md), разделы 4–7  
+**Обновлён:** 2026-07-04 21:30 (UTC+3)  
+**Основание:** [`../2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md), разделы 4–7  
 **Цель:** закрыть оставшиеся gaps после v8 (RPC hardening, ops, observability, distribution)  
 **Оценка суммарно:** ~8–12 рабочих дней (3 волны)
 
@@ -45,8 +45,8 @@ flowchart LR
 | O1 | RPC metrics `RecordRequestReply` | R7 | **P3-high** | 2 |
 | O2 | Алерты RPC в metrics runbook | R7 | P3 | 2 |
 | O3 | Distributed tracing (OTel Activity) | #20 | P4 | 4 |
-| R1 | `IntegrateWithResult()` для SentAndWait | R8, R3 | P3 | 3 |
-| R2 | Concurrent RPC (correlation map) | R5 | P3 | 3 |
+| R1 | `IntegrateWithResult()` для SentAndWait | R8, R3 | **Закрыт** | 3 |
+| R2 | Concurrent RPC (correlation map) | R5 | **Закрыт** | 3 |
 | R3 | ReplyPublisher — reuse connection / channel pool | R6 | P3 | 3 |
 | R4 | Sample hosted RPC server handler | R4 | P3 | 3 |
 | R5 | Runbook: SentAndWait RPC adoption | R3, R4 | P3 | 3 |
@@ -261,10 +261,10 @@ services.AddIntegrationFlowRabbitMqListener("OrdersRpc", message =>
 
 - [ ] NuGet `1.0.0` опубликован, release с integration gate
 - [ ] RPC metrics + алерты в runbook
-- [ ] `IntegrateWithResult()` для SentAndWait
-- [ ] Concurrent RPC (opt-in) + ReplyPublisher reuse
+- [x] `IntegrateWithResult()` для SentAndWait
+- [x] Concurrent RPC (opt-in) + connection reuse
 - [ ] Sample hosted RPC server + adoption runbook
-- [ ] Analysis v9 — SentAndWait 8/10, Observability/Distribution 9/10
+- [ ] Analysis v10 — SentAndWait 7/10, Observability/Distribution 9/10 (после волн 1–2)
 
 ---
 
@@ -272,7 +272,8 @@ services.AddIntegrationFlowRabbitMqListener("OrdersRpc", message =>
 
 | Документ | Связь |
 |----------|-------|
-| [`2026-07-04_2102-integrationflow-full-analysis.md`](../2026-07-04_2102-integrationflow-full-analysis.md) | Источник рисков и P3 |
+| [`2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md) | Источник рисков и P3 |
+| [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](2026-07-04_2130-remaining-risks-mitigation.md) | **Актуальный план** закрытия главных рисков v1.0 |
 | [`plans/2026-07-04_2104-sentandwait-async-execution.md`](2026-07-04_2104-sentandwait-async-execution.md) | Async API + concurrent RPC — детальный план |
 | [`plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md`](2026-07-04_0836-p1-p2-metrics-and-nuget.md) | P1–P2 выполнены; publish → волна 1 |
 | [`runbooks/2026-07-04_0845-nuget-release.md`](../runbooks/2026-07-04_0845-nuget-release.md) | D1 |

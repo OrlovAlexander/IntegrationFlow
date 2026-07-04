@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Exceptions;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Transmitter;
@@ -16,7 +18,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     /// <summary>
     /// Request-reply transmitter для SentAndWait через RabbitMQ.
     /// </summary>
-    internal sealed class RabbitMqRequestReplyTransmitter : ITransmitter, ITransmitterAsync
+    internal sealed class RabbitMqRequestReplyTransmitter : ITransmitter, ITransmitterAsync, IMetricsAwareTransmitter
     {
         private readonly RabbitMqRequestReplyConfiguration configuration;
         private readonly RabbitMqRequestReplyConnection connection;
@@ -32,6 +34,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             concurrencyGate = CreateConcurrencyGate(this.configuration.MaxConcurrentRequests);
         }
 
+        public IIntegrationFlowMetrics? Metrics { get; set; }
+
         public ObtainedData Transmit(TransmitData transmitData)
             => TransmitAsync(transmitData, CancellationToken.None).GetAwaiter().GetResult();
 
@@ -43,6 +47,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             }
 
             var correlationId = Guid.NewGuid().ToString("N");
+            var stopwatch = Stopwatch.StartNew();
+            var success = false;
+            var timedOut = false;
             try
             {
                 configuration.Validate();
@@ -61,7 +68,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 {
                     PublishRequest(transmitData, correlationId);
                     var responseBody = await waitTask.ConfigureAwait(false);
-                    return CreateObtainedData(responseBody);
+                    var result = CreateObtainedData(responseBody);
+                    success = !result.IsFailed;
+                    return result;
                 }
                 catch
                 {
@@ -71,10 +80,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             }
             catch (RequestReplyTimeoutException ex)
             {
+                timedOut = true;
                 throw new SentAndWaitTimeoutException(ex.Message, ex);
             }
             finally
             {
+                Metrics?.RecordRequestReply(
+                    configuration.Name,
+                    stopwatch.Elapsed,
+                    success,
+                    timedOut);
                 concurrencyGate?.Release();
             }
         }

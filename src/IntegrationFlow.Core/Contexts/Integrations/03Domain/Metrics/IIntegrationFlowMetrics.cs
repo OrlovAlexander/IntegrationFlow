@@ -34,4 +34,13 @@ public interface IIntegrationFlowMetrics
     /// Records current pending outbox message count.
     /// </summary>
     void RecordOutboxPending(int count);
+
+    /// <summary>
+    /// Records request-reply (SentAndWait) operation duration and outcome.
+    /// </summary>
+    /// <param name="profileName">Integration profile or side identifier.</param>
+    /// <param name="duration">Round-trip duration.</param>
+    /// <param name="success">True when a valid response was received.</param>
+    /// <param name="timedOut">True when the operation ended due to response timeout.</param>
+    void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false);
 }

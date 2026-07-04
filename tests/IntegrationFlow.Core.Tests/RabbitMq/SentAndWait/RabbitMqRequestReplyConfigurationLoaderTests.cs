@@ -101,6 +101,31 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
     }
 
     [Fact]
+    public void LoadFromFile_ReadsReuseReplyConnectionAndSslSettings()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMqRequestReply": {
+                "HostName": "rabbit.example.com",
+                "Port": 5671,
+                "RequestTarget": "Queue",
+                "QueueName": "orders.rpc",
+                "ReuseReplyConnection": false,
+                "SslEnabled": true,
+                "SslServerName": "rabbit.example.com"
+              }
+            }
+            """);
+
+        var configuration = RabbitMqRequestReplyConfigurationLoader.LoadFromFile(configPath);
+
+        Assert.False(configuration.ReuseReplyConnection);
+        Assert.True(configuration.SslEnabled);
+        Assert.Equal("rabbit.example.com", configuration.SslServerName);
+    }
+
+    [Fact]
     public void Validate_ThrowsWhenQueueTargetWithoutQueueName()
     {
         var configuration = new RabbitMqRequestReplyConfiguration

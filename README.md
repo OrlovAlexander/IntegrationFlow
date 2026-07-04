@@ -268,10 +268,10 @@ dotnet test --filter "Category=Integration"
 ```
 
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-04_2102-integrationflow-full-analysis.md`](docs/2026-07-04_2102-integrationflow-full-analysis.md).  
+Полный анализ решения и рисков: [`docs/2026-07-04_2128-integrationflow-full-analysis.md`](docs/2026-07-04_2128-integrationflow-full-analysis.md).  
 План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
-План async SentAndWait: [`docs/plans/2026-07-04_2104-sentandwait-async-execution.md`](docs/plans/2026-07-04_2104-sentandwait-async-execution.md).  
+План закрытия главных рисков (v1.0): [`docs/plans/2026-07-04_2130-remaining-risks-mitigation.md`](docs/plans/2026-07-04_2130-remaining-risks-mitigation.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Observability
@@ -300,6 +300,8 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.outbox.relay.failed` | Counter | Ошибки relay |
 | `integrationflow.outbox.relay.abandoned` | Counter | Abandoned после max attempts |
 | `integrationflow.outbox.pending` | Gauge | Текущий backlog pending |
+| `integrationflow.requestreply.completed` | Counter | Завершённые RPC-запросы (`profile`, `success`, `timeout`) |
+| `integrationflow.requestreply.duration` | Histogram | Длительность RPC round-trip (секунды) |
 
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
 
@@ -353,7 +355,54 @@ if (!result.Success)
 }
 ```
 
-Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP).
+Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `SslEnabled` / `SslServerName` (AMQPS).
+
+### Server-side RPC handler
+
+Reply публикуется **до return** из handler (иначе ack без ответа):
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+
+services.AddIntegrationFlow();
+services.AddIntegrationFlowRabbitMqListener("OrdersRpc",
+    IntegrationFlow.Contexts.Integrations._00Samples.SentAndWait
+        .SampleRabbitMqSentAndWaitRpcServer.CreateHandler("OrdersRpc"));
+```
+
+### Production defaults
+
+```csharp
+SentAndWaitIntegrationOptions.ThrowOnFailure = true;
+SentAndForgotIntegrationOptions.ThrowOnFailure = true;
+```
+
+Runbooks: [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md), [`docs/runbooks/2026-07-04_2130-production-adoption.md`](docs/runbooks/2026-07-04_2130-production-adoption.md).
+
+### AMQPS (TLS)
+
+```json
+{
+  "RabbitMqRequestReply": {
+    "OrdersRpc": {
+      "HostName": "rabbit.example.com",
+      "Port": 5671,
+      "SslEnabled": true,
+      "SslServerName": "rabbit.example.com",
+      "QueueName": "orders.rpc"
+    }
+  }
+}
+```
+
+### Secrets через environment variables
+
+Не коммитьте prod-пароли в `rabbitmq.json`. В host app переопределяйте через `IConfiguration`:
+
+```bash
+RabbitMq__Inbox__Password=secret
+RabbitMqRequestReply__OrdersRpc__Password=secret
+```
 
 ## Локализация
 

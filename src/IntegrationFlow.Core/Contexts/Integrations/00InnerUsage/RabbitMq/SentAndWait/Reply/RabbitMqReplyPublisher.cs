@@ -3,6 +3,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
+using RabbitMQ.Client;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Reply
 {
@@ -13,6 +14,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     {
         private readonly RabbitMqConnectionSettings connectionSettings;
         private readonly string contentType;
+        private readonly RabbitMqRequestReplyConfiguration? pooledConfiguration;
 
         /// <summary>
         /// Creates publisher from request-reply profile configuration.
@@ -27,6 +29,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             configuration.Validate();
             connectionSettings = configuration.ToConnectionSettings();
             contentType = configuration.ContentType;
+            pooledConfiguration = configuration.ReuseReplyConnection ? configuration : null;
         }
 
         /// <summary>
@@ -71,10 +74,47 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 throw new ArgumentException("ReplyTo address is required.", nameof(replyTo));
             }
 
+            if (pooledConfiguration != null)
+            {
+                PublishReplyUsingPool(replyTo, correlationId, responseBody);
+                return;
+            }
+
+            PublishReplyUsingDedicatedConnection(replyTo, correlationId, responseBody);
+        }
+
+        /// <summary>
+        /// Publishes UTF-8 text reply.
+        /// </summary>
+        public void PublishTextReply(RabbitMqReceivedMessage request, string responseText)
+        {
+            PublishReply(request, responseText ?? string.Empty);
+        }
+
+        private void PublishReplyUsingPool(string replyTo, string correlationId, byte[] responseBody)
+        {
+            try
+            {
+                var pooledChannel = RabbitMqReplyPublisherPool.GetOrAdd(pooledConfiguration!);
+                PublishReply(pooledChannel.Channel, replyTo, correlationId, responseBody);
+            }
+            catch
+            {
+                RabbitMqReplyPublisherPool.Invalidate(pooledConfiguration!);
+                throw;
+            }
+        }
+
+        private void PublishReplyUsingDedicatedConnection(string replyTo, string correlationId, byte[] responseBody)
+        {
             var factory = RabbitMqConnectionFactory.Create(connectionSettings);
             using var connection = factory.CreateConnection();
             using var channel = connection.CreateModel();
+            PublishReply(channel, replyTo, correlationId, responseBody);
+        }
 
+        private void PublishReply(IModel channel, string replyTo, string correlationId, byte[] responseBody)
+        {
             var properties = channel.CreateBasicProperties();
             properties.ContentType = contentType;
             if (!string.IsNullOrWhiteSpace(correlationId))
@@ -88,14 +128,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 mandatory: false,
                 basicProperties: properties,
                 body: responseBody ?? Array.Empty<byte>());
-        }
-
-        /// <summary>
-        /// Publishes UTF-8 text reply.
-        /// </summary>
-        public void PublishTextReply(RabbitMqReceivedMessage request, string responseText)
-        {
-            PublishReply(request, responseText ?? string.Empty);
         }
     }
 }

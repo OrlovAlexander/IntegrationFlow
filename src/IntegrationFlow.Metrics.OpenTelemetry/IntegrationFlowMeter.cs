@@ -30,6 +30,13 @@ internal sealed class IntegrationFlowMeter : IDisposable
             "integrationflow.outbox.pending",
             ObservePendingCount,
             description: "Current pending outbox message count.");
+        RequestReplyCompleted = meter.CreateCounter<long>(
+            "integrationflow.requestreply.completed",
+            description: "SentAndWait request-reply operations completed.");
+        RequestReplyDuration = meter.CreateHistogram<double>(
+            "integrationflow.requestreply.duration",
+            unit: "s",
+            description: "SentAndWait request-reply round-trip duration in seconds.");
     }
 
     public Counter<long> MessagesProcessed { get; }
@@ -41,6 +48,10 @@ internal sealed class IntegrationFlowMeter : IDisposable
     public Counter<long> OutboxRelayFailed { get; }
 
     public Counter<long> OutboxRelayAbandoned { get; }
+
+    public Counter<long> RequestReplyCompleted { get; }
+
+    public Histogram<double> RequestReplyDuration { get; }
 
     public void SetPendingCount(int count)
     {

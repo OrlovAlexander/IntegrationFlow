@@ -36,6 +36,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             nameof(RabbitMqRequestReplyConfiguration.ClientProvidedName),
             nameof(RabbitMqRequestReplyConfiguration.MaxConcurrentRequests),
             nameof(RabbitMqRequestReplyConfiguration.ReuseConnection),
+            nameof(RabbitMqRequestReplyConfiguration.ReuseReplyConnection),
+            nameof(RabbitMqRequestReplyConfiguration.SslEnabled),
+            nameof(RabbitMqRequestReplyConfiguration.SslServerName),
         };
 
         public static RabbitMqRequestReplyConfiguration Load()
@@ -245,6 +248,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             target.ValidateTopology = source.ValidateTopology;
             target.MaxConcurrentRequests = source.MaxConcurrentRequests;
             target.ReuseConnection = source.ReuseConnection;
+            target.ReuseReplyConnection = source.ReuseReplyConnection;
+            target.SslEnabled = source.SslEnabled;
+            target.SslServerName = source.SslServerName;
         }
     }
 }

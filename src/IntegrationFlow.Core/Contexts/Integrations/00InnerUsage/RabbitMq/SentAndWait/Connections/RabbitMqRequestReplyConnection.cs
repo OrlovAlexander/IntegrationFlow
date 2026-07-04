@@ -80,6 +80,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             DisposeInternal(deleteExclusiveQueue: true);
         }
 
+        internal void ForceDispose()
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            disposed = true;
+            DisposeInternal(deleteExclusiveQueue: true);
+        }
+
         internal byte[] CompleteWaitingForResponse(string correlationId, TimeSpan timeout)
             => WaitForResponseAsync(correlationId, timeout, CancellationToken.None).GetAwaiter().GetResult();
 

@@ -32,6 +32,7 @@ jobs:
       - run: dotnet restore IntegrationFlow.sln
       - run: dotnet build IntegrationFlow.sln -c Release --no-restore
       - run: dotnet test IntegrationFlow.sln -c Release --no-build --filter "Category!=Integration"
+      - run: dotnet test IntegrationFlow.sln -c Release --no-build --filter "Category=Integration"
       - run: dotnet pack IntegrationFlow.sln -c Release --no-build -o ./artifacts -p:Version=${{ steps.version.outputs.value }}
 
       - run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

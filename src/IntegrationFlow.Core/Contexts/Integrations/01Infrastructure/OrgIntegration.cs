@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using IntegrationFlow.Contexts.Integrations._02Application;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait;
 
@@ -21,11 +22,14 @@ namespace IntegrationFlow.Contexts.Integrations._01Infrastructure
         /// </summary>
         private ConcurrentDictionary<Type, ISentAndForgotIntegrationOppositeSideProvider> SentAndForgotProvider { get; set; }
 
+        private readonly IIntegrationFlowMetrics metrics;
+
         /// <summary>
         /// Ctor
         /// </summary>
-        public OrgIntegration()
+        public OrgIntegration(IIntegrationFlowMetrics metrics)
         {
+            this.metrics = metrics ?? NullIntegrationFlowMetrics.Instance;
             SentAndForgotProvider = new ConcurrentDictionary<Type, ISentAndForgotIntegrationOppositeSideProvider>();
             SentAndWaitProvider = new ConcurrentDictionary<Type, ISentAndWaitIntegrationOppositeSideProvider>();
         }
@@ -42,7 +46,7 @@ namespace IntegrationFlow.Contexts.Integrations._01Infrastructure
             ISentAndWaitIntegrationOppositeSideProvider provider = FindSentAndWaitProvider<TOppositeSideProvider>();
             var integrationOppositeSide = provider.IntegrationOppositeSideResolve(oppositeSideCode);
 
-            return new SentAndWaitIntegration(integrationOppositeSide, srcData, Logger.Create());
+            return new SentAndWaitIntegration(integrationOppositeSide, srcData, Logger.Create(), metrics);
         }
 
         /// <summary>

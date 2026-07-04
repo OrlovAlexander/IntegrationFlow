@@ -110,6 +110,21 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         public bool ReuseConnection { get; set; }
 
         /// <summary>
+        /// Переиспользовать publish-channel для RPC-ответов на server-side.
+        /// </summary>
+        public bool ReuseReplyConnection { get; set; } = true;
+
+        /// <summary>
+        /// Использовать TLS (AMQPS) при подключении к брокеру.
+        /// </summary>
+        public bool SslEnabled { get; set; }
+
+        /// <summary>
+        /// Имя сервера для проверки TLS-сертификата (SNI).
+        /// </summary>
+        public string SslServerName { get; set; } = string.Empty;
+
+        /// <summary>
         /// Проверяет корректность конфигурации.
         /// </summary>
         public void Validate()
@@ -169,7 +184,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 VirtualHost = VirtualHost,
                 AutomaticRecoveryEnabled = AutomaticRecoveryEnabled,
                 ClientProvidedName = ClientProvidedName,
-                DispatchConsumersAsync = true
+                DispatchConsumersAsync = true,
+                SslEnabled = SslEnabled,
+                SslServerName = SslServerName
             };
         }
 

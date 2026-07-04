@@ -9,7 +9,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq
     {
         public static ConnectionFactory Create(RabbitMqConnectionSettings settings)
         {
-            return new ConnectionFactory
+            var factory = new ConnectionFactory
             {
                 HostName = settings.HostName,
                 Port = settings.Port,
@@ -20,6 +20,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq
                 DispatchConsumersAsync = settings.DispatchConsumersAsync,
                 ClientProvidedName = settings.ClientProvidedName
             };
+
+            if (settings.SslEnabled)
+            {
+                factory.Ssl.Enabled = true;
+                if (!string.IsNullOrWhiteSpace(settings.SslServerName))
+                {
+                    factory.Ssl.ServerName = settings.SslServerName;
+                }
+            }
+
+            return factory;
         }
     }
 }

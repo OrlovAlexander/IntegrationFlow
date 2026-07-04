@@ -16,6 +16,8 @@
 | `integrationflow.outbox.relay.failed` | Counter | Ошибки publish relay |
 | `integrationflow.message.processed` | Counter | Consumer throughput / failures |
 | `integrationflow.message.processing.duration` | Histogram | Latency обработки |
+| `integrationflow.requestreply.completed` | Counter | RPC round-trip (`profile`, `success`, `timeout`) |
+| `integrationflow.requestreply.duration` | Histogram | Latency RPC (секунды) |
 
 ---
 
@@ -45,6 +47,24 @@ increase(integrationflow_message_processed_total{success="false"}[5m]) > 0
 increase(integrationflow_outbox_relay_failed_total[5m]) > 5
 ```
 
+**RPC failures (за 5 мин):**
+
+```promql
+increase(integrationflow_requestreply_completed_total{success="false"}[5m]) > 0
+```
+
+**RPC timeouts (за 5 мин):**
+
+```promql
+increase(integrationflow_requestreply_completed_total{timeout="true"}[5m]) > 0
+```
+
+**RPC p99 latency:**
+
+```promql
+histogram_quantile(0.99, rate(integrationflow_requestreply_duration_bucket[5m])) > 5
+```
+
 > Имена серий зависят от Prometheus exporter (underscore vs dot). Проверьте `/metrics` endpoint приложения.
 
 ---
@@ -57,3 +77,6 @@ increase(integrationflow_outbox_relay_failed_total[5m]) > 5
 | abandoned > 0 | См. [`2026-07-03_2216-abandoned-outbox-replay.md`](2026-07-03_2216-abandoned-outbox-replay.md) |
 | consumer failures | Логи handler, DLQ, poison messages |
 | relay failed | Broker connectivity, topology, credentials |
+| RPC failures | Логи transmitter, broker, server handler |
+| RPC timeouts | Увеличить `ResponseTimeoutSeconds`; проверить server latency |
+| RPC p99 высокий | `ReuseConnection`, server `ReuseReplyConnection`, нагрузка |

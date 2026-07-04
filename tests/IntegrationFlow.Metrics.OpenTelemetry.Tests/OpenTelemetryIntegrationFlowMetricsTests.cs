@@ -66,6 +66,36 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         Assert.Equal(0, collector.GetCounterSum("integrationflow.outbox.relay.failed"));
     }
 
+    [Fact]
+    public void RecordRequestReply_IncrementsCounterAndHistogram()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRequestReply("OrdersRpc", TimeSpan.FromMilliseconds(120), success: true);
+        collector.Collect();
+
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.requestreply.completed"));
+        Assert.True(collector.GetHistogramCount("integrationflow.requestreply.duration") >= 1);
+        Assert.Contains(
+            collector.GetCounterTags("integrationflow.requestreply.completed"),
+            tags => tags.TryGetValue("profile", out var profile) && profile?.ToString() == "ordersrpc");
+    }
+
+    [Fact]
+    public void RecordRequestReply_RecordsTimeoutTag()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRequestReply("OrdersRpc", TimeSpan.FromSeconds(30), success: false, timedOut: true);
+        collector.Collect();
+
+        Assert.Contains(
+            collector.GetCounterTags("integrationflow.requestreply.completed"),
+            tags => tags.TryGetValue("timeout", out var timeout) && timeout?.ToString() == "true");
+    }
+
     [Theory]
     [InlineData("Orders.Inbox", "orders_inbox")]
     [InlineData("", "unknown")]
