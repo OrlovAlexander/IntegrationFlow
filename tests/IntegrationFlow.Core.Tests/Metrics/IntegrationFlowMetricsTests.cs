@@ -155,12 +155,20 @@ public sealed class IntegrationFlowMetricsTests
 
         public bool LastRequestReplyTimedOut { get; private set; }
 
+        public int RequestReplyRetryCount { get; private set; }
+
         public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
         {
             RequestReplyCount++;
             LastProfileName = profileName;
             LastRequestReplySuccess = success;
             LastRequestReplyTimedOut = timedOut;
+        }
+
+        public void RecordRequestReplyRetryAfterTimeout(string profileName)
+        {
+            RequestReplyRetryCount++;
+            LastProfileName = profileName;
         }
     }
 

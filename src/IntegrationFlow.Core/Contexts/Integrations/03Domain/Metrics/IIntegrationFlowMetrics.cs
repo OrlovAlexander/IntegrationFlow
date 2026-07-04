@@ -43,4 +43,9 @@ public interface IIntegrationFlowMetrics
     /// <param name="success">True when a valid response was received.</param>
     /// <param name="timedOut">True when the operation ended due to response timeout.</param>
     void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false);
+
+    /// <summary>
+    /// Records a request-reply retry after timeout (same MessageId, new CorrelationId).
+    /// </summary>
+    void RecordRequestReplyRetryAfterTimeout(string profileName);
 }

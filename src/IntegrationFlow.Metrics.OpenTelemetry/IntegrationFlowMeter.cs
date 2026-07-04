@@ -37,6 +37,9 @@ internal sealed class IntegrationFlowMeter : IDisposable
             "integrationflow.requestreply.duration",
             unit: "s",
             description: "SentAndWait request-reply round-trip duration in seconds.");
+        RequestReplyRetryAfterTimeout = meter.CreateCounter<long>(
+            "integrationflow.requestreply.retry_after_timeout",
+            description: "SentAndWait request-reply retries after timeout.");
     }
 
     public Counter<long> MessagesProcessed { get; }
@@ -52,6 +55,8 @@ internal sealed class IntegrationFlowMeter : IDisposable
     public Counter<long> RequestReplyCompleted { get; }
 
     public Histogram<double> RequestReplyDuration { get; }
+
+    public Counter<long> RequestReplyRetryAfterTimeout { get; }
 
     public void SetPendingCount(int count)
     {

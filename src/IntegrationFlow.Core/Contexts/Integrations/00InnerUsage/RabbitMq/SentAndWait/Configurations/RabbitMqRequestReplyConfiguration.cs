@@ -125,6 +125,21 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         public string SslServerName { get; set; } = string.Empty;
 
         /// <summary>
+        /// Режим request-reply: sync blocking или async outbox.
+        /// </summary>
+        public RabbitMqRequestReplyRequestMode RequestMode { get; set; } = RabbitMqRequestReplyRequestMode.Sync;
+
+        /// <summary>
+        /// Очередь для RPC-ответов при <see cref="RequestMode"/> = AsyncOutbox.
+        /// </summary>
+        public string ResponseQueueName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// SLA ожидания ответа для async pending (секунды).
+        /// </summary>
+        public int PendingTimeoutSeconds { get; set; } = 300;
+
+        /// <summary>
         /// Проверяет корректность конфигурации.
         /// </summary>
         public void Validate()
@@ -156,6 +171,18 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             else
             {
                 throw new InvalidOperationException($"Неизвестный RequestTarget: {RequestTarget}.");
+            }
+
+            if (RequestMode == RabbitMqRequestReplyRequestMode.AsyncOutbox &&
+                string.IsNullOrWhiteSpace(ResponseQueueName))
+            {
+                throw new InvalidOperationException(
+                    "ResponseQueueName обязателен для RequestMode=AsyncOutbox.");
+            }
+
+            if (PendingTimeoutSeconds <= 0)
+            {
+                throw new InvalidOperationException("PendingTimeoutSeconds должен быть больше 0.");
             }
         }
 

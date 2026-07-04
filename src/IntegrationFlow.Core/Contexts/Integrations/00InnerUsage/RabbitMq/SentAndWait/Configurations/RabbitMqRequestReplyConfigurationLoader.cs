@@ -39,6 +39,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             nameof(RabbitMqRequestReplyConfiguration.ReuseReplyConnection),
             nameof(RabbitMqRequestReplyConfiguration.SslEnabled),
             nameof(RabbitMqRequestReplyConfiguration.SslServerName),
+            nameof(RabbitMqRequestReplyConfiguration.RequestMode),
+            nameof(RabbitMqRequestReplyConfiguration.ResponseQueueName),
+            nameof(RabbitMqRequestReplyConfiguration.PendingTimeoutSeconds),
         };
 
         public static RabbitMqRequestReplyConfiguration Load()

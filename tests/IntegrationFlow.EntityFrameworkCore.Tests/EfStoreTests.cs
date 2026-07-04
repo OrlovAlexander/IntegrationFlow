@@ -1,5 +1,6 @@
 using IntegrationFlow.Contexts.Integrations._03Domain.Outbox;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
+using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.ResponseCache;
 using IntegrationFlow.EntityFrameworkCore.Deduplication;
 using IntegrationFlow.EntityFrameworkCore.Outbox;
 using IntegrationFlow.Testing;
@@ -85,5 +86,24 @@ public sealed class EfMessageDeduplicationStoreTests
         Assert.Equal(DeduplicationBeginResult.Acquired, await store.TryBeginProcessingAsync("msg-2"));
         await store.MarkProcessedAsync("msg-2");
         Assert.Equal(DeduplicationBeginResult.AlreadyProcessed, await store.TryBeginProcessingAsync("msg-2"));
+    }
+}
+
+public sealed class EfRequestReplyResponseStoreTests
+{
+    [Fact]
+    public async Task StoreResponse_ThenTryBegin_ReturnsAlreadyProcessed()
+    {
+        await using var factory = TestDbContextFactoryFactory.Create($"ef-rpc-cache-{Guid.NewGuid():N}");
+        var store = new EntityFrameworkCore.ResponseCache.EfRequestReplyResponseStore<TestIntegrationDbContext>(
+            factory,
+            new RequestReplyResponseCacheOptions { ResponseRetention = TimeSpan.FromDays(7) });
+
+        var messageId = "rpc-msg-1";
+        Assert.Equal(RequestReplyCacheResult.Acquired, await store.TryBeginAsync(messageId));
+        await store.StoreResponseAsync(messageId, new byte[] { 1, 2, 3 });
+
+        Assert.Equal(RequestReplyCacheResult.AlreadyProcessed, await store.TryBeginAsync(messageId));
+        Assert.Equal(new byte[] { 1, 2, 3 }, await store.GetCachedResponseAsync(messageId));
     }
 }

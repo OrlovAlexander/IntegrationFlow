@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Reply;
+using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.ResponseCache;
 
 namespace IntegrationFlow.Contexts.Integrations._00Samples.SentAndWait
 {
@@ -15,25 +16,38 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.SentAndWait
         /// Создаёт hosted-listener handler для профиля request-reply.
         /// </summary>
         public static Func<object, Task> CreateHandler(string configurationProfileName)
+            => CreateHandler(configurationProfileName, responseStore: null);
+
+        /// <summary>
+        /// Создаёт handler с опциональным кешем ответов для идемпотентного RPC.
+        /// </summary>
+        public static Func<object, Task> CreateHandler(
+            string configurationProfileName,
+            IRequestReplyResponseStore? responseStore)
         {
             var configuration = RabbitMqRequestReplyConfigurationLoader.LoadProfile(configurationProfileName);
             var replyPublisher = new RabbitMqReplyPublisher(configuration);
-            return message => HandleAsync(message, replyPublisher);
+            return message => HandleAsync(message, replyPublisher, responseStore);
         }
 
-        private static Task HandleAsync(object message, RabbitMqReplyPublisher replyPublisher)
+        private static Task HandleAsync(
+            object message,
+            RabbitMqReplyPublisher replyPublisher,
+            IRequestReplyResponseStore? responseStore)
         {
             if (message is not RabbitMqReceivedMessage receivedMessage || !receivedMessage.IsRequestReply)
             {
                 return Task.CompletedTask;
             }
 
-            var responseText = BuildResponse(receivedMessage);
-            replyPublisher.PublishTextReply(receivedMessage, responseText);
-            return Task.CompletedTask;
+            return RabbitMqRpcServerPipeline.HandleAsync(
+                receivedMessage,
+                replyPublisher,
+                BuildResponseAsync,
+                responseStore);
         }
 
-        private static string BuildResponse(RabbitMqReceivedMessage request)
-            => $$"""{"status":"ok","echo":{{request.BodyText}}}""";
+        private static Task<string> BuildResponseAsync(RabbitMqReceivedMessage request)
+            => Task.FromResult($$"""{"status":"ok","echo":{{request.BodyText}}}""");
     }
 }

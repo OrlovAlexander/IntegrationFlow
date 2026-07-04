@@ -46,7 +46,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 await concurrencyGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            var correlationId = Guid.NewGuid().ToString("N");
             var stopwatch = Stopwatch.StartNew();
             var success = false;
             var timedOut = false;
@@ -54,34 +53,34 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             {
                 configuration.Validate();
 
-                if (connection.NeedReconnect() && !connection.Reconnect())
+                var maxAttempts = GetMaxAttempts(transmitData);
+                for (var attempt = 0; attempt < maxAttempts; attempt++)
                 {
-                    return new ObtainedData(null, isFailed: true);
+                    if (attempt > 0)
+                    {
+                        Metrics?.RecordRequestReplyRetryAfterTimeout(configuration.Name);
+                        await Task.Delay(SentAndWaitIntegrationOptions.RetryDelay, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+
+                    try
+                    {
+                        var result = await TransmitOnceAsync(transmitData, cancellationToken).ConfigureAwait(false);
+                        success = !result.IsFailed;
+                        return result;
+                    }
+                    catch (SentAndWaitTimeoutException) when (attempt < maxAttempts - 1)
+                    {
+                        continue;
+                    }
                 }
 
-                var waitTask = connection.WaitForResponseAsync(
-                    correlationId,
-                    configuration.GetResponseTimeout(),
-                    cancellationToken);
-
-                try
-                {
-                    PublishRequest(transmitData, correlationId);
-                    var responseBody = await waitTask.ConfigureAwait(false);
-                    var result = CreateObtainedData(responseBody);
-                    success = !result.IsFailed;
-                    return result;
-                }
-                catch
-                {
-                    connection.CancelPendingResponse(correlationId);
-                    throw;
-                }
+                throw new InvalidOperationException("Request-reply transmit did not complete.");
             }
-            catch (RequestReplyTimeoutException ex)
+            catch (SentAndWaitTimeoutException ex)
             {
                 timedOut = true;
-                throw new SentAndWaitTimeoutException(ex.Message, ex);
+                throw;
             }
             finally
             {
@@ -94,6 +93,49 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             }
         }
 
+        private async Task<ObtainedData> TransmitOnceAsync(TransmitData transmitData, CancellationToken cancellationToken)
+        {
+            if (connection.NeedReconnect() && !connection.Reconnect())
+            {
+                return new ObtainedData(null, isFailed: true);
+            }
+
+            var correlationId = Guid.NewGuid().ToString("N");
+            var waitTask = connection.WaitForResponseAsync(
+                correlationId,
+                configuration.GetResponseTimeout(),
+                cancellationToken);
+
+            try
+            {
+                PublishRequest(transmitData, correlationId);
+                var responseBody = await waitTask.ConfigureAwait(false);
+                return CreateObtainedData(responseBody);
+            }
+            catch (RequestReplyTimeoutException ex)
+            {
+                connection.CancelPendingResponse(correlationId);
+                throw new SentAndWaitTimeoutException(ex.Message, ex);
+            }
+            catch
+            {
+                connection.CancelPendingResponse(correlationId);
+                throw;
+            }
+        }
+
+        private static int GetMaxAttempts(TransmitData transmitData)
+        {
+            if (!SentAndWaitIntegrationOptions.RetryOnTimeout ||
+                string.IsNullOrWhiteSpace(transmitData.MessageId) ||
+                SentAndWaitIntegrationOptions.MaxRetries <= 0)
+            {
+                return 1;
+            }
+
+            return 1 + SentAndWaitIntegrationOptions.MaxRetries;
+        }
+
         private void PublishRequest(TransmitData transmitData, string correlationId)
         {
             var channel = connection.PublishChannel;
@@ -102,7 +144,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 ValidateTopologyPassive(channel);
             }
 
-            var messageId = Guid.NewGuid().ToString("N");
+            var messageId = string.IsNullOrWhiteSpace(transmitData.MessageId)
+                ? Guid.NewGuid().ToString("N")
+                : transmitData.MessageId;
             var body = RabbitMqPublishTransmitter.SerializeBody(transmitData.Data);
 
             var properties = channel.CreateBasicProperties();

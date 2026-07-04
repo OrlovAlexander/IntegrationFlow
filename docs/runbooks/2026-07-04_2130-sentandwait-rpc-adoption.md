@@ -129,3 +129,6 @@ services.AddIntegrationFlowRabbitMqListener("OrdersRpc", message =>
 
 - [`2026-07-04_2130-production-adoption.md`](2026-07-04_2130-production-adoption.md) — ReceiveAndProcess + SentAndForgot
 - [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](../plans/2026-07-04_2130-remaining-risks-mitigation.md)
+- [`plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](../plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md) — стратегия R1/R2 для critical flows
+- [`plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](../plans/2026-07-04_2244-sentandwait-rpc-implementation.md) — план реализации (фазы 0–3)
+- [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](../2026-07-04_2301-sentandwait-rpc-implementation-status.md) — статус реализации

@@ -92,4 +92,4 @@ services.AddIntegrationFlowEfDeduplication<MyDbContext>();
 ## Связанные документы
 
 - [`plans/2026-07-03_1639-production-readiness.md`](../plans/2026-07-03_1639-production-readiness.md)
-- [`2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md)
+- [`2026-07-04_2234-integrationflow-full-analysis.md`](../2026-07-04_2234-integrationflow-full-analysis.md)

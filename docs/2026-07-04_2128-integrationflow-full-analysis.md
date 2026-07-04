@@ -1,8 +1,9 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** актуально  
+**Статус:** superseded (v10)  
 **Создан:** 2026-07-04 21:28 (UTC+3)  
-**Обновлён:** 2026-07-04 21:28 (UTC+3)  
+**Обновлён:** 2026-07-04 22:34 (UTC+3)  
+**Актуальная версия:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md) (v11)  
 **Связанные документы:** [`2026-07-04_2102-integrationflow-full-analysis.md`](2026-07-04_2102-integrationflow-full-analysis.md) (superseded, v9), [`plans/2026-07-04_2104-sentandwait-async-execution.md`](plans/2026-07-04_2104-sentandwait-async-execution.md) (выполнено), [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) (следующие шаги)
 
 Актуальное состояние после коммита `eee98f8` (async SentAndWait + `IntegrateWithResult`). Локально **128 тестов** (86 + 8 + 13 + 2 + 19) — все зелёные в Release, CI на GitHub Actions (unit → integration → pack).

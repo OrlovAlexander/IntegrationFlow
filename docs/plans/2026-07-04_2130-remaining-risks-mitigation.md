@@ -3,7 +3,7 @@
 **Статус:** в работе (код и docs выполнены; NuGet publish — ops)  
 **Создан:** 2026-07-04 21:30 (UTC+3)  
 **Обновлён:** 2026-07-04 22:23 (UTC+3)  
-**Основание:** [`../2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md), раздел 8 (главные оставшиеся риски)  
+**Основание:** [`../2026-07-04_2234-integrationflow-full-analysis.md`](../2026-07-04_2234-integrationflow-full-analysis.md), раздел 8 (главные оставшиеся риски)  
 **Связанные планы:** [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md) (детализация волн 1–4), [`2026-07-04_2104-sentandwait-async-execution.md`](2026-07-04_2104-sentandwait-async-execution.md) (выполнено)  
 **Цель:** довести IntegrationFlow до **production-ready v1.0** — закрыть ops/adoption gaps и снизить технические риски RPC/performance/security  
 **Оценка суммарно:** ~7–10 рабочих дней (4 волны)
@@ -112,7 +112,7 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](../runbooks/2026-07-04_08
 
 - [ ] 128 тестов зелёные на `master`
 - [ ] `dotnet pack -c Release` без ошибок
-- [ ] [`2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md) актуален
+- [x] [`2026-07-04_2234-integrationflow-full-analysis.md`](../2026-07-04_2234-integrationflow-full-analysis.md) актуален
 - [ ] Runbooks adoption готовы (волна 3) или явно помечены pre-release
 
 **DoD волны 1:** три пакета `1.0.0` на NuGet.org; release workflow с integration gate.
@@ -329,7 +329,7 @@ gantt
 | ReplyPublisher pool — regression | Средняя | Default `ReuseReplyConnection=false`; opt-in |
 | `Obsolete` на `Integrate()` — шум | Средняя | Только docs в v1.0; Obsolete в 1.1 |
 | Scope creep (tracing) | Высокая | Волна 4 явно optional |
-| Inherent R1/R2 «не закрыты кодом» | — | Runbook + decision tree; не добавлять outbox для RPC |
+| Inherent R1/R2 «не закрыты кодом» | — | Runbook + decision tree; детальный план — [`2026-07-04_2242-sentandwait-rpc-critical-flows.md`](2026-07-04_2242-sentandwait-rpc-critical-flows.md) |
 
 ---
 
@@ -343,7 +343,7 @@ gantt
 - [x] ReplyPublisher connection reuse (R6)
 - [x] Connection pool eviction (A5)
 - [x] TLS + secrets samples (S1, S2) — README
-- [x] Analysis v10 обновлён — Observability 9/10; Distribution 8/10 (NuGet publish — ops)
+- [x] Analysis v11 обновлён — Observability 9/10; Distribution 8/10 (NuGet publish — ops)
 
 ---
 
@@ -364,7 +364,9 @@ gantt
 
 | Документ | Связь |
 |----------|-------|
-| [`2026-07-04_2128-integrationflow-full-analysis.md`](../2026-07-04_2128-integrationflow-full-analysis.md) | Источник рисков |
+| [`2026-07-04_2234-integrationflow-full-analysis.md`](../2026-07-04_2234-integrationflow-full-analysis.md) | Источник рисков |
+| [`2026-07-04_2242-sentandwait-rpc-critical-flows.md`](2026-07-04_2242-sentandwait-rpc-critical-flows.md) | P4: стратегия async request-response + idempotent RPC |
+| [`2026-07-04_2244-sentandwait-rpc-implementation.md`](2026-07-04_2244-sentandwait-rpc-implementation.md) | P4: фазы реализации, PR-ы |
 | [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md) | Детализация задач D/O/R/A по волнам |
 | [`2026-07-04_2104-sentandwait-async-execution.md`](2026-07-04_2104-sentandwait-async-execution.md) | R5, R8 закрыты |
 | [`runbooks/2026-07-04_0845-nuget-release.md`](../runbooks/2026-07-04_0845-nuget-release.md) | D1 |

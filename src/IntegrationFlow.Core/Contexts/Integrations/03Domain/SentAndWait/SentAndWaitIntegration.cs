@@ -17,6 +17,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
         private readonly object configConnectSyncObject = new();
         private readonly SentAndWaitIntegrationOppositeSide oppositeSide;
         private readonly object srcData;
+        private readonly string? messageId;
         private readonly IIntegrationLogger logger;
         private readonly IIntegrationFlowMetrics metrics;
 
@@ -24,10 +25,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
             SentAndWaitIntegrationOppositeSide integrationOppositeSide,
             object srcData,
             IIntegrationLogger logger,
-            IIntegrationFlowMetrics? metrics = null)
+            IIntegrationFlowMetrics? metrics = null,
+            string? messageId = null)
         {
             oppositeSide = integrationOppositeSide;
             this.srcData = srcData;
+            this.messageId = messageId;
             this.logger = logger;
             this.metrics = metrics ?? NullIntegrationFlowMetrics.Instance;
         }
@@ -35,7 +38,22 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
         /// <summary>
         /// Передаваемые данные
         /// </summary>
-        public TransmitData TransmitData => new(srcData);
+        public TransmitData TransmitData => string.IsNullOrWhiteSpace(messageId)
+            ? new TransmitData(srcData)
+            : new TransmitData(srcData, messageId);
+
+        /// <summary>
+        /// Создаёт копию интеграции с idempotency key для retry после timeout.
+        /// </summary>
+        public SentAndWaitIntegration WithMessageId(string idempotencyKey)
+        {
+            if (string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                throw new ArgumentException("Message id is required.", nameof(idempotencyKey));
+            }
+
+            return new SentAndWaitIntegration(oppositeSide, srcData, logger, metrics, idempotencyKey);
+        }
 
         /// <summary>
         /// Выполнить интеграцию

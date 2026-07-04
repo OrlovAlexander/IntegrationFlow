@@ -41,4 +41,9 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
     {
     }
+
+    /// <inheritdoc />
+    public void RecordRequestReplyRetryAfterTimeout(string profileName)
+    {
+    }
 }

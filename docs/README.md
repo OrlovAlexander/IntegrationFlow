@@ -26,7 +26,8 @@
 | 2026-07-04 09:01 | 2026-07-04 09:29 | [Полный анализ IntegrationFlow и рисков (v7, superseded)](2026-07-04_0901-integrationflow-full-analysis.md) |
 | 2026-07-04 09:29 | 2026-07-04 21:02 | [Полный анализ IntegrationFlow и рисков (v8, superseded)](2026-07-04_0929-integrationflow-full-analysis.md) |
 | 2026-07-04 21:02 | 2026-07-04 21:28 | [Полный анализ IntegrationFlow и рисков (v9, superseded)](2026-07-04_2102-integrationflow-full-analysis.md) |
-| 2026-07-04 21:28 | 2026-07-04 21:28 | [Полный анализ IntegrationFlow и рисков (v10, актуально)](2026-07-04_2128-integrationflow-full-analysis.md) |
+| 2026-07-04 21:28 | 2026-07-04 22:34 | [Полный анализ IntegrationFlow и рисков (v10, superseded)](2026-07-04_2128-integrationflow-full-analysis.md) |
+| 2026-07-04 22:34 | 2026-07-04 22:34 | [Полный анализ IntegrationFlow и рисков (v11, актуально)](2026-07-04_2234-integrationflow-full-analysis.md) |
 | 2026-07-03 22:16 | 2026-07-03 22:16 | [Runbook: replay abandoned outbox](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | 2026-07-04 08:36 | 2026-07-04 08:36 | [План: P1 metrics + P2 NuGet publish (выполнено)](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md) |
 | 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: metrics and alerting](runbooks/2026-07-04_0845-metrics-and-alerting.md) |
@@ -37,3 +38,6 @@
 | 2026-07-04 21:30 | 2026-07-04 22:23 | [План: закрытие главных оставшихся рисков v1.0 (в работе)](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
 | 2026-07-04 21:30 | 2026-07-04 22:23 | [Runbook: SentAndWait RPC adoption](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md) |
 | 2026-07-04 21:30 | 2026-07-04 22:23 | [Runbook: production adoption checklist](runbooks/2026-07-04_2130-production-adoption.md) |
+| 2026-07-04 22:42 | 2026-07-04 22:42 | [План: SentAndWait RPC critical flows (R1/R2)](plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md) |
+| 2026-07-04 22:44 | 2026-07-04 22:55 | [План реализации: SentAndWait RPC (фазы 0–3)](plans/2026-07-04_2244-sentandwait-rpc-implementation.md) |
+| 2026-07-04 23:01 | 2026-07-04 23:01 | [Статус реализации SentAndWait RPC (фазы 1–2)](2026-07-04_2301-sentandwait-rpc-implementation-status.md) |

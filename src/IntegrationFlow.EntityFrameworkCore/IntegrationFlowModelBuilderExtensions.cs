@@ -36,6 +36,29 @@ public static class IntegrationFlowModelBuilderExtensions
             entity.HasIndex(message => message.ExpiresAt);
         });
 
+        modelBuilder.Entity<ResponseCache.RpcResponseCacheEntity>(entity =>
+        {
+            entity.ToTable("IntegrationFlowRpcResponseCache");
+            entity.HasKey(entry => entry.MessageId);
+            entity.Property(entry => entry.MessageId).HasMaxLength(256);
+            entity.Property(entry => entry.State).HasConversion<int>();
+            entity.Property(entry => entry.ResponseBody).IsRequired();
+            entity.HasIndex(entry => entry.ExpiresAt);
+        });
+
+        modelBuilder.Entity<RpcPending.RpcPendingRequestEntity>(entity =>
+        {
+            entity.ToTable("IntegrationFlowRpcPendingRequests");
+            entity.HasKey(request => request.Id);
+            entity.Property(request => request.ProfileName).HasMaxLength(128).IsRequired();
+            entity.Property(request => request.ContentType).HasMaxLength(128).IsRequired();
+            entity.Property(request => request.RequestPayload).IsRequired();
+            entity.Property(request => request.Status).HasConversion<int>();
+            entity.Property(request => request.LockedBy).HasMaxLength(128);
+            entity.Property(request => request.LastError).HasMaxLength(2048);
+            entity.HasIndex(request => new { request.Status, request.RetryAfter, request.CreatedAt });
+        });
+
         return modelBuilder;
     }
 }

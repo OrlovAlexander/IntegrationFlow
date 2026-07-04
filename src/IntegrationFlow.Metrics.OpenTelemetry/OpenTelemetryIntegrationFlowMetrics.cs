@@ -99,6 +99,13 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
     }
 
     /// <inheritdoc />
+    public void RecordRequestReplyRetryAfterTimeout(string profileName)
+    {
+        var profile = SanitizeProfile(profileName);
+        meter.RequestReplyRetryAfterTimeout.Add(1, new KeyValuePair<string, object?>("profile", profile));
+    }
+
+    /// <inheritdoc />
     public void Dispose()
     {
         meter.Dispose();

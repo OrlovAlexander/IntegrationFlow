@@ -268,10 +268,13 @@ dotnet test --filter "Category=Integration"
 ```
 
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-04_2128-integrationflow-full-analysis.md`](docs/2026-07-04_2128-integrationflow-full-analysis.md).  
+Полный анализ решения и рисков: [`docs/2026-07-04_2234-integrationflow-full-analysis.md`](docs/2026-07-04_2234-integrationflow-full-analysis.md).  
 План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
 План закрытия главных рисков (v1.0): [`docs/plans/2026-07-04_2130-remaining-risks-mitigation.md`](docs/plans/2026-07-04_2130-remaining-risks-mitigation.md).  
+План SentAndWait RPC для critical flows (R1/R2): [`docs/plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](docs/plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md).  
+План реализации (фазы 0–3, PR-ы): [`docs/plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](docs/plans/2026-07-04_2244-sentandwait-rpc-implementation.md).  
+Статус реализации (фазы 1–2): [`docs/2026-07-04_2301-sentandwait-rpc-implementation-status.md`](docs/2026-07-04_2301-sentandwait-rpc-implementation-status.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Observability
@@ -301,6 +304,7 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.outbox.relay.abandoned` | Counter | Abandoned после max attempts |
 | `integrationflow.outbox.pending` | Gauge | Текущий backlog pending |
 | `integrationflow.requestreply.completed` | Counter | Завершённые RPC-запросы (`profile`, `success`, `timeout`) |
+| `integrationflow.requestreply.retry_after_timeout` | Counter | Retry RPC после timeout (`profile`) |
 | `integrationflow.requestreply.duration` | Histogram | Длительность RPC round-trip (секунды) |
 
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
@@ -356,6 +360,10 @@ if (!result.Success)
 ```
 
 Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `SslEnabled` / `SslServerName` (AMQPS).
+
+**Idempotent sync RPC (фаза 1):** задайте `MessageId` через `WithMessageId()` или `TransmitData(data, messageId)`; на server — `IRequestReplyResponseStore` + `RabbitMqRpcServerPipeline`. При timeout включите `SentAndWaitIntegrationOptions.RetryOnTimeout = true` (retry с тем же MessageId).
+
+**Async RPC для critical flows (фаза 2):** `RequestMode: AsyncOutbox` + `ResponseQueueName` в конфиге; stage через `IRpcPendingEnqueue` / `DbContext.EnqueueRpcRequest()` в той же TX; relay — `AddIntegrationFlowRpcPendingRelay()`; correlation — `AddIntegrationFlowRabbitMqRpcResponseCorrelation()`; EF — `AddIntegrationFlowEfRpcPending<TContext>()`.
 
 ### Server-side RPC handler
 

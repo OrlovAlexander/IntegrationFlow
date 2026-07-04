@@ -96,6 +96,18 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
             tags => tags.TryGetValue("timeout", out var timeout) && timeout?.ToString() == "true");
     }
 
+    [Fact]
+    public void RecordRequestReplyRetryAfterTimeout_IncrementsCounter()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRequestReplyRetryAfterTimeout("OrdersRpc");
+        collector.Collect();
+
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.requestreply.retry_after_timeout"));
+    }
+
     [Theory]
     [InlineData("Orders.Inbox", "orders_inbox")]
     [InlineData("", "unknown")]
