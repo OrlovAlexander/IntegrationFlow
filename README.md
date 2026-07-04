@@ -24,7 +24,9 @@ IntegrationFlow/
 │       ├── 01Infrastructure/          # Логирование, локализация
 │       ├── 02Application/             # Прикладные интерфейсы
 │       └── 03Domain/                    # Доменная модель и базовые классы
-└── tests/IntegrationFlow.Core.Tests/  # Модульные тесты (xUnit)
+├── src/IntegrationFlow.EntityFrameworkCore/  # EF stores (net8.0)
+├── src/IntegrationFlow.Metrics.OpenTelemetry/  # Metrics (net8.0)
+└── tests/                             # Модульные и integration-тесты (xUnit)
 ```
 
 ## Требования
@@ -268,6 +270,44 @@ dotnet test --filter "Category=Integration"
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
 Полный анализ решения и рисков: [`docs/2026-07-03_2201-integrationflow-full-analysis.md`](docs/2026-07-03_2201-integrationflow-full-analysis.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
+
+## Observability
+
+Пакет `IntegrationFlow.Metrics.OpenTelemetry` реализует `IIntegrationFlowMetrics` через `System.Diagnostics.Metrics` (совместимо с OpenTelemetry SDK и Prometheus exporter):
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+using IntegrationFlow.Metrics.OpenTelemetry.DependencyInjection;
+
+services.AddIntegrationFlow();
+services.AddIntegrationFlowOpenTelemetryMetrics();
+
+// В host app — экспорт метрик (пример с OpenTelemetry + Prometheus):
+// builder.Services.AddOpenTelemetry()
+//     .WithMetrics(m => m.AddMeter("IntegrationFlow").AddPrometheusExporter());
+```
+
+Метрики:
+
+| Имя | Тип | Описание |
+|-----|-----|----------|
+| `integrationflow.message.processed` | Counter | Обработанные inbox-сообщения (`profile`, `success`) |
+| `integrationflow.message.processing.duration` | Histogram | Длительность обработки (секунды) |
+| `integrationflow.outbox.relay.published` | Counter | Успешный relay outbox |
+| `integrationflow.outbox.relay.failed` | Counter | Ошибки relay |
+| `integrationflow.outbox.relay.abandoned` | Counter | Abandoned после max attempts |
+| `integrationflow.outbox.pending` | Gauge | Текущий backlog pending |
+
+Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
+
+## NuGet
+
+```bash
+dotnet pack IntegrationFlow.sln -c Release
+```
+
+Пакеты: `IntegrationFlow.Core`, `IntegrationFlow.EntityFrameworkCore`, `IntegrationFlow.Metrics.OpenTelemetry`.  
+Release process: [`docs/runbooks/2026-07-04_0845-nuget-release.md`](docs/runbooks/2026-07-04_0845-nuget-release.md).
 
 ## Локализация
 

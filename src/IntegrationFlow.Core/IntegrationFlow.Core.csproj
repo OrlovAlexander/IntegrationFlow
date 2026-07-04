@@ -13,6 +13,7 @@
     <PackageId>IntegrationFlow.Core</PackageId>
     <Title>IntegrationFlow Core</Title>
     <Description>Integration framework for RabbitMQ consumers and transactional outbox producers.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
     <None Include="Contexts\Integrations\Docs\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Contexts\Integrations\00Samples\ReceiveAndProcess\rabbitmq.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

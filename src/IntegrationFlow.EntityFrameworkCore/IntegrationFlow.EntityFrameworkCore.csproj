@@ -13,6 +13,7 @@
     <PackageId>IntegrationFlow.EntityFrameworkCore</PackageId>
     <Title>IntegrationFlow Entity Framework Core</Title>
     <Description>EF Core stores for IntegrationFlow transactional outbox and message deduplication.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
     <ProjectReference Include="..\IntegrationFlow.Core\IntegrationFlow.Core.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.11" />

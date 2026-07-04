@@ -217,8 +217,8 @@ flowchart TB
 | P | Задача | Статус |
 |---|--------|--------|
 | **P1** | Убрать NoOp из `DefaultRabbitMqIntegrationProcessorSide` (throw вместо silent ack) | ✅ |
-| **P1** | Reference implementation `IIntegrationFlowMetrics` (Prometheus/OpenTelemetry) | Открыт |
-| **P2** | CI job `dotnet pack` + publish to NuGet.org | Открыт |
+| **P1** | Reference implementation `IIntegrationFlowMetrics` (Prometheus/OpenTelemetry) | ✅ [`plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md`](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md) |
+| **P2** | CI job `dotnet pack` + publish to NuGet.org | ✅ workflow готов; нужен `NUGET_API_KEY` + tag `v1.0.0` |
 | **P2** | Runbook для abandoned outbox replay | ✅ [`runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | **P3** | `SentAndWait` или явно пометить out-of-scope | Открыт |
 
