@@ -34,6 +34,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             nameof(RabbitMqRequestReplyConfiguration.ValidateTopology),
             nameof(RabbitMqRequestReplyConfiguration.AutomaticRecoveryEnabled),
             nameof(RabbitMqRequestReplyConfiguration.ClientProvidedName),
+            nameof(RabbitMqRequestReplyConfiguration.MaxConcurrentRequests),
+            nameof(RabbitMqRequestReplyConfiguration.ReuseConnection),
         };
 
         public static RabbitMqRequestReplyConfiguration Load()
@@ -241,6 +243,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             target.Persistent = source.Persistent;
             target.Mandatory = source.Mandatory;
             target.ValidateTopology = source.ValidateTopology;
+            target.MaxConcurrentRequests = source.MaxConcurrentRequests;
+            target.ReuseConnection = source.ReuseConnection;
         }
     }
 }

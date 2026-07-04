@@ -31,7 +31,12 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
 
         /// <inheritdoc />
         public override IConnection GetConnection(IConfiguration configuration, IIntegrationLogger logger)
-            => new RabbitMqRequestReplyConnection((RabbitMqRequestReplyConfiguration)configuration);
+        {
+            var requestReplyConfiguration = (RabbitMqRequestReplyConfiguration)configuration;
+            return requestReplyConfiguration.ReuseConnection
+                ? RabbitMqRequestReplyConnectionPool.GetOrAdd(requestReplyConfiguration)
+                : new RabbitMqRequestReplyConnection(requestReplyConfiguration);
+        }
 
         /// <inheritdoc />
         public override ITransmitter GetTransmitter(IConfiguration configuration, IConnection connection, IIntegrationLogger logger)

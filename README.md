@@ -268,9 +268,10 @@ dotnet test --filter "Category=Integration"
 ```
 
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-04_0929-integrationflow-full-analysis.md`](docs/2026-07-04_0929-integrationflow-full-analysis.md).  
+Полный анализ решения и рисков: [`docs/2026-07-04_2102-integrationflow-full-analysis.md`](docs/2026-07-04_2102-integrationflow-full-analysis.md).  
 План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
+План async SentAndWait: [`docs/plans/2026-07-04_2104-sentandwait-async-execution.md`](docs/plans/2026-07-04_2104-sentandwait-async-execution.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Observability
@@ -331,6 +332,28 @@ integration.Integrate(handler);
 Секция конфигурации в `rabbitmq.json` — `RabbitMqRequestReply`. На стороне сервера используйте `RabbitMqReplyPublisher` для ответа на `RabbitMqReceivedMessage.ReplyTo`.
 
 План реализации: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).
+
+### Async API
+
+```csharp
+var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRabbitMqSentAndWaitProvider>(
+    oppositeSideCode: "OrdersRpc",
+    srcData: new { OrderId = 42 });
+
+var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWaitProvider>("OrdersRpc");
+
+// Рекомендуется в ASP.NET Core / IHost:
+await integration.IntegrateAsync(handler, cancellationToken);
+
+// Или typed result:
+var result = await integration.IntegrateWithResultAsync(cancellationToken);
+if (!result.Success)
+{
+    if (result.TimedOut) { /* retry с новым CorrelationId */ }
+}
+```
+
+Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP).
 
 ## Локализация
 

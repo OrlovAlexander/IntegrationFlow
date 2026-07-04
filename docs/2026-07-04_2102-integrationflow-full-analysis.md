@@ -1,17 +1,17 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** superseded → см. [`2026-07-04_2102-integrationflow-full-analysis.md`](2026-07-04_2102-integrationflow-full-analysis.md)  
-**Создан:** 2026-07-04 09:29 (UTC+3)  
+**Статус:** актуально  
+**Создан:** 2026-07-04 21:02 (UTC+3)  
 **Обновлён:** 2026-07-04 21:02 (UTC+3)  
-**Связанные документы:** [`2026-07-04_0901-integrationflow-full-analysis.md`](2026-07-04_0901-integrationflow-full-analysis.md) (superseded), [`plans/2026-07-04_0904-rabbitmq-sentandwait.md`](plans/2026-07-04_0904-rabbitmq-sentandwait.md) (MVP выполнен), [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) (следующие шаги)
+**Связанные документы:** [`2026-07-04_0929-integrationflow-full-analysis.md`](2026-07-04_0929-integrationflow-full-analysis.md) (superseded), [`plans/2026-07-04_0904-rabbitmq-sentandwait.md`](plans/2026-07-04_0904-rabbitmq-sentandwait.md) (MVP выполнен), [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) (следующие шаги)
 
-Актуальное состояние после коммита `f7f8e08` (RabbitMQ SentAndWait request-reply MVP). Локально **103 unit + 18 integration = 121 тест** — все зелёные, CI на GitHub Actions (unit → integration → pack).
+Актуальное состояние после коммита `85b0a45` (fix flaky metrics test + SentAndWait MVP). Локально **121 тест** (82 + 8 + 13 + 16 + 2) — все зелёные в Release, CI на GitHub Actions (unit → integration → pack).
 
 ---
 
 ## 1. Что это за решение
 
-**IntegrationFlow** — .NET-библиотека для интеграций между системами. Три NuGet-пакета:
+**IntegrationFlow** — .NET-библиотека для построения интеграций между системами. Три NuGet-пакета:
 
 | Пакет | TFM | Назначение |
 |-------|-----|------------|
@@ -36,7 +36,7 @@ IntegrationFlow/
 │   └── 00InnerUsage/RabbitMq/
 │       ├── ReceiveAndProcess/     # consumer
 │       ├── SentAndForgot/         # publisher + outbox relay
-│       └── SentAndWait/           # request-reply RPC (NEW)
+│       └── SentAndWait/           # request-reply RPC
 ├── src/IntegrationFlow.EntityFrameworkCore/
 ├── src/IntegrationFlow.Metrics.OpenTelemetry/
 └── tests/                         # 121 тест (unit + integration)
@@ -58,7 +58,7 @@ flowchart TB
         Stage --> Save[SaveChanges]
         Save --> Relay[OutboxRelayService]
         Relay --> Claim[ClaimPending SKIP LOCKED]
-        Claim --> Pub["Publish (MessageId = OutboxId)"]
+        Claim --> Pub["Publish MessageId = OutboxId"]
     end
 
     subgraph rpc [SentAndWait — RabbitMQ RPC]
@@ -113,14 +113,14 @@ flowchart TB
 - Transactional outbox + EF SKIP LOCKED claim
 - `ReplayAbandonedAsync` + runbook
 
-### SentAndWait RabbitMQ (`f7f8e08`)
+### SentAndWait RabbitMQ
 
 - `RabbitMqRequestReplyTransmitter` — publish + wait с timeout
 - `DirectReplyTo` (default) + `ExclusiveQueue` fallback
 - `RabbitMqReplyPublisher` — server-side reply на `ReplyTo`
 - `RabbitMqRequestReplyConfigurationLoader` — секция `RabbitMqRequestReply`
 - `SentAndWaitIntegrationOptions.ThrowOnFailure`
-- 8 unit + 2 E2E теста (roundtrip + timeout)
+- Unit + E2E тесты (roundtrip + timeout)
 
 ### Observability и distribution
 
@@ -202,16 +202,15 @@ flowchart TB
 | Критерий | Оценка | Комментарий |
 |----------|--------|-------------|
 | **Архитектура** | **8/10** | Outbox, dedup, RPC; sync RPC без outbox — by design |
-| **Delivery guarantees** | **~98%** | Async paths зрелые; RPC — at-most-once |
+| **Delivery guarantees (async paths)** | **~98%** | ReceiveAndProcess + SentAndForgot зрелые |
 | **Production readiness (ReceiveAndProcess)** | **Да, при adoption** | Outbox TX + EF + dedup + DLQ |
 | **Production readiness (SentAndForgot)** | **Да, при adoption** | Outbox + EF + confirms |
 | **Production readiness (SentAndWait RPC)** | **Условно** | MVP sync RPC; не для critical TX |
 | **Public API / ergonomics** | **7/10** | RPC transmitter internal; public reply publisher |
 | **Тестовое покрытие** | **8/10** | 121 тест, E2E + RPC roundtrip |
-| **Документация** | **8/10** | README, plans, runbooks, analysis v8 |
-| **Observability** | **8/10** | Metrics для consumer/outbox; RPC не покрыт |
-| **Распространение** | **8/10** | CI pack; publish не выполнен |
-| **SentAndWait** | **6/10** | ↑ с 2/10 — RabbitMQ MVP; REST sample остаётся |
+| **Документация** | **8/10** | README, plans, runbooks, analysis v9 |
+| **Observability** | **7/10** | Metrics для consumer/outbox; RPC не покрыт |
+| **Распространение** | **7/10** | CI pack работает; NuGet publish не выполнен |
 
 ---
 
@@ -242,8 +241,8 @@ flowchart TB
 | P | Задача | Статус |
 |---|--------|--------|
 | **P3** | RPC metrics (`RecordRequestReply`) | Открыт — [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) волна 2 |
-| **P3** | `IntegrateWithResult()` для SentAndWait | Открыт — roadmap волна 3 |
-| **P3** | Concurrent RPC (correlation map) | Открыт — roadmap волна 3 |
+| **P3** | `IntegrateWithResult()` для SentAndWait | Открыт — [`plans/2026-07-04_2104-sentandwait-async-execution.md`](plans/2026-07-04_2104-sentandwait-async-execution.md) фаза 1 |
+| **P3** | Async `IntegrateAsync()` + concurrent RPC | Открыт — [`plans/2026-07-04_2104-sentandwait-async-execution.md`](plans/2026-07-04_2104-sentandwait-async-execution.md) |
 | **P3** | Integration tests в `release.yml` | Открыт — roadmap волна 1 |
 | **P3** | NuGet publish (`NUGET_API_KEY` + tag) | Открыт — roadmap волна 1 |
 | **P3** | Distributed tracing | Открыт — roadmap волна 4 (optional) |
@@ -252,16 +251,17 @@ flowchart TB
 
 ## 8. Итоговый вывод
 
-Проект **архитектурно зрелый** для RabbitMQ интеграций. После `f7f8e08` закрыт главный gap — **SentAndWait через RabbitMQ** (sync request-reply MVP).
+Проект **архитектурно зрелый** для RabbitMQ интеграций. После `85b0a45` закрыт главный gap — **SentAndWait через RabbitMQ** (sync request-reply MVP) и стабилизированы metrics-тесты.
 
 **Blockers сняты** для всех трёх RabbitMQ-сценариев на уровне базовой функциональности. Главные **оставшиеся риски**:
 
-| Категория | Главный риск |
-|-----------|--------------|
-| **SentAndWait RPC** | At-most-once при timeout; нет outbox; один in-flight на connection |
-| **Adoption** | `ThrowOnFailure=false` по умолчанию; server должен reply до ack |
-| **Operations** | Нет RPC metrics; NuGet не опубликован |
-| **Security** | Credentials в JSON, нет TLS samples |
+| Категория | Главный риск | Severity |
+|-----------|--------------|----------|
+| **SentAndWait RPC** | At-most-once при timeout; нет outbox; один in-flight на connection | Высокий для critical flows |
+| **Adoption** | `ThrowOnFailure=false` по умолчанию; server должен reply до ack | Высокий |
+| **Operations** | NuGet не опубликован; release без integration tests; нет RPC metrics | Средний |
+| **Performance (RPC)** | Serial lock + новое connection на reply | Средний при нагрузке |
+| **Security** | Plain credentials, нет TLS samples | Средний |
 
 **Рекомендация:**
 

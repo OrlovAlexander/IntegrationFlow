@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Exceptions;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Connection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -13,34 +16,37 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     /// <summary>
     /// Подключение к RabbitMQ для request-reply (SentAndWait).
     /// </summary>
-    internal sealed class RabbitMqRequestReplyConnection : DomainConnection
+    internal sealed class RabbitMqRequestReplyConnection : DomainConnection, ILeaveOpenOnDispose
     {
         private readonly RabbitMqRequestReplyConfiguration configuration;
-        private readonly object pendingSync = new();
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<byte[]>> pendingReplies = new();
         private RabbitMQ.Client.IConnection connection;
         private IModel publishChannel;
         private IModel consumeChannel;
-        private EventingBasicConsumer consumer;
+        private AsyncEventingBasicConsumer consumer;
         private string replyAddress = string.Empty;
         private bool exclusiveReplyQueue;
         private bool disposed;
-        private string pendingCorrelationId = string.Empty;
-        private ManualResetEventSlim pendingSignal;
-        private byte[] pendingResponse;
 
         public RabbitMqRequestReplyConnection(RabbitMqRequestReplyConfiguration configuration)
-            : this(configuration, openConnection: true)
+            : this(configuration, leaveOpenOnDispose: false, openConnection: true)
         {
         }
 
-        internal RabbitMqRequestReplyConnection(RabbitMqRequestReplyConfiguration configuration, bool openConnection)
+        internal RabbitMqRequestReplyConnection(
+            RabbitMqRequestReplyConfiguration configuration,
+            bool leaveOpenOnDispose,
+            bool openConnection = true)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            LeaveOpenOnDispose = leaveOpenOnDispose;
             if (openConnection)
             {
                 Open();
             }
         }
+
+        public bool LeaveOpenOnDispose { get; }
 
         internal IModel PublishChannel => publishChannel;
 
@@ -65,7 +71,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
 
         public void Dispose()
         {
-            if (disposed)
+            if (disposed || LeaveOpenOnDispose)
             {
                 return;
             }
@@ -74,63 +80,60 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             DisposeInternal(deleteExclusiveQueue: true);
         }
 
-        internal void BeginWaitingForResponse(string correlationId)
+        internal byte[] CompleteWaitingForResponse(string correlationId, TimeSpan timeout)
+            => WaitForResponseAsync(correlationId, timeout, CancellationToken.None).GetAwaiter().GetResult();
+
+        internal async Task<byte[]> WaitForResponseAsync(
+            string correlationId,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(correlationId))
             {
                 throw new ArgumentException("Correlation id is required.", nameof(correlationId));
             }
 
-            lock (pendingSync)
+            var tcs = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!pendingReplies.TryAdd(correlationId, tcs))
             {
-                pendingCorrelationId = correlationId;
-                pendingResponse = null;
-                pendingSignal?.Dispose();
-                pendingSignal = new ManualResetEventSlim(false);
-            }
-        }
-
-        internal byte[] CompleteWaitingForResponse(TimeSpan timeout)
-        {
-            ManualResetEventSlim signal;
-            lock (pendingSync)
-            {
-                signal = pendingSignal ?? throw new InvalidOperationException("Response wait was not started.");
+                throw new InvalidOperationException("Duplicate correlation id.");
             }
 
             try
             {
-                if (!signal.Wait(timeout))
-                {
-                    throw new Exceptions.RequestReplyTimeoutException(
-                        $"RabbitMQ request-reply response was not received within {timeout.TotalSeconds:0} seconds.");
-                }
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeoutCts.CancelAfter(timeout);
 
-                lock (pendingSync)
+                using (timeoutCts.Token.Register(() =>
                 {
-                    return pendingResponse ?? Array.Empty<byte>();
+                    if (pendingReplies.TryRemove(correlationId, out var pending))
+                    {
+                        pending.TrySetCanceled(timeoutCts.Token);
+                    }
+                }))
+                {
+                    try
+                    {
+                        return await tcs.Task.ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        throw new RequestReplyTimeoutException(
+                            $"RabbitMQ request-reply response was not received within {timeout.TotalSeconds:0} seconds.");
+                    }
                 }
             }
             finally
             {
-                lock (pendingSync)
-                {
-                    pendingCorrelationId = string.Empty;
-                    pendingResponse = null;
-                    pendingSignal?.Dispose();
-                    pendingSignal = null;
-                }
+                pendingReplies.TryRemove(correlationId, out _);
             }
         }
 
-        internal void CancelWaitingForResponse()
+        internal void CancelPendingResponse(string correlationId)
         {
-            lock (pendingSync)
+            if (pendingReplies.TryRemove(correlationId, out var pending))
             {
-                pendingCorrelationId = string.Empty;
-                pendingResponse = null;
-                pendingSignal?.Dispose();
-                pendingSignal = null;
+                pending.TrySetCanceled();
             }
         }
 
@@ -150,8 +153,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 _ => throw new InvalidOperationException($"Unsupported reply mode: {configuration.ReplyMode}.")
             };
 
-            consumer = new EventingBasicConsumer(consumeChannel);
-            consumer.Received += OnReplyReceived;
+            consumer = new AsyncEventingBasicConsumer(consumeChannel);
+            consumer.Received += OnReplyReceivedAsync;
             consumeChannel.BasicConsume(
                 queue: replyAddress,
                 autoAck: true,
@@ -171,40 +174,36 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             return declare.QueueName;
         }
 
-        private void OnReplyReceived(object sender, BasicDeliverEventArgs eventArgs)
+        private Task OnReplyReceivedAsync(object sender, BasicDeliverEventArgs eventArgs)
         {
             var correlationId = eventArgs.BasicProperties?.CorrelationId;
             if (string.IsNullOrWhiteSpace(correlationId))
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            lock (pendingSync)
+            if (pendingReplies.TryRemove(correlationId, out var pending))
             {
-                if (!string.Equals(pendingCorrelationId, correlationId, StringComparison.Ordinal))
-                {
-                    return;
-                }
-
-                pendingResponse = eventArgs.Body.ToArray();
-                pendingSignal?.Set();
+                pending.TrySetResult(eventArgs.Body.ToArray());
             }
+
+            return Task.CompletedTask;
         }
 
         private void DisposeInternal(bool deleteExclusiveQueue)
         {
             if (consumer != null)
             {
-                consumer.Received -= OnReplyReceived;
+                consumer.Received -= OnReplyReceivedAsync;
                 consumer = null;
             }
 
-            lock (pendingSync)
+            foreach (var key in pendingReplies.Keys.ToArray())
             {
-                pendingSignal?.Dispose();
-                pendingSignal = null;
-                pendingCorrelationId = string.Empty;
-                pendingResponse = null;
+                if (pendingReplies.TryRemove(key, out var pending))
+                {
+                    pending.TrySetCanceled();
+                }
             }
 
             TryCloseChannel(consumeChannel);

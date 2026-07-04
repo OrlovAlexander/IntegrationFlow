@@ -100,6 +100,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         public bool ValidateTopology { get; set; } = true;
 
         /// <summary>
+        /// Максимум одновременных in-flight RPC на одном transmitter (0 = без ограничения).
+        /// </summary>
+        public int MaxConcurrentRequests { get; set; } = 1;
+
+        /// <summary>
+        /// Переиспользовать TCP-подключение между вызовами интеграции.
+        /// </summary>
+        public bool ReuseConnection { get; set; }
+
+        /// <summary>
         /// Проверяет корректность конфигурации.
         /// </summary>
         public void Validate()
@@ -159,7 +169,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 VirtualHost = VirtualHost,
                 AutomaticRecoveryEnabled = AutomaticRecoveryEnabled,
                 ClientProvidedName = ClientProvidedName,
-                DispatchConsumersAsync = false
+                DispatchConsumersAsync = true
             };
         }
 

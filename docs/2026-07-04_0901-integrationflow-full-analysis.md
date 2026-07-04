@@ -1,6 +1,6 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** superseded → см. [`2026-07-04_0929-integrationflow-full-analysis.md`](2026-07-04_0929-integrationflow-full-analysis.md)  
+**Статус:** superseded → см. [`2026-07-04_2102-integrationflow-full-analysis.md`](2026-07-04_2102-integrationflow-full-analysis.md)  
 **Создан:** 2026-07-04 09:01 (UTC+3)  
 **Обновлён:** 2026-07-04 09:29 (UTC+3)  
 **Связанные документы:** [`2026-07-03_2201-integrationflow-full-analysis.md`](2026-07-03_2201-integrationflow-full-analysis.md) (superseded), [`plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md`](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md)

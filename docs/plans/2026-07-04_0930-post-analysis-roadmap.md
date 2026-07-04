@@ -3,7 +3,7 @@
 **Статус:** открыт  
 **Создан:** 2026-07-04 09:30 (UTC+3)  
 **Обновлён:** 2026-07-04 09:30 (UTC+3)  
-**Основание:** [`../2026-07-04_0929-integrationflow-full-analysis.md`](../2026-07-04_0929-integrationflow-full-analysis.md), разделы 4–7  
+**Основание:** [`../2026-07-04_2102-integrationflow-full-analysis.md`](../2026-07-04_2102-integrationflow-full-analysis.md), разделы 4–7  
 **Цель:** закрыть оставшиеся gaps после v8 (RPC hardening, ops, observability, distribution)  
 **Оценка суммарно:** ~8–12 рабочих дней (3 волны)
 
@@ -228,7 +228,7 @@ services.AddIntegrationFlowRabbitMqListener("OrdersRpc", message =>
 | A2 | TLS / AMQPS sample | 0.5 дня | `RabbitMqConnectionSettings` + README |
 | A3 | Secrets via env | 0.5 дня | `IConfiguration` overlay в loader |
 | A4 | REST out-of-scope | 0.25 дня | README + analysis note |
-| — | `IntegrateAsync()` SentAndWait | 1 день | Если нужен async API |
+| — | `IntegrateAsync()` SentAndWait | 1 день | См. [`plans/2026-07-04_2104-sentandwait-async-execution.md`](2026-07-04_2104-sentandwait-async-execution.md) (~4–6 дней полный scope) |
 | — | Prefetch > 1 guidance | 0.5 дня | Docs only |
 
 ---
@@ -272,8 +272,8 @@ services.AddIntegrationFlowRabbitMqListener("OrdersRpc", message =>
 
 | Документ | Связь |
 |----------|-------|
-| [`2026-07-04_0929-integrationflow-full-analysis.md`](../2026-07-04_0929-integrationflow-full-analysis.md) | Источник рисков и P3 |
-| [`plans/2026-07-04_0904-rabbitmq-sentandwait.md`](2026-07-04_0904-rabbitmq-sentandwait.md) | MVP выполнен; hardening → волна 3 |
+| [`2026-07-04_2102-integrationflow-full-analysis.md`](../2026-07-04_2102-integrationflow-full-analysis.md) | Источник рисков и P3 |
+| [`plans/2026-07-04_2104-sentandwait-async-execution.md`](2026-07-04_2104-sentandwait-async-execution.md) | Async API + concurrent RPC — детальный план |
 | [`plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md`](2026-07-04_0836-p1-p2-metrics-and-nuget.md) | P1–P2 выполнены; publish → волна 1 |
 | [`runbooks/2026-07-04_0845-nuget-release.md`](../runbooks/2026-07-04_0845-nuget-release.md) | D1 |
 | [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](../runbooks/2026-07-04_0845-metrics-and-alerting.md) | O2 |

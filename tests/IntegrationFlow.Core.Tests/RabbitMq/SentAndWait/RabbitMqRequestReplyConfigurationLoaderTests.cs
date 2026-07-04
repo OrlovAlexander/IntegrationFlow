@@ -79,6 +79,28 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
     }
 
     [Fact]
+    public void LoadFromFile_ReadsMaxConcurrentRequestsAndReuseConnection()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMqRequestReply": {
+                "HostName": "localhost",
+                "RequestTarget": "Queue",
+                "QueueName": "orders.rpc",
+                "MaxConcurrentRequests": 8,
+                "ReuseConnection": true
+              }
+            }
+            """);
+
+        var configuration = RabbitMqRequestReplyConfigurationLoader.LoadFromFile(configPath);
+
+        Assert.Equal(8, configuration.MaxConcurrentRequests);
+        Assert.True(configuration.ReuseConnection);
+    }
+
+    [Fact]
     public void Validate_ThrowsWhenQueueTargetWithoutQueueName()
     {
         var configuration = new RabbitMqRequestReplyConfiguration
