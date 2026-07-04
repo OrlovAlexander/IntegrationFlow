@@ -51,6 +51,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D0C5F001-8
 		docs\plans\2026-07-04_2244-sentandwait-rpc-implementation.md = docs\plans\2026-07-04_2244-sentandwait-rpc-implementation.md
 		docs\2026-07-04_2301-sentandwait-rpc-implementation-status.md = docs\2026-07-04_2301-sentandwait-rpc-implementation-status.md
 		docs\2026-07-04_2338-integration-types-full-report.md = docs\2026-07-04_2338-integration-types-full-report.md
+		docs\2026-07-04_2352-rabbitmq-full-analysis.md = docs\2026-07-04_2352-rabbitmq-full-analysis.md
 		docs\runbooks\2026-07-04_0845-metrics-and-alerting.md = docs\runbooks\2026-07-04_0845-metrics-and-alerting.md
 		docs\runbooks\2026-07-04_0845-nuget-release.md = docs\runbooks\2026-07-04_0845-nuget-release.md
 		docs\runbooks\2026-07-04_2130-sentandwait-rpc-adoption.md = docs\runbooks\2026-07-04_2130-sentandwait-rpc-adoption.md

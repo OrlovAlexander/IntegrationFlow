@@ -270,6 +270,7 @@ dotnet test --filter "Category=Integration"
 Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
 Полный анализ решения и рисков: [`docs/2026-07-04_2234-integrationflow-full-analysis.md`](docs/2026-07-04_2234-integrationflow-full-analysis.md).  
 Отчёт по видам интеграций, сценариям и gap-листу: [`docs/2026-07-04_2338-integration-types-full-report.md`](docs/2026-07-04_2338-integration-types-full-report.md).  
+Полный анализ RabbitMQ (gaps и roadmap): [`docs/2026-07-04_2352-rabbitmq-full-analysis.md`](docs/2026-07-04_2352-rabbitmq-full-analysis.md).  
 План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
 План закрытия главных рисков (v1.0): [`docs/plans/2026-07-04_2130-remaining-risks-mitigation.md`](docs/plans/2026-07-04_2130-remaining-risks-mitigation.md).  

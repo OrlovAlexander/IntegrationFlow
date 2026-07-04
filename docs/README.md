@@ -42,3 +42,4 @@
 | 2026-07-04 22:44 | 2026-07-04 22:55 | [План реализации: SentAndWait RPC (фазы 0–3)](plans/2026-07-04_2244-sentandwait-rpc-implementation.md) |
 | 2026-07-04 23:01 | 2026-07-04 23:45 | [Статус реализации SentAndWait RPC (фазы 1–3)](2026-07-04_2301-sentandwait-rpc-implementation-status.md) |
 | 2026-07-04 23:38 | 2026-07-04 23:38 | [Полный отчёт по видам интеграций, рискам и сценариям (актуально)](2026-07-04_2338-integration-types-full-report.md) |
+| 2026-07-04 23:52 | 2026-07-04 23:52 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
