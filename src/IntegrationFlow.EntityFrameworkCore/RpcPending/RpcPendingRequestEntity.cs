@@ -32,5 +32,7 @@ public sealed class RpcPendingRequestEntity
 
     public DateTimeOffset? CompletedAt { get; set; }
 
+    public DateTimeOffset? CompensatedAt { get; set; }
+
     public string? LastError { get; set; }
 }

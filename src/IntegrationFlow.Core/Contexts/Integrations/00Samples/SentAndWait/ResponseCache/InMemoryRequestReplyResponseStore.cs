@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.ResponseCache;
@@ -83,6 +84,31 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.SentAndWait.ResponseC
             }
 
             return Task.FromResult<byte[]?>(entry.ResponseBody);
+        }
+
+        public Task<int> PurgeExpiredAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var now = DateTimeOffset.UtcNow;
+            var staleProcessingBefore = now.Subtract(options.ProcessingLockDuration);
+            var removed = 0;
+
+            foreach (var pair in entries.ToArray())
+            {
+                var entry = pair.Value;
+                if ((entry.State == CacheEntryState.Completed &&
+                     entry.CompletedAt.Add(options.ResponseRetention) <= now) ||
+                    (entry.State == CacheEntryState.Processing &&
+                     entry.StartedAt <= staleProcessingBefore))
+                {
+                    if (entries.TryRemove(pair.Key, out _))
+                    {
+                        removed++;
+                    }
+                }
+            }
+
+            return Task.FromResult(removed);
         }
 
         private enum CacheEntryState

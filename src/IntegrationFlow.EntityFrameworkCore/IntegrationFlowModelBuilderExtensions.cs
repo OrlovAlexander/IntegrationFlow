@@ -56,7 +56,7 @@ public static class IntegrationFlowModelBuilderExtensions
             entity.Property(request => request.Status).HasConversion<int>();
             entity.Property(request => request.LockedBy).HasMaxLength(128);
             entity.Property(request => request.LastError).HasMaxLength(2048);
-            entity.HasIndex(request => new { request.Status, request.RetryAfter, request.CreatedAt });
+            entity.HasIndex(request => new { request.Status, request.CompensatedAt, request.CreatedAt });
         });
 
         return modelBuilder;

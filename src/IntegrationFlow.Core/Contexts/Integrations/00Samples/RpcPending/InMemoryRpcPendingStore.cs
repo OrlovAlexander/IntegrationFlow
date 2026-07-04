@@ -170,6 +170,61 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.RpcPending
             return Task.FromResult(count);
         }
 
+        public Task<IReadOnlyList<RpcPendingRequest>> GetCompensationCandidatesAsync(
+            int batchSize,
+            CancellationToken cancellationToken = default)
+        {
+            var candidates = entries.Values
+                .Where(request =>
+                    request.CompensatedAt == null &&
+                    request.Status is RpcPendingStatus.Failed or RpcPendingStatus.TimedOut)
+                .OrderBy(request => request.CreatedAt)
+                .Take(Math.Max(1, batchSize))
+                .ToList();
+
+            return Task.FromResult((IReadOnlyList<RpcPendingRequest>)candidates);
+        }
+
+        public Task MarkCompensatedAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            if (entries.TryGetValue(id, out var request) && request.CompensatedAt == null)
+            {
+                entries[id] = request.WithCompensated(DateTimeOffset.UtcNow);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<int> PurgeTerminalAsync(
+            DateTimeOffset terminalBefore,
+            int batchSize,
+            CancellationToken cancellationToken = default)
+        {
+            var removed = 0;
+            foreach (var pair in entries.ToArray())
+            {
+                if (removed >= Math.Max(1, batchSize))
+                {
+                    break;
+                }
+
+                var request = pair.Value;
+                var terminalAt = request.CompensatedAt ?? request.CompletedAt;
+                var purge =
+                    (request.Status == RpcPendingStatus.Completed &&
+                     terminalAt != null &&
+                     terminalAt < terminalBefore) ||
+                    (request.CompensatedAt != null && request.CompensatedAt < terminalBefore);
+
+                if (purge && entries.TryRemove(pair.Key, out _))
+                {
+                    removed++;
+                }
+            }
+
+            return Task.FromResult(removed);
+        }
+
         private static bool CanMarkInFlight(RpcPendingRequest request, string workerId)
         {
             return request.Status == RpcPendingStatus.InFlight &&

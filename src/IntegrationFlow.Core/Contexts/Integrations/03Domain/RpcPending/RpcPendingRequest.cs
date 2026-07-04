@@ -31,6 +31,8 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
 
         public DateTimeOffset? CompletedAt { get; }
 
+        public DateTimeOffset? CompensatedAt { get; }
+
         public string LastError { get; }
 
         public RpcPendingRequest(
@@ -53,7 +55,8 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                 lockedUntil: null,
                 retryAfter: null,
                 completedAt: null,
-                lastError: null)
+                lastError: null,
+                compensatedAt: null)
         {
         }
 
@@ -70,7 +73,8 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             DateTimeOffset? lockedUntil,
             DateTimeOffset? retryAfter,
             DateTimeOffset? completedAt,
-            string? lastError)
+            string? lastError,
+            DateTimeOffset? compensatedAt = null)
         {
             Id = id;
             ProfileName = profileName ?? string.Empty;
@@ -84,8 +88,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             LockedUntil = lockedUntil;
             RetryAfter = retryAfter;
             CompletedAt = completedAt;
+            CompensatedAt = compensatedAt;
             LastError = lastError ?? string.Empty;
         }
+
+        internal RpcPendingRequest WithCompensated(DateTimeOffset compensatedAt)
+            => Copy(compensatedAt: compensatedAt);
 
         internal RpcPendingRequest WithClaim(string workerId, DateTimeOffset lockedUntil)
             => Copy(status: RpcPendingStatus.InFlight, lockedBy: workerId, lockedUntil: lockedUntil);
@@ -143,7 +151,8 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             DateTimeOffset? lockedUntil = null,
             DateTimeOffset? retryAfter = null,
             DateTimeOffset? completedAt = null,
-            string? lastError = null)
+            string? lastError = null,
+            DateTimeOffset? compensatedAt = null)
             => new(
                 Id,
                 ProfileName,
@@ -157,6 +166,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                 lockedUntil ?? LockedUntil,
                 retryAfter ?? RetryAfter,
                 completedAt ?? CompletedAt,
-                lastError ?? LastError);
+                lastError ?? LastError,
+                compensatedAt ?? CompensatedAt);
     }
 }

@@ -22,5 +22,10 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.ResponseCa
         /// Возвращает ранее сохранённый ответ или <c>null</c>.
         /// </summary>
         Task<byte[]?> GetCachedResponseAsync(string messageId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Removes expired completed entries and stale processing locks.
+        /// </summary>
+        Task<int> PurgeExpiredAsync(CancellationToken cancellationToken = default);
     }
 }

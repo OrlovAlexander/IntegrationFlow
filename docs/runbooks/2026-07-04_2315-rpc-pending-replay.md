@@ -100,7 +100,26 @@ foreach (var id in abandonedIds)
 
 ---
 
-## 5. Связанные документы
+## 6. Compensation (Failed / TimedOut)
+
+При `Failed` или `TimedOut` можно зарегистрировать `IRpcCompensationHandler`. Встроенный вариант — `OutboxRpcCompensationHandler` (компенсация через SentAndForgot outbox):
+
+```csharp
+services.AddIntegrationFlowEfRpcPending<MyDbContext>();
+services.AddIntegrationFlowEfOutbox<MyDbContext>();
+services.AddIntegrationFlowEfOutboxRpcCompensation<MyDbContext>(options =>
+{
+    options.OutboxProfileName = "OrdersCompensation";
+});
+services.AddIntegrationFlowRpcPendingCompensation();
+services.AddIntegrationFlowRpcPendingRelay();
+```
+
+Worker `RpcPendingCompensationBackgroundService` находит pending без `CompensatedAt`, вызывает handler и выставляет `CompensatedAt`.
+
+---
+
+## 7. Связанные документы
 
 - [SentAndWait RPC implementation status](../2026-07-04_2301-sentandwait-rpc-implementation-status.md)
 - [Abandoned outbox replay](./2026-07-03_2216-abandoned-outbox-replay.md)

@@ -46,5 +46,16 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
         /// Returns count of requests waiting for RPC response.
         /// </summary>
         Task<int> GetAwaitingResponseCountAsync(CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<RpcPendingRequest>> GetCompensationCandidatesAsync(
+            int batchSize,
+            CancellationToken cancellationToken = default);
+
+        Task MarkCompensatedAsync(Guid id, CancellationToken cancellationToken = default);
+
+        Task<int> PurgeTerminalAsync(
+            DateTimeOffset terminalBefore,
+            int batchSize,
+            CancellationToken cancellationToken = default);
     }
 }

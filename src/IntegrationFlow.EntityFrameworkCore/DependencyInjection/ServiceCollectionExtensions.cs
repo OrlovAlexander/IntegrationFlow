@@ -1,3 +1,4 @@
+using System;
 using IntegrationFlow.Contexts.Integrations._03Domain.Outbox;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.ResponseCache;
@@ -87,6 +88,26 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddSingleton<IRpcPendingStore, EfRpcPendingStore<TContext>>();
         services.TryAddScoped<IRpcPendingEnqueue, EfRpcPendingEnqueue<TContext>>();
+        return services;
+    }
+
+    /// <summary>
+    /// Регистрирует compensation handler, публикующий компенсацию через transactional outbox.
+    /// </summary>
+    public static IServiceCollection AddIntegrationFlowEfOutboxRpcCompensation<TContext>(
+        this IServiceCollection services,
+        Action<OutboxRpcCompensationOptions> configure)
+        where TContext : DbContext
+    {
+        var options = new OutboxRpcCompensationOptions();
+        configure(options);
+        if (string.IsNullOrWhiteSpace(options.OutboxProfileName))
+        {
+            throw new ArgumentException("Outbox profile name is required.", nameof(configure));
+        }
+
+        services.TryAddSingleton(options);
+        services.TryAddSingleton<IRpcCompensationHandler, OutboxRpcCompensationHandler<TContext>>();
         return services;
     }
 }

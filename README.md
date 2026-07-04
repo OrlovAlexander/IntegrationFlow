@@ -369,7 +369,7 @@ if (!result.Success)
 
 **Idempotent sync RPC (фаза 1):** задайте `MessageId` через `WithMessageId()` или `TransmitData(data, messageId)`; на server — `IRequestReplyResponseStore` + `RabbitMqRpcServerPipeline`. При timeout включите `SentAndWaitIntegrationOptions.RetryOnTimeout = true` (retry с тем же MessageId).
 
-**Async RPC для critical flows (фаза 2):** `RequestMode: AsyncOutbox` + `ResponseQueueName` в конфиге; stage через `IRpcPendingEnqueue` / `DbContext.EnqueueRpcRequest()` или high-level `CreateSentAndWaitAsyncOutboxIntegration` → `CreatePendingRequest()` в TX; ожидание — `IntegrateWithResultAsync(pendingId)`; relay — `AddIntegrationFlowRpcPendingRelay()`; correlation — `AddIntegrationFlowRabbitMqRpcResponseCorrelation()`; EF — `AddIntegrationFlowEfRpcPending<TContext>()`.
+**Async RPC для critical flows (фаза 2–3):** `RequestMode: AsyncOutbox` + `ResponseQueueName` в конфиге; stage через `CreateSentAndWaitAsyncOutboxIntegration` → `CreatePendingRequest()` в TX; ожидание — `IntegrateWithResultAsync(pendingId)`; relay — `AddIntegrationFlowRpcPendingRelay()`; correlation — `AddIntegrationFlowRabbitMqRpcResponseCorrelation()`; compensation — `AddIntegrationFlowEfOutboxRpcCompensation<T>()` + `AddIntegrationFlowRpcPendingCompensation()`; cleanup — `AddIntegrationFlowMaintenance()`; EF — `AddIntegrationFlowEfRpcPending<TContext>()`.
 
 ### Server-side RPC handler
 

@@ -149,4 +149,29 @@ public sealed class EfRequestReplyResponseStore<TContext> : IRequestReplyRespons
 
         return entity.ResponseBody;
     }
+
+    public async Task<int> PurgeExpiredAsync(CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var set = context.Set<RpcResponseCacheEntity>();
+        var now = DateTimeOffset.UtcNow;
+        var staleProcessingBefore = now.Subtract(options.ProcessingLockDuration);
+
+        var expired = await set
+            .Where(entry =>
+                (entry.ExpiresAt != null && entry.ExpiresAt <= now) ||
+                (entry.State == RpcResponseCacheState.Processing && entry.CreatedAt <= staleProcessingBefore))
+            .Take(500)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (expired.Count == 0)
+        {
+            return 0;
+        }
+
+        set.RemoveRange(expired);
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return expired.Count;
+    }
 }

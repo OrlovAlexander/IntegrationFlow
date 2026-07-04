@@ -2,7 +2,7 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:01 (UTC+3)  
-**Обновлён:** 2026-07-04 23:35 (UTC+3)  
+**Обновлён:** 2026-07-04 23:45 (UTC+3)  
 **Связанные документы:** [`plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md), [`plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md)
 
 Итог реализации по плану [`2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md). **121+ unit-тестов** зелёные (Release); integration-тесты RPC — при наличии Docker.
@@ -169,11 +169,40 @@ var result = await pendingStore.WaitForCompletionAsync(
 | 3 | PostgreSQL SKIP LOCKED claim для RpcPending | P2 | ✅ |
 | 4 | `CreateSentAndWaitAsyncOutboxIntegration` — high-level API | P2 | ✅ |
 | 5 | Metrics: `rpc.pending.*` | P2 | ✅ |
-| 6 | Фаза 3: `IRpcCompensationHandler`, cleanup jobs | P3 | ⏳ |
+| 6 | Фаза 3: `IRpcCompensationHandler`, cleanup jobs | P3 | ✅ |
 
 ---
 
-## 4. Семантика по режимам
+## 7. Фаза 3 — Hardening ✅
+
+| Компонент | Файл |
+|-----------|------|
+| `IRpcCompensationHandler` | [`IRpcCompensationHandler.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/IRpcCompensationHandler.cs) |
+| `RpcPendingCompensationService` + worker | [`RpcPendingCompensationService.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/RpcPendingCompensationService.cs) |
+| `OutboxRpcCompensationHandler` | [`OutboxRpcCompensationHandler.cs`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/OutboxRpcCompensationHandler.cs) |
+| `IntegrationFlowMaintenanceService` + worker | [`IntegrationFlowMaintenanceService.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/Maintenance/) |
+| `IRequestReplyResponseStore.PurgeExpiredAsync` | response cache cleanup |
+| `IRpcPendingStore.PurgeTerminalAsync` | terminal pending cleanup |
+
+DI:
+
+```csharp
+services.AddIntegrationFlowEfOutboxRpcCompensation<MyDbContext>(o => o.OutboxProfileName = "Compensation");
+services.AddIntegrationFlowRpcPendingCompensation();
+services.AddIntegrationFlowMaintenance(o => o.RpcPendingTerminalRetention = TimeSpan.FromDays(30));
+```
+
+### Тесты (фаза 3)
+
+| Тест | Файл |
+|------|------|
+| Compensation dispatch | `tests/IntegrationFlow.Core.Tests/RpcPending/RpcPendingCompensationServiceTests.cs` |
+| Outbox compensation handler | `tests/IntegrationFlow.EntityFrameworkCore.Tests/OutboxRpcCompensationHandlerTests.cs` |
+| Maintenance purge | `tests/IntegrationFlow.Core.Tests/Maintenance/IntegrationFlowMaintenanceServiceTests.cs` |
+
+---
+
+## 8. Семантика по режимам
 
 | Режим | Critical TX | Timeout |
 |-------|-------------|---------|
@@ -182,7 +211,7 @@ var result = await pendingStore.WaitForCompletionAsync(
 
 ---
 
-## 5. Связь с рисками R1/R2
+## 9. Связь с рисками R1/R2
 
 | Риск | Фаза 1 | Фаза 2 |
 |------|--------|--------|
@@ -194,7 +223,7 @@ var result = await pendingStore.WaitForCompletionAsync(
 
 ---
 
-## 6. Проверка
+## 10. Проверка
 
 ```bash
 dotnet build IntegrationFlow.sln -c Release
@@ -202,4 +231,4 @@ dotnet test IntegrationFlow.sln -c Release --filter "Category!=Integration"
 dotnet test IntegrationFlow.sln -c Release --filter "Category=Integration"  # Docker
 ```
 
-Ожидаемо unit: **124+** тестов (Core + Metrics + EF).
+Ожидаемо unit: **128** тестов (Core + Metrics + EF).

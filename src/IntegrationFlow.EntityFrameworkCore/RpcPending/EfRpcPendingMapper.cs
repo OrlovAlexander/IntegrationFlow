@@ -19,7 +19,8 @@ internal static class EfRpcPendingMapper
             LockedUntil = request.LockedUntil,
             RetryAfter = request.RetryAfter,
             CompletedAt = request.CompletedAt,
-            LastError = request.LastError
+            LastError = request.LastError,
+            CompensatedAt = request.CompensatedAt
         };
 
     internal static RpcPendingRequest ToDomain(RpcPendingRequestEntity entity)
@@ -36,5 +37,6 @@ internal static class EfRpcPendingMapper
             entity.LockedUntil,
             entity.RetryAfter,
             entity.CompletedAt,
-            entity.LastError);
+            entity.LastError,
+            entity.CompensatedAt);
 }

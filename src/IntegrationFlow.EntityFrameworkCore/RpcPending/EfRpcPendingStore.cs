@@ -201,6 +201,65 @@ public sealed class EfRpcPendingStore<TContext> : IRpcPendingStore
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<RpcPendingRequest>> GetCompensationCandidatesAsync(
+        int batchSize,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var candidates = await context.Set<RpcPendingRequestEntity>()
+            .Where(request =>
+                request.CompensatedAt == null &&
+                (request.Status == RpcPendingStatus.Failed || request.Status == RpcPendingStatus.TimedOut))
+            .OrderBy(request => request.CreatedAt)
+            .Take(Math.Max(1, batchSize))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return candidates.Select(EfRpcPendingMapper.ToDomain).ToList();
+    }
+
+    public async Task MarkCompensatedAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var entity = await context.Set<RpcPendingRequestEntity>().FindAsync(new object[] { id }, cancellationToken).ConfigureAwait(false);
+        if (entity == null || entity.CompensatedAt != null)
+        {
+            return;
+        }
+
+        entity.CompensatedAt = DateTimeOffset.UtcNow;
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<int> PurgeTerminalAsync(
+        DateTimeOffset terminalBefore,
+        int batchSize,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var set = context.Set<RpcPendingRequestEntity>();
+        var candidates = await set
+            .Where(request =>
+                (request.Status == RpcPendingStatus.Completed &&
+                 request.CompletedAt != null &&
+                 request.CompletedAt < terminalBefore) ||
+                (request.CompensatedAt != null && request.CompensatedAt < terminalBefore))
+            .OrderBy(request => request.CreatedAt)
+            .Take(Math.Max(1, batchSize))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (candidates.Count == 0)
+        {
+            return 0;
+        }
+
+        set.RemoveRange(candidates);
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return candidates.Count;
+    }
+
     private static async Task ReleaseExpiredClaimsInternalAsync(
         DbSet<RpcPendingRequestEntity> set,
         DateTimeOffset now,
