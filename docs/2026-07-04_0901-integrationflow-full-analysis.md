@@ -1,8 +1,8 @@
 # Полный анализ IntegrationFlow и оценка рисков
 
-**Статус:** актуально  
+**Статус:** superseded → см. [`2026-07-04_0929-integrationflow-full-analysis.md`](2026-07-04_0929-integrationflow-full-analysis.md)  
 **Создан:** 2026-07-04 09:01 (UTC+3)  
-**Обновлён:** 2026-07-04 09:01 (UTC+3)  
+**Обновлён:** 2026-07-04 09:29 (UTC+3)  
 **Связанные документы:** [`2026-07-03_2201-integrationflow-full-analysis.md`](2026-07-03_2201-integrationflow-full-analysis.md) (superseded), [`plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md`](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md)
 
 Актуальное состояние после коммита `5780b82` (P1–P2: metrics-пакет, CI pack/release). Локально **95 unit + 16 integration = 111 тестов** — все зелёные.

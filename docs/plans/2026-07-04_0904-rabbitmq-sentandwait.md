@@ -407,6 +407,8 @@ Server **не объявляет** reply queue при DirectReplyTo.
 
 ### Этап 4 — Hardening (опционально, ~1–2 дня)
 
+> Перенесено в [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md), волны 2–3.
+
 1. `ReplyMode = ExclusiveQueue`
 2. Concurrent RPC (correlation map, multiple in-flight)
 3. `IntegrateWithResult()` / typed result для SentAndWait
@@ -476,7 +478,7 @@ Server **не объявляет** reply queue при DirectReplyTo.
 - [x] Unit-тесты loader, transmitter, reply publisher
 - [x] E2E roundtrip (Testcontainers) в CI
 - [x] README + example doc
-- [ ] Анализ рисков обновлён (SentAndWait production-ready при adoption)
+- [x] Анализ рисков обновлён — [`2026-07-04_0929-integrationflow-full-analysis.md`](../2026-07-04_0929-integrationflow-full-analysis.md)
 
 ---
 
