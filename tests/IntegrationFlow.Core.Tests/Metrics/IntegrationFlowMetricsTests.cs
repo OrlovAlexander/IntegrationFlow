@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Processors;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Publishers;
-using IntegrationFlow.Contexts.Integrations._00Samples.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.Outbox;
@@ -22,7 +22,9 @@ public sealed class IntegrationFlowMetricsTests
     {
         var metrics = new TestMetrics();
         var logger = NullIntegrationLogger.Instance;
-        var publisher = PublisherBase.Create<RabbitMqPublisher, InboxRabbitMqPublisherSide>(logger);
+        var publisher = PublisherBase.Create<RabbitMqPublisher>(
+            logger,
+            new MetricsTestRabbitMqPublisherSide(Guid.NewGuid().ToString("N")));
         publisher.Metrics = metrics;
 
         var configuration = publisher.IntegrationPublisherSide.GetConfiguration(publisher, logger);
@@ -57,6 +59,30 @@ public sealed class IntegrationFlowMetricsTests
         Assert.Equal(0, metrics.FailedCount);
         Assert.Equal(0, metrics.AbandonedCount);
         Assert.Equal(0, metrics.LastPendingCount);
+    }
+
+    /// <summary>
+    /// Isolated publisher side: loads the Inbox profile but uses a unique TypeCollection cache key
+    /// so parallel tests do not share <see cref="PublisherBase.Metrics"/>.
+    /// </summary>
+    private sealed class MetricsTestRabbitMqPublisherSide : RabbitMqIntegrationPublisherSideBase
+    {
+        private readonly string cacheKeySuffix;
+
+        public MetricsTestRabbitMqPublisherSide(string cacheKeySuffix)
+        {
+            if (string.IsNullOrWhiteSpace(cacheKeySuffix))
+            {
+                throw new ArgumentException("Cache key suffix is required.", nameof(cacheKeySuffix));
+            }
+
+            this.cacheKeySuffix = cacheKeySuffix;
+        }
+
+        protected override string ConfigurationName => "Inbox";
+
+        public override string GetPublisherCacheKey()
+            => $"{base.GetPublisherCacheKey()}|{cacheKeySuffix}";
     }
 
     private sealed class MetricsProcessorSide : IntegrationProcessorSideBase
