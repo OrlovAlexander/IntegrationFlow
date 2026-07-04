@@ -74,7 +74,7 @@ namespace IntegrationFlow.Contexts.Integrations._00Samples.RpcPending
         public Task CompleteAsync(Guid id, byte[] responsePayload, CancellationToken cancellationToken = default)
         {
             if (entries.TryGetValue(id, out var request) &&
-                request.Status is RpcPendingStatus.AwaitingResponse or RpcPendingStatus.InFlight)
+                request.Status is not RpcPendingStatus.Completed and not RpcPendingStatus.Failed)
             {
                 entries[id] = request.WithCompleted(responsePayload, DateTimeOffset.UtcNow);
             }

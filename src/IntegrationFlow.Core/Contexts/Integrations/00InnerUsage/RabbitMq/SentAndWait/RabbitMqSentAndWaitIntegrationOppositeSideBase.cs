@@ -52,6 +52,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
 
         /// <inheritdoc />
         public override ILogging GetLogging(IIntegrationLogger logger) => null;
+
+        /// <inheritdoc />
+        public override string GetRpcPendingProfileName(IIntegrationLogger logger) => ConfigurationName;
     }
 
     /// <summary>

@@ -75,7 +75,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
         /// <summary>
         /// Возвращает код интеграции
         /// </summary>
-        /// <returns></returns>
         protected abstract object GetIntegrationOppositeSideCode();
+
+        /// <summary>
+        /// Имя профиля request-reply для AsyncOutbox pending store.
+        /// </summary>
+        public virtual string GetRpcPendingProfileName(IIntegrationLogger logger)
+            => IntegrationOppositeSideCode?.ToString() ?? string.Empty;
     }
 }

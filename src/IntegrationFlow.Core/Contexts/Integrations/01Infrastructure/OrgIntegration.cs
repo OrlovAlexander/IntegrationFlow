@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using IntegrationFlow.Contexts.Integrations._02Application;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
+using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait;
 
@@ -47,6 +48,24 @@ namespace IntegrationFlow.Contexts.Integrations._01Infrastructure
             var integrationOppositeSide = provider.IntegrationOppositeSideResolve(oppositeSideCode);
 
             return new SentAndWaitIntegration(integrationOppositeSide, srcData, Logger.Create(), metrics);
+        }
+
+        SentAndWaitAsyncOutboxIntegration IOrgIntegration.CreateSentAndWaitAsyncOutboxIntegration<TOppositeSideProvider>(
+            object oppositeSideCode,
+            object srcData,
+            IRpcPendingStore pendingStore,
+            TimeSpan? defaultWaitTimeout)
+        {
+            ISentAndWaitIntegrationOppositeSideProvider provider = FindSentAndWaitProvider<TOppositeSideProvider>();
+            var integrationOppositeSide = provider.IntegrationOppositeSideResolve(oppositeSideCode);
+
+            return new SentAndWaitAsyncOutboxIntegration(
+                integrationOppositeSide,
+                srcData,
+                pendingStore,
+                Logger.Create(),
+                metrics,
+                defaultWaitTimeout);
         }
 
         /// <summary>

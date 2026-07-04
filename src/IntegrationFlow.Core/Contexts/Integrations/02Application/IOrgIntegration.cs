@@ -1,3 +1,5 @@
+using System;
+using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait;
 
@@ -16,6 +18,16 @@ namespace IntegrationFlow.Contexts.Integrations._02Application
         /// <param name="srcData">Исходные данные</param>
         /// <returns>Интеграция</returns>
         SentAndWaitIntegration CreateSentAndWaitIntegration<TOppositeSideProvider>(object oppositeSideCode, object srcData)
+            where TOppositeSideProvider : ISentAndWaitIntegrationOppositeSideProvider, new();
+
+        /// <summary>
+        /// Создать AsyncOutbox-интеграцию SentAndWait (stage pending в TX, ожидание через store).
+        /// </summary>
+        SentAndWaitAsyncOutboxIntegration CreateSentAndWaitAsyncOutboxIntegration<TOppositeSideProvider>(
+            object oppositeSideCode,
+            object srcData,
+            IRpcPendingStore pendingStore,
+            TimeSpan? defaultWaitTimeout = null)
             where TOppositeSideProvider : ISentAndWaitIntegrationOppositeSideProvider, new();
 
         /// <summary>

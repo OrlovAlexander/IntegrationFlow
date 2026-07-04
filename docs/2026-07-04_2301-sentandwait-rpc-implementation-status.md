@@ -2,7 +2,7 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:01 (UTC+3)  
-**Обновлён:** 2026-07-04 23:20 (UTC+3)  
+**Обновлён:** 2026-07-04 23:35 (UTC+3)  
 **Связанные документы:** [`plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md), [`plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md)
 
 Итог реализации по плану [`2244-sentandwait-rpc-implementation.md`](plans/2026-07-04_2244-sentandwait-rpc-implementation.md). **121+ unit-тестов** зелёные (Release); integration-тесты RPC — при наличии Docker.
@@ -65,6 +65,8 @@ DI: `AddIntegrationFlowEfRequestReplyResponseCache<TContext>()`.
 | `InMemoryRpcPendingStore` (tests/samples) | [`00Samples/RpcPending/InMemoryRpcPendingStore.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/RpcPending/InMemoryRpcPendingStore.cs) |
 | `RpcPendingRelayService` | [`RpcPendingRelayService.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/RpcPendingRelayService.cs) — metrics + injectable config loader |
 | `RpcPendingWaitExtensions.WaitForCompletionAsync` | [`RpcPendingWaitExtensions.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/RpcPending/RpcPendingWaitExtensions.cs) |
+| `SentAndWaitAsyncOutboxIntegration` | [`SentAndWaitAsyncOutboxIntegration.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/03Domain/SentAndWait/SentAndWaitAsyncOutboxIntegration.cs) — `CreatePendingRequest`, `IntegrateWithResultAsync` |
+| `CreateSentAndWaitAsyncOutboxIntegration<T>()` | [`IOrgIntegration`](../src/IntegrationFlow.Core/Contexts/Integrations/02Application/IOrgIntegration.cs) / [`OrgIntegration`](../src/IntegrationFlow.Core/Contexts/Integrations/01Infrastructure/OrgIntegration.cs) |
 
 ### Transport и конфиг
 
@@ -89,6 +91,7 @@ DI: `AddIntegrationFlowEfRequestReplyResponseCache<TContext>()`.
 |-----------|------|
 | Entity | [`RpcPendingRequestEntity.cs`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/RpcPendingRequestEntity.cs) |
 | Store + enqueue | [`EfRpcPendingStore.cs`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/EfRpcPendingStore.cs), [`EfRpcPendingEnqueue.cs`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/EfRpcPendingEnqueue.cs) |
+| Claim strategies (PostgreSQL SKIP LOCKED) | [`RpcPending/Claim/`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/Claim/) |
 | Extension | [`DbContextRpcPendingExtensions.EnqueueRpcRequest()`](../src/IntegrationFlow.EntityFrameworkCore/RpcPending/DbContextRpcPendingExtensions.cs) |
 | Model | `ConfigureIntegrationFlow()` — таблица `IntegrationFlowRpcPendingRequests` |
 
@@ -149,9 +152,11 @@ var result = await pendingStore.WaitForCompletionAsync(
 | Stage → complete | `tests/IntegrationFlow.EntityFrameworkCore.Tests/EfRpcPendingStoreTests.cs` |
 | `WaitForCompletionAsync` | там же |
 | E2E AsyncOutbox relay + response | `tests/IntegrationFlow.Core.IntegrationTests/RabbitMqRpcPendingAsyncOutboxEndToEndTests.cs` |
+| PostgreSQL parallel claim | `tests/IntegrationFlow.EntityFrameworkCore.IntegrationTests/EfRpcPendingPostgreSqlClaimTests.cs` |
+| High-level AsyncOutbox API | `tests/IntegrationFlow.Core.Tests/SentAndWait/SentAndWaitAsyncOutboxIntegrationTests.cs` |
 | Rpc pending metrics | `tests/IntegrationFlow.Metrics.OpenTelemetry.Tests/OpenTelemetryIntegrationFlowMetricsTests.cs` |
 
-**DoD фазы 2 (полный):** частично — E2E, runbook, metrics ✅; PostgreSQL SKIP LOCKED и high-level API в backlog.
+**DoD фазы 2 (полный):** выполнен (P3 compensation/cleanup — в backlog).
 
 ---
 
@@ -161,8 +166,8 @@ var result = await pendingStore.WaitForCompletionAsync(
 |---|--------|-----------|--------|
 | 1 | E2E integration test AsyncOutbox (Docker) | P1 | ✅ |
 | 2 | Runbook abandoned pending replay | P1 | ✅ |
-| 3 | PostgreSQL SKIP LOCKED claim для RpcPending | P2 | ⏳ |
-| 4 | `CreateSentAndWaitAsyncOutboxIntegration` — high-level API | P2 | ⏳ |
+| 3 | PostgreSQL SKIP LOCKED claim для RpcPending | P2 | ✅ |
+| 4 | `CreateSentAndWaitAsyncOutboxIntegration` — high-level API | P2 | ✅ |
 | 5 | Metrics: `rpc.pending.*` | P2 | ✅ |
 | 6 | Фаза 3: `IRpcCompensationHandler`, cleanup jobs | P3 | ⏳ |
 
@@ -197,4 +202,4 @@ dotnet test IntegrationFlow.sln -c Release --filter "Category!=Integration"
 dotnet test IntegrationFlow.sln -c Release --filter "Category=Integration"  # Docker
 ```
 
-Ожидаемо unit: **121+** тестов (Core + Metrics + EF).
+Ожидаемо unit: **124+** тестов (Core + Metrics + EF).
