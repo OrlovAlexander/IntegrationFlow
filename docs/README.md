@@ -27,7 +27,8 @@
 | 2026-07-04 09:29 | 2026-07-04 21:02 | [Полный анализ IntegrationFlow и рисков (v8, superseded)](2026-07-04_0929-integrationflow-full-analysis.md) |
 | 2026-07-04 21:02 | 2026-07-04 21:28 | [Полный анализ IntegrationFlow и рисков (v9, superseded)](2026-07-04_2102-integrationflow-full-analysis.md) |
 | 2026-07-04 21:28 | 2026-07-04 22:34 | [Полный анализ IntegrationFlow и рисков (v10, superseded)](2026-07-04_2128-integrationflow-full-analysis.md) |
-| 2026-07-04 22:34 | 2026-07-04 22:34 | [Полный анализ IntegrationFlow и рисков (v11, актуально)](2026-07-04_2234-integrationflow-full-analysis.md) |
+| 2026-07-04 22:34 | 2026-07-05 14:55 | [Полный анализ IntegrationFlow и рисков (v11, superseded)](2026-07-04_2234-integrationflow-full-analysis.md) |
+| 2026-07-05 14:55 | 2026-07-05 14:55 | [Полный анализ IntegrationFlow и рисков (v12, актуально)](2026-07-05_1455-integrationflow-full-analysis.md) |
 | 2026-07-03 22:16 | 2026-07-03 22:16 | [Runbook: replay abandoned outbox](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | 2026-07-04 08:36 | 2026-07-04 08:36 | [План: P1 metrics + P2 NuGet publish (выполнено)](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md) |
 | 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: metrics and alerting](runbooks/2026-07-04_0845-metrics-and-alerting.md) |
