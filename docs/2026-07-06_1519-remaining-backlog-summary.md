@@ -2,8 +2,9 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-06 15:19 (UTC+3)  
-**Обновлён:** 2026-07-06 16:17 (UTC+3)  
+**Обновлён:** 2026-07-06 16:45 (UTC+3)  
 **Основание:** [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md)  
+**Детальный backlog:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **Следующий план:** P3 — [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md)
 
 ---
@@ -64,4 +65,4 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 ## Итог
 
-**P1 + P2 core закрыты.** До публичного release — **NuGet publish**. Следующая волна разработки — **P3 ops readiness** (health checks, config overlay).
+**P1 + P2 core закрыты.** До публичного release — **NuGet publish**. Следующая волна разработки — **P3 ops readiness** (health checks, config overlay). Полный перечень задач: [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md).
