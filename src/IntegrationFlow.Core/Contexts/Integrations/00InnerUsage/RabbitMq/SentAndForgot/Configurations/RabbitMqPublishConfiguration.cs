@@ -1,5 +1,6 @@
 using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Cfg;
 
@@ -8,7 +9,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
     /// <summary>
     /// Конфигурация публикации сообщений в RabbitMQ для SentAndForgot.
     /// </summary>
-    public class RabbitMqPublishConfiguration : IConfiguration
+    public class RabbitMqPublishConfiguration : IConfiguration, IRabbitMqConnectionConfiguration
     {
         /// <summary>
         /// Имя профиля подключения в rabbitmq.json.

@@ -1,3 +1,4 @@
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Configurations;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations
@@ -5,7 +6,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// <summary>
     /// Конфигурация подключения к очереди RabbitMQ.
     /// </summary>
-    public class RabbitMqConfiguration : IConfiguration
+    public class RabbitMqConfiguration : IConfiguration, IRabbitMqConnectionConfiguration
     {
         /// <inheritdoc />
         public bool Asynchronously { get; set; } = true;

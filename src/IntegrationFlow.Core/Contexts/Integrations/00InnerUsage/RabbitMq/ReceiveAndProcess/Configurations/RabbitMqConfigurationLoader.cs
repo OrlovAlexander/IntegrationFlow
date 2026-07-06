@@ -69,7 +69,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                     $"Файл '{filePath}' содержит именованные профили RabbitMQ. Используйте LoadProfile или LoadAll.");
             }
 
-            var rabbitMqConfiguration = BindSection(section);
+            var rabbitMqConfiguration = BindSection(configuration, section);
             rabbitMqConfiguration.Name = DefaultProfileName;
             return rabbitMqConfiguration;
         }
@@ -265,7 +265,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
             if (IsLegacyFlatFormat(section))
             {
-                var rabbitMqConfiguration = BindSection(section);
+                var rabbitMqConfiguration = BindSection(configuration, section);
                 rabbitMqConfiguration.Name = DefaultProfileName;
                 return new[] { rabbitMqConfiguration };
             }
@@ -273,7 +273,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             var profiles = new List<RabbitMqConfiguration>();
             foreach (var child in section.GetChildren())
             {
-                var profile = BindSection(child);
+                var profile = BindSection(configuration, child);
                 profile.Name = child.Key;
                 profiles.Add(profile);
             }
@@ -293,9 +293,10 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                 .Any(child => ConnectionPropertyNames.Contains(child.Key));
         }
 
-        private static RabbitMqConfiguration BindSection(IConfiguration section)
+        private static RabbitMqConfiguration BindSection(IConfiguration configuration, IConfigurationSection section)
         {
             var rabbitMqConfiguration = new RabbitMqConfiguration();
+            RabbitMqConnectionProfileResolver.ApplySharedConnectionBeforeBind(configuration, section, rabbitMqConfiguration);
             section.Bind(rabbitMqConfiguration);
             return rabbitMqConfiguration;
         }

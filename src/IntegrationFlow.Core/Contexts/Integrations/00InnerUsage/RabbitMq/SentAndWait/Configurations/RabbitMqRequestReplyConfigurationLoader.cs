@@ -62,7 +62,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                     $"Файл '{filePath}' содержит именованные профили RabbitMQ request-reply. Используйте LoadProfile или LoadAll.");
             }
 
-            var requestReplyConfiguration = BindSection(section);
+            var requestReplyConfiguration = BindSection(configuration, section);
             requestReplyConfiguration.Name = DefaultProfileName;
             requestReplyConfiguration.Validate();
             return requestReplyConfiguration;
@@ -200,7 +200,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
 
             if (IsLegacyFlatFormat(section))
             {
-                var requestReplyConfiguration = BindSection(section);
+                var requestReplyConfiguration = BindSection(configuration, section);
                 requestReplyConfiguration.Name = DefaultProfileName;
                 requestReplyConfiguration.Validate();
                 return new[] { requestReplyConfiguration };
@@ -209,7 +209,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var profiles = new List<RabbitMqRequestReplyConfiguration>();
             foreach (var child in section.GetChildren())
             {
-                var profile = BindSection(child);
+                var profile = BindSection(configuration, child);
                 profile.Name = child.Key;
                 profile.Validate();
                 profiles.Add(profile);
@@ -230,9 +230,10 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 .Any(child => ConnectionPropertyNames.Contains(child.Key));
         }
 
-        private static RabbitMqRequestReplyConfiguration BindSection(IConfiguration section)
+        private static RabbitMqRequestReplyConfiguration BindSection(IConfiguration configuration, IConfigurationSection section)
         {
             var requestReplyConfiguration = new RabbitMqRequestReplyConfiguration();
+            RabbitMqConnectionProfileResolver.ApplySharedConnectionBeforeBind(configuration, section, requestReplyConfiguration);
             section.Bind(requestReplyConfiguration);
             return requestReplyConfiguration;
         }

@@ -1,5 +1,6 @@
 using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Configurations;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations
@@ -7,7 +8,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     /// <summary>
     /// Конфигурация request-reply через RabbitMQ для SentAndWait.
     /// </summary>
-    public sealed class RabbitMqRequestReplyConfiguration : IConfiguration
+    public sealed class RabbitMqRequestReplyConfiguration : IConfiguration, IRabbitMqConnectionConfiguration
     {
         /// <summary>
         /// Имя профиля подключения в rabbitmq.json.

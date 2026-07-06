@@ -72,7 +72,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                     $"Файл '{filePath}' содержит именованные профили RabbitMQ publish. Используйте LoadProfile или LoadAll.");
             }
 
-            var publishConfiguration = BindSection(section);
+            var publishConfiguration = BindSection(configuration, section);
             publishConfiguration.Name = DefaultProfileName;
             publishConfiguration.Validate();
             return publishConfiguration;
@@ -237,7 +237,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
 
             if (IsLegacyFlatFormat(section))
             {
-                var publishConfiguration = BindSection(section);
+                var publishConfiguration = BindSection(configuration, section);
                 publishConfiguration.Name = DefaultProfileName;
                 publishConfiguration.Validate();
                 return new[] { publishConfiguration };
@@ -246,7 +246,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             var profiles = new List<RabbitMqPublishConfiguration>();
             foreach (var child in section.GetChildren())
             {
-                var profile = BindSection(child);
+                var profile = BindSection(configuration, child);
                 profile.Name = child.Key;
                 profile.Validate();
                 profiles.Add(profile);
@@ -267,9 +267,10 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 .Any(child => ConnectionPropertyNames.Contains(child.Key));
         }
 
-        private static RabbitMqPublishConfiguration BindSection(IConfiguration section)
+        private static RabbitMqPublishConfiguration BindSection(IConfiguration configuration, IConfigurationSection section)
         {
             var publishConfiguration = new RabbitMqPublishConfiguration();
+            RabbitMqConnectionProfileResolver.ApplySharedConnectionBeforeBind(configuration, section, publishConfiguration);
             section.Bind(publishConfiguration);
             return publishConfiguration;
         }

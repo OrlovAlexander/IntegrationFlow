@@ -101,6 +101,54 @@ builder.ConfigureServices((context, services) =>
 
 ```json
 {
+  "RabbitMqConnections": {
+    "Prod": {
+      "HostName": "rabbit.prod.internal",
+      "Port": 5671,
+      "UserName": "integration",
+      "Password": "secret",
+      "VirtualHost": "/prod",
+      "SslEnabled": true,
+      "SslServerName": "rabbit.prod.internal"
+    }
+  },
+  "RabbitMq": {
+    "Inbox": {
+      "Connection": "Prod",
+      "QueueName": "integration.inbox",
+      "PrefetchCount": 1,
+      "ClientProvidedName": "IntegrationFlow.InboxListener"
+    }
+  },
+  "RabbitMqPublish": {
+    "OrdersOut": {
+      "Connection": "Prod",
+      "PublishTarget": "Queue",
+      "QueueName": "orders.outbox"
+    }
+  },
+  "RabbitMqRequestReply": {
+    "OrdersRpc": {
+      "Connection": "Prod",
+      "QueueName": "orders.rpc"
+    }
+  }
+}
+```
+
+Секция `RabbitMqConnections` хранит общие параметры TCP-подключения (`HostName`, `Port`, `UserName`, `Password`, `VirtualHost`, TLS). В профилях сценариев укажите `"Connection": "Prod"` — дублировать учётные данные в трёх секциях не нужно. Параметры профиля сценария **переопределяют** общий профиль (например, свой `HostName` или `ClientProvidedName`).
+
+Environment variables для shared profile:
+
+```bash
+export RabbitMqConnections__Prod__HostName=rabbit.prod.internal
+export RabbitMqConnections__Prod__Password=secret
+```
+
+**Без shared profile** (полная inline-конфигурация) по-прежнему поддерживается:
+
+```json
+{
   "RabbitMq": {
     "Inbox": {
       "HostName": "localhost",
