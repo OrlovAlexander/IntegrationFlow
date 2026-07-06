@@ -3,9 +3,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Logging;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 
@@ -124,8 +126,18 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                         await outboxStore
                             .MarkAbandonedAsync(message.Id, workerId, "Max attempts exceeded.", cancellationToken)
                             .ConfigureAwait(false);
-                        logger.LogWarn(
-                            $"Outbox relay. Message '{message.Id}' exceeded max attempts ({options.MaxAttempts}). Abandoned.");
+                        using (RabbitMqStructuredLogging.BeginPublishScope(
+                                   logger,
+                                   profileName,
+                                   message.Id.ToString("N"),
+                                   message.Id.ToString("N"),
+                                   RabbitMqTransportLogKind.OutboxRelay))
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "abandoned"))
+                        {
+                            logger.LogWarn(
+                                $"Outbox relay. Message exceeded max attempts ({options.MaxAttempts}).");
+                        }
+
                         abandoned++;
                         continue;
                     }
@@ -140,12 +152,25 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                             transmitter = new RabbitMqPublishTransmitter(configuration, connection);
                         }
 
-                        var transmitData = new TransmitData(message.Payload, message.Id.ToString("N"))
-                            .WithCorrelationId(message.Id.ToString("N"));
+                        var messageId = message.Id.ToString("N");
+                        var transmitData = new TransmitData(message.Payload, messageId)
+                            .WithCorrelationId(messageId);
 
-                        transmitter!.TransmitWithResult(transmitData);
-                        await outboxStore.MarkPublishedAsync(message.Id, workerId, cancellationToken).ConfigureAwait(false);
-                        logger.LogInfo($"Outbox relay. Message '{message.Id}' published via profile '{profileName}'.");
+                        using (RabbitMqStructuredLogging.BeginPublishScope(
+                                   logger,
+                                   profileName,
+                                   messageId,
+                                   messageId,
+                                   RabbitMqTransportLogKind.OutboxRelay))
+                        {
+                            transmitter!.TransmitWithResult(transmitData);
+                            await outboxStore.MarkPublishedAsync(message.Id, workerId, cancellationToken).ConfigureAwait(false);
+                            using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "published"))
+                            {
+                                logger.LogInfo("Outbox relay. Message published.");
+                            }
+                        }
+
                         published++;
                     }
                     catch (Exception ex)
@@ -154,7 +179,17 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
                         await outboxStore
                             .MarkFailedAsync(message.Id, workerId, ex.Message, retryAfter, cancellationToken)
                             .ConfigureAwait(false);
-                        logger.LogException($"Outbox relay. Failed to publish message '{message.Id}'.", ex);
+                        using (RabbitMqStructuredLogging.BeginPublishScope(
+                                   logger,
+                                   profileName,
+                                   message.Id.ToString("N"),
+                                   message.Id.ToString("N"),
+                                   RabbitMqTransportLogKind.OutboxRelay))
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "publish_failed"))
+                        {
+                            logger.LogException("Outbox relay. Failed to publish message.", ex);
+                        }
+
                         failed++;
                     }
                 }

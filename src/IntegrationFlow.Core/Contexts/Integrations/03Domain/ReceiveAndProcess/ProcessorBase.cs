@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Cfg;
@@ -138,7 +139,19 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess
                 switch (beginResult)
                 {
                     case DeduplicationBeginResult.AlreadyProcessed:
-                        Logger.LogInfo(SR.T("Сообщение '{0}' уже обработано, пропуск.", messageId));
+                        using (IntegrationStructuredLogging.BeginScope(
+                                   Logger,
+                                   (IntegrationStructuredLogFields.Profile, Publisher.IntegrationPublisherSide.GetProfileName()),
+                                   (IntegrationStructuredLogFields.MessageId, messageId),
+                                   (IntegrationStructuredLogFields.Kind, "listener"),
+                                   (IntegrationStructuredLogFields.Outcome, "dedup_skip")))
+                        {
+                            Logger.LogInfo(SR.T("Сообщение уже обработано, пропуск."));
+                        }
+
+                        Publisher.Metrics?.RecordConsumerOutcome(
+                            Publisher.IntegrationPublisherSide.GetProfileName(),
+                            ConsumerOutcomeReason.DedupSkip);
                         return;
                     case DeduplicationBeginResult.InProgress:
                         throw new MessageProcessingInProgressException(messageId);

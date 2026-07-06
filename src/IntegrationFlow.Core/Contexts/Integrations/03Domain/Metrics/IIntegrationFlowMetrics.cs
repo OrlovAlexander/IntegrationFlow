@@ -85,6 +85,13 @@ public interface IIntegrationFlowMetrics
     void RecordListenerShutdownRequeue(string profileName);
 
     /// <summary>
+    /// Records RabbitMQ consumer acknowledgement outcomes.
+    /// </summary>
+    /// <param name="profileName">Integration profile or side identifier.</param>
+    /// <param name="reason">Outcome reason: <see cref="ConsumerOutcomeReason"/>.</param>
+    void RecordConsumerOutcome(string profileName, string reason);
+
+    /// <summary>
     /// Records current RabbitMQ connection pool size.
     /// </summary>
     /// <param name="kind">Pool kind: <c>rpc</c> or <c>publish</c>.</param>

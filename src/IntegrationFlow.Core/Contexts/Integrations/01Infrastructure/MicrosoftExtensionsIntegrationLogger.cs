@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using Microsoft.Extensions.Logging;
 
@@ -7,7 +8,7 @@ namespace IntegrationFlow.Contexts.Integrations._01Infrastructure;
 /// <summary>
 /// Adapts <see cref="ILogger"/> to <see cref="IIntegrationLogger"/>.
 /// </summary>
-public sealed class MicrosoftExtensionsIntegrationLogger : IIntegrationLogger
+public sealed class MicrosoftExtensionsIntegrationLogger : IIntegrationLogger, IScopedIntegrationLogger
 {
     private readonly ILogger logger;
 
@@ -15,6 +16,9 @@ public sealed class MicrosoftExtensionsIntegrationLogger : IIntegrationLogger
     {
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
+
+    public IDisposable BeginScope(IReadOnlyDictionary<string, object?> state)
+        => logger.BeginScope(state!);
 
     public void LogException(string message, Exception ex) =>
         logger.LogError(ex, "{Message}", message);

@@ -7,6 +7,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Exceptions;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
@@ -148,25 +149,36 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 ? Guid.NewGuid().ToString("N")
                 : transmitData.MessageId;
             var body = RabbitMqPublishTransmitter.SerializeBody(transmitData.Data);
+            var destination = configuration.GetRequestRoutingKey();
 
-            var properties = channel.CreateBasicProperties();
-            properties.ContentType = configuration.ContentType;
-            properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
-            properties.CorrelationId = correlationId;
-            properties.ReplyTo = connection.ReplyAddress;
-            properties.MessageId = messageId;
+            using (RabbitMqDistributedTracing.StartProducerActivity(
+                       "request",
+                       configuration.Name,
+                       destination,
+                       messageId,
+                       correlationId))
+            {
+                var properties = channel.CreateBasicProperties();
+                properties.ContentType = configuration.ContentType;
+                properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
+                properties.CorrelationId = correlationId;
+                properties.ReplyTo = connection.ReplyAddress;
+                properties.MessageId = messageId;
 
-            channel.BasicPublish(
-                exchange: configuration.GetRequestExchange(),
-                routingKey: configuration.GetRequestRoutingKey(),
-                mandatory: configuration.Mandatory,
-                basicProperties: properties,
-                body: body);
+                RabbitMqTracePropagation.Inject(properties);
 
-            RabbitMqPublisherConfirms.EnsureConfirmed(
-                channel,
-                configuration.PublisherConfirmsEnabled,
-                TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds)));
+                channel.BasicPublish(
+                    exchange: configuration.GetRequestExchange(),
+                    routingKey: configuration.GetRequestRoutingKey(),
+                    mandatory: configuration.Mandatory,
+                    basicProperties: properties,
+                    body: body);
+
+                RabbitMqPublisherConfirms.EnsureConfirmed(
+                    channel,
+                    configuration.PublisherConfirmsEnabled,
+                    TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds)));
+            }
         }
 
         private static SemaphoreSlim? CreateConcurrencyGate(int maxConcurrentRequests)

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
@@ -197,8 +198,23 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait
                         metricsAwareTransmitter.Metrics = metrics;
                     }
 
-                    var result = await TransmitAsync(transmitter, destinationData, cancellationToken).ConfigureAwait(false);
-                    logger.LogInfo(SR.T("SendAndWait - '{0}' - Обмен данными состоялся", sideCode));
+                    var requestMessageId = string.IsNullOrWhiteSpace(destinationData.MessageId)
+                        ? Guid.NewGuid().ToString("N")
+                        : destinationData.MessageId;
+                    ObtainedData result;
+                    using (IntegrationStructuredLogging.BeginScope(
+                               logger,
+                               (IntegrationStructuredLogFields.Profile, sideCode),
+                               (IntegrationStructuredLogFields.MessageId, requestMessageId),
+                               (IntegrationStructuredLogFields.CorrelationId, requestMessageId),
+                               (IntegrationStructuredLogFields.Kind, "request_reply")))
+                    {
+                        result = await TransmitAsync(transmitter, destinationData, cancellationToken).ConfigureAwait(false);
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "published"))
+                        {
+                            logger.LogInfo(SR.T("SendAndWait - '{0}' - Обмен данными состоялся", sideCode));
+                        }
+                    }
 
                     var validator = oppositeSide.GetValidator(configuration!, logger);
                     if (validator != null)

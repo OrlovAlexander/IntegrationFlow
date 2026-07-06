@@ -6,6 +6,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndPro
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure;
+using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using Xunit;
 
@@ -148,13 +149,157 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         Assert.True(acknowledgement.NackRequeue);
     }
 
+    [Fact]
+    public async Task HandleAsync_NacksWithRequeueOnProcessException_RecordsRequeueMetric()
+    {
+        var metrics = new RecordingConsumerMetrics();
+        var acknowledgement = new RecordingAcknowledgement();
+        var handler = CreateHandler(
+            acknowledgement,
+            _ => Task.FromException(new InvalidOperationException("fail")),
+            metrics,
+            "Inbox");
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 7),
+            new RabbitMqConfiguration { RequeueOnFailure = true },
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(1, metrics.OutcomeCount);
+        Assert.Equal(ConsumerOutcomeReason.Requeue, metrics.LastReason);
+        Assert.Equal("Inbox", metrics.LastProfile);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NacksWithoutRequeueWhenConfigured_RecordsNackMetric()
+    {
+        var metrics = new RecordingConsumerMetrics();
+        var acknowledgement = new RecordingAcknowledgement();
+        var handler = CreateHandler(
+            acknowledgement,
+            _ => Task.FromException(new InvalidOperationException("fail")),
+            metrics,
+            "Inbox");
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 8),
+            new RabbitMqConfiguration { RequeueOnFailure = false },
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ConsumerOutcomeReason.Nack, metrics.LastReason);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NacksRequeueOnInProgressDedup_RecordsInProgressRequeueMetric()
+    {
+        var metrics = new RecordingConsumerMetrics();
+        var acknowledgement = new RecordingAcknowledgement();
+        var handler = CreateHandler(
+            acknowledgement,
+            _ => Task.FromException(new MessageProcessingInProgressException("msg-1")),
+            metrics,
+            "Inbox");
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 9),
+            new RabbitMqConfiguration(),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(ConsumerOutcomeReason.InProgressRequeue, metrics.LastReason);
+    }
+
     private static RabbitMqReceivedMessageHandler CreateHandler(
         IRabbitMqMessageAcknowledgement acknowledgement,
-        Func<object, Task> process)
-        => new(process, acknowledgement, NullIntegrationLogger.Instance);
+        Func<object, Task> process,
+        IIntegrationFlowMetrics? metrics = null,
+        string? profileName = null)
+        => new(process, acknowledgement, NullIntegrationLogger.Instance, metrics: metrics, profileName: profileName);
 
     private static RabbitMqReceivedMessage CreateMessage(ulong deliveryTag)
         => new(new byte[] { 1 }, deliveryTag, "rk", "msg-id", "corr-id");
+
+    private sealed class RecordingConsumerMetrics : IIntegrationFlowMetrics
+    {
+        public int OutcomeCount { get; private set; }
+
+        public string? LastProfile { get; private set; }
+
+        public string? LastReason { get; private set; }
+
+        public void RecordMessageProcessed(string profileName, TimeSpan duration, bool success)
+        {
+        }
+
+        public void RecordOutboxRelayPublished(int count)
+        {
+        }
+
+        public void RecordOutboxRelayFailed(int count)
+        {
+        }
+
+        public void RecordOutboxRelayAbandoned(int count)
+        {
+        }
+
+        public void RecordOutboxPending(int count)
+        {
+        }
+
+        public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        {
+        }
+
+        public void RecordRequestReplyRetryAfterTimeout(string profileName)
+        {
+        }
+
+        public void RecordRpcPendingRelayPublished(int count)
+        {
+        }
+
+        public void RecordRpcPendingRelayFailed(int count)
+        {
+        }
+
+        public void RecordRpcPendingRelayAbandoned(int count)
+        {
+        }
+
+        public void RecordRpcPendingAwaiting(int count)
+        {
+        }
+
+        public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        {
+        }
+
+        public void RecordListenerReconnect(string profileName)
+        {
+        }
+
+        public void RecordListenerShutdownRequeue(string profileName)
+        {
+        }
+
+        public void RecordConsumerOutcome(string profileName, string reason)
+        {
+            OutcomeCount++;
+            LastProfile = profileName;
+            LastReason = reason;
+        }
+
+        public void RecordConnectionPoolSize(string kind, int size)
+        {
+        }
+
+        public void RecordBrokerConnected(string profileName, string kind, bool connected)
+        {
+        }
+    }
 
     private sealed class RecordingAcknowledgement : IRabbitMqMessageAcknowledgement
     {

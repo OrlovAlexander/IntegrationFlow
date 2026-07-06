@@ -221,6 +221,10 @@ public sealed class IntegrationFlowMetricsTests
         {
         }
 
+        public void RecordConsumerOutcome(string profileName, string reason)
+        {
+        }
+
         public void RecordConnectionPoolSize(string kind, int size)
         {
         }

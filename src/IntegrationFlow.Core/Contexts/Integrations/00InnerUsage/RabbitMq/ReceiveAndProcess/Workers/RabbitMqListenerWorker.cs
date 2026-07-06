@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Logging;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
@@ -125,17 +126,30 @@ internal sealed class RabbitMqListenerWorker
 
                     if (!startedInvoked)
                     {
-                        logger.Log(SR.T(
-                            "RabbitMQ listener. Подключение к очереди '{0}' установлено.",
-                            configuration.QueueName));
+                        using (RabbitMqStructuredLogging.BeginTransportScope(
+                                   logger,
+                                   profileName,
+                                   RabbitMqTransportLogKind.Listener))
+                        {
+                            logger.Log(SR.T(
+                                "RabbitMQ listener. Подключение к очереди '{0}' установлено.",
+                                configuration.QueueName));
+                        }
+
                         onStarted?.Invoke();
                         startedInvoked = true;
                     }
                     else
                     {
-                        logger.Log(SR.T(
-                            "RabbitMQ listener. Переподключение к очереди '{0}' выполнено.",
-                            configuration.QueueName));
+                        using (RabbitMqStructuredLogging.BeginTransportScope(
+                                   logger,
+                                   profileName,
+                                   RabbitMqTransportLogKind.Listener))
+                        {
+                            logger.Log(SR.T(
+                                "RabbitMQ listener. Переподключение к очереди '{0}' выполнено.",
+                                configuration.QueueName));
+                        }
                     }
 
                     reconnectAttempt = 0;
@@ -156,10 +170,16 @@ internal sealed class RabbitMqListenerWorker
                         RabbitMqTransportKind.Listener,
                         profileName,
                         reconnectAttempt);
-                    logger.Log(SR.T(
-                        "RabbitMQ listener. Соединение с очередью '{0}' разорвано. Повторное подключение через {1} с.",
-                        configuration.QueueName,
-                        RabbitMqConsumerSessionLifecycle.GetReconnectDelaySeconds(reconnectAttempt)));
+                    using (RabbitMqStructuredLogging.BeginTransportScope(
+                               logger,
+                               profileName,
+                               RabbitMqTransportLogKind.Listener))
+                    {
+                        logger.Log(SR.T(
+                            "RabbitMQ listener. Соединение с очередью '{0}' разорвано. Повторное подключение через {1} с.",
+                            configuration.QueueName,
+                            RabbitMqConsumerSessionLifecycle.GetReconnectDelaySeconds(reconnectAttempt)));
+                    }
                     await RabbitMqConsumerSessionLifecycle
                         .DelayReconnectAsync(reconnectAttempt, cancellationToken)
                         .ConfigureAwait(false);
@@ -177,9 +197,15 @@ internal sealed class RabbitMqListenerWorker
                         profileName,
                         reconnectAttempt,
                         ex.Message);
-                    logger.LogException(
-                        SR.T("RabbitMQ listener. Ошибка прослушивания очереди '{0}'.", configuration.QueueName),
-                        ex);
+                    using (RabbitMqStructuredLogging.BeginTransportScope(
+                               logger,
+                               profileName,
+                               RabbitMqTransportLogKind.Listener))
+                    {
+                        logger.LogException(
+                            SR.T("RabbitMQ listener. Ошибка прослушивания очереди '{0}'.", configuration.QueueName),
+                            ex);
+                    }
 
                     if (cancellationToken.IsCancellationRequested)
                     {

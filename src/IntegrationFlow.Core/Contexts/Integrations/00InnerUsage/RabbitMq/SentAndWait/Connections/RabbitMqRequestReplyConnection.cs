@@ -6,6 +6,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Exceptions;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Connection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -194,27 +195,36 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         private Task OnReplyReceivedAsync(object sender, BasicDeliverEventArgs eventArgs)
         {
             var correlationId = eventArgs.BasicProperties?.CorrelationId;
-            if (string.IsNullOrWhiteSpace(correlationId))
+            using (RabbitMqDistributedTracing.StartConsumerActivity(
+                       eventArgs.BasicProperties?.Headers,
+                       "response",
+                       configuration.Name,
+                       eventArgs.BasicProperties?.MessageId,
+                       correlationId,
+                       eventArgs.DeliveryTag))
             {
-                if (configuration.ManualReplyAck)
+                if (string.IsNullOrWhiteSpace(correlationId))
                 {
-                    AcknowledgeReply(eventArgs.DeliveryTag);
+                    if (configuration.ManualReplyAck)
+                    {
+                        AcknowledgeReply(eventArgs.DeliveryTag);
+                    }
+
+                    return Task.CompletedTask;
                 }
 
-                return Task.CompletedTask;
-            }
-
-            if (pendingReplies.TryRemove(correlationId, out var pending))
-            {
-                pending.TrySetResult(eventArgs.Body.ToArray());
-                if (configuration.ManualReplyAck)
+                if (pendingReplies.TryRemove(correlationId, out var pending))
                 {
-                    AcknowledgeReply(eventArgs.DeliveryTag);
+                    pending.TrySetResult(eventArgs.Body.ToArray());
+                    if (configuration.ManualReplyAck)
+                    {
+                        AcknowledgeReply(eventArgs.DeliveryTag);
+                    }
                 }
-            }
-            else if (configuration.ManualReplyAck)
-            {
-                NegativeAcknowledgeReply(eventArgs.DeliveryTag, requeue: false);
+                else if (configuration.ManualReplyAck)
+                {
+                    NegativeAcknowledgeReply(eventArgs.DeliveryTag, requeue: false);
+                }
             }
 
             return Task.CompletedTask;

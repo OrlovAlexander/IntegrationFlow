@@ -83,6 +83,11 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     }
 
     /// <inheritdoc />
+    public void RecordConsumerOutcome(string profileName, string reason)
+    {
+    }
+
+    /// <inheritdoc />
     public void RecordConnectionPoolSize(string kind, int size)
     {
     }

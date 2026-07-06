@@ -5,6 +5,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Transmitter;
 using RabbitMQ.Client;
@@ -42,39 +43,51 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
 
             var messageId = ResolveMessageId(transmitData);
             var body = SerializeBody(transmitData.Data);
-            var properties = channel.CreateBasicProperties();
-            properties.ContentType = configuration.ContentType;
-            properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
-            properties.MessageId = messageId;
+            var destination = configuration.GetPublishRoutingKey();
 
-            if (!string.IsNullOrWhiteSpace(transmitData.CorrelationId))
+            using (RabbitMqDistributedTracing.StartProducerActivity(
+                       "publish",
+                       configuration.Name,
+                       destination,
+                       messageId,
+                       transmitData.CorrelationId))
             {
-                properties.CorrelationId = transmitData.CorrelationId;
+                var properties = channel.CreateBasicProperties();
+                properties.ContentType = configuration.ContentType;
+                properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
+                properties.MessageId = messageId;
+
+                if (!string.IsNullOrWhiteSpace(transmitData.CorrelationId))
+                {
+                    properties.CorrelationId = transmitData.CorrelationId;
+                }
+
+                RabbitMqTracePropagation.Inject(properties);
+
+                connection.ResetUnroutableFlag();
+
+                channel.BasicPublish(
+                    exchange: configuration.GetPublishExchange(),
+                    routingKey: configuration.GetPublishRoutingKey(),
+                    mandatory: configuration.Mandatory,
+                    basicProperties: properties,
+                    body: body);
+
+                if (configuration.PublisherConfirmsEnabled)
+                {
+                    RabbitMqPublisherConfirms.EnsureConfirmed(
+                        channel,
+                        configuration.PublisherConfirmsEnabled,
+                        TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds)));
+                }
+
+                if (configuration.Mandatory)
+                {
+                    connection.WaitForUnroutableProcessing(TimeSpan.FromMilliseconds(100));
+                }
+
+                connection.EnsureNotUnroutable();
             }
-
-            connection.ResetUnroutableFlag();
-
-            channel.BasicPublish(
-                exchange: configuration.GetPublishExchange(),
-                routingKey: configuration.GetPublishRoutingKey(),
-                mandatory: configuration.Mandatory,
-                basicProperties: properties,
-                body: body);
-
-            if (configuration.PublisherConfirmsEnabled)
-            {
-                RabbitMqPublisherConfirms.EnsureConfirmed(
-                    channel,
-                    configuration.PublisherConfirmsEnabled,
-                    TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds)));
-            }
-
-            if (configuration.Mandatory)
-            {
-                connection.WaitForUnroutableProcessing(TimeSpan.FromMilliseconds(100));
-            }
-
-            connection.EnsureNotUnroutable();
 
             return TransmitResult.Create(messageId);
         }

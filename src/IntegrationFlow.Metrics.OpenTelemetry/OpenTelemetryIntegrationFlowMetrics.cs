@@ -168,6 +168,15 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
     }
 
     /// <inheritdoc />
+    public void RecordConsumerOutcome(string profileName, string reason)
+    {
+        var profile = SanitizeProfile(profileName);
+        var normalizedReason = SanitizeReason(reason);
+        meter.ConsumerOutcome.Add(1, new KeyValuePair<string, object?>("profile", profile),
+            new KeyValuePair<string, object?>("reason", normalizedReason));
+    }
+
+    /// <inheritdoc />
     public void RecordConnectionPoolSize(string kind, int size)
         => meter.SetConnectionPoolSize(kind, size);
 
@@ -189,5 +198,15 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
         }
 
         return profileName.ToLowerInvariant().Replace('.', '_');
+    }
+
+    internal static string SanitizeReason(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return "unknown";
+        }
+
+        return reason.ToLowerInvariant();
     }
 }

@@ -150,6 +150,38 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
     }
 
     [Fact]
+    public void RecordConsumerOutcome_IncrementsCounterWithTags()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordConsumerOutcome("Inbox", ConsumerOutcomeReason.Nack);
+        metrics.RecordConsumerOutcome("Inbox", ConsumerOutcomeReason.Requeue);
+        metrics.RecordConsumerOutcome("Orders", ConsumerOutcomeReason.DedupSkip);
+        metrics.RecordConsumerOutcome("Inbox", ConsumerOutcomeReason.InProgressRequeue);
+        collector.Collect();
+
+        Assert.Equal(4, collector.GetCounterSum("integrationflow.message.consumer.outcome"));
+        Assert.Contains(
+            collector.GetCounterTags("integrationflow.message.consumer.outcome"),
+            tags => tags.TryGetValue("profile", out var profile)
+                && profile?.ToString() == "inbox"
+                && tags.TryGetValue("reason", out var reason)
+                && reason?.ToString() == "nack");
+        Assert.Contains(
+            collector.GetCounterTags("integrationflow.message.consumer.outcome"),
+            tags => tags.TryGetValue("reason", out var reason) && reason?.ToString() == "dedup_skip");
+    }
+
+    [Theory]
+    [InlineData("NACK", "nack")]
+    [InlineData("", "unknown")]
+    public void SanitizeReason_NormalizesValue(string input, string expected)
+    {
+        Assert.Equal(expected, OpenTelemetryIntegrationFlowMetrics.SanitizeReason(input));
+    }
+
+    [Fact]
     public void RecordListenerTransportMetrics_IncrementsCounters()
     {
         using var collector = new MetricCollector("IntegrationFlow");

@@ -351,25 +351,75 @@ Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2
 План SentAndWait RPC для critical flows (R1/R2): [`docs/plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](docs/plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md).  
 План реализации (фазы 0–3, PR-ы): [`docs/plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](docs/plans/2026-07-04_2244-sentandwait-rpc-implementation.md).  
 Статус реализации (фазы 1–2): [`docs/2026-07-04_2301-sentandwait-rpc-implementation-status.md`](docs/2026-07-04_2301-sentandwait-rpc-implementation-status.md).  
+Статус реализации P3 ops: [`docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md).  
 Указатель документации: [`docs/README.md`](docs/README.md).
 
 ## Observability
 
-Пакет `IntegrationFlow.Metrics.OpenTelemetry` реализует `IIntegrationFlowMetrics` через `System.Diagnostics.Metrics` (совместимо с OpenTelemetry SDK и Prometheus exporter):
+Полный гайд P3 (health, metrics, logging, tracing, config): [`docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md).  
+Runbook алертов и порогов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
+
+### Production quick-start (.NET 8+)
 
 ```csharp
 using IntegrationFlow.DependencyInjection;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using IntegrationFlow.Metrics.OpenTelemetry.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
-services.AddIntegrationFlow();
-services.AddIntegrationFlowOpenTelemetryMetrics();
+var builder = WebApplication.CreateBuilder(args);
 
-// В host app — экспорт метрик (пример с OpenTelemetry + Prometheus):
-// builder.Services.AddOpenTelemetry()
-//     .WithMetrics(m => m.AddMeter("IntegrationFlow").AddPrometheusExporter());
+builder.Services.AddIntegrationFlow();
+builder.Services.AddIntegrationFlowRabbitMq(builder.Configuration);
+builder.Services.AddIntegrationFlowRabbitMqListener("Inbox", message => { /* ... */ });
+builder.Services.AddIntegrationFlowOutboxRelay();
+builder.Services.AddIntegrationFlowOpenTelemetryMetrics();
+builder.Services.AddIntegrationFlowRabbitMqHealthChecks(options =>
+{
+    options.MaxReconnectAttemptsBeforeUnhealthy = 5;
+    options.OutboxRelayMaxConsecutiveFailures = 5;
+});
+
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddMeter("IntegrationFlow")
+        .AddPrometheusExporter())
+    .WithTracing(tracing => tracing
+        .AddSource(IntegrationFlowRabbitMqActivitySource.Name)
+        .AddAspNetCoreInstrumentation()
+        .AddOtlpExporter());
+
+var app = builder.Build();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+app.MapPrometheusScrapingEndpoint();
 ```
 
-Метрики:
+**appsettings.Production.json** (overlay поверх `rabbitmq.json`):
+
+```json
+{
+  "RabbitMq": {
+    "Inbox": {
+      "HostName": "rabbit.prod.internal",
+      "PrefetchCount": 10
+    }
+  },
+  "IntegrationFlow": {
+    "HealthChecks": {
+      "MaxReconnectAttemptsBeforeUnhealthy": 5,
+      "OutboxRelayMaxConsecutiveFailures": 5
+    }
+  }
+}
+```
+
+Секреты — через environment variables (`RabbitMq__Inbox__Password`, см. раздел RabbitMQ выше).
+
+Метрики (`IntegrationFlow.Metrics.OpenTelemetry` + `System.Diagnostics.Metrics`):
 
 | Имя | Тип | Описание |
 |-----|-----|----------|
@@ -390,10 +440,88 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.rpc.pending.duration` | Histogram | AsyncOutbox: round-trip от staging (секунды) |
 | `integrationflow.listener.reconnect` | Counter | Переподключения listener после разрыва (`profile`) |
 | `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при graceful shutdown (`profile`) |
+| `integrationflow.message.consumer.outcome` | Counter | Consumer ack outcomes (`profile`, `reason`) |
 | `integrationflow.connection.pool.size` | Gauge | Размер pool TCP-подключений (`kind=rpc|publish`) |
 | `integrationflow.broker.connected` | Gauge | Подключение к брокеру (`profile`, `kind=listener|outbox_relay|rpc_correlation`; 1=connected, 0=disconnected) |
 
+### P3 checklist (production observability)
+
+| ID | Возможность | Регистрация / действие |
+|----|-------------|------------------------|
+| P3-1 | Health checks | `AddIntegrationFlowRabbitMqHealthChecks()` + `MapHealthChecks("/health/ready")` |
+| P3-2 | Config overlay | `AddIntegrationFlowRabbitMq(IConfiguration)` + env vars `RabbitMq__*` |
+| P3-3 | Broker gauge | `AddIntegrationFlowOpenTelemetryMetrics()` |
+| P3-4 | Distributed tracing | `AddSource(IntegrationFlowRabbitMqActivitySource.Name)` в OTel tracing |
+| P3-5 | Structured logging | `AddIntegrationFlow()` + host `ILogger` (Serilog / OTel logs) |
+| P3-6 | Consumer outcomes | Автоматически с метриками; алерты — в runbook |
+| P3-7 | Документация | Этот раздел + runbook + [`P3 status`](docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
+
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
+
+### Structured logging (P3-5)
+
+Transport workers attach structured fields via `ILogger.BeginScope` (совместимо с Serilog, OpenTelemetry log exporter, JSON console):
+
+| Поле | Описание |
+|------|----------|
+| `integrationflow.profile` | Имя профиля RabbitMQ |
+| `integrationflow.message_id` | AMQP `MessageId` |
+| `integrationflow.correlation_id` | AMQP `CorrelationId` |
+| `integrationflow.delivery_tag` | Delivery tag consumer |
+| `integrationflow.kind` | `listener`, `outbox_relay`, `rpc_correlation`, `publish`, `request_reply` |
+| `integrationflow.outcome` | `consume_started`, `ack`, `nack`, `requeue`, `dedup_skip`, `in_progress_requeue`, `shutdown_requeue`, `published`, `publish_failed`, `abandoned` |
+
+Пример вывода (Serilog compact JSON):
+
+```json
+{"@t":"...","@mt":"RabbitMQ listener. Сообщение подтверждено.","integrationflow.profile":"Inbox","integrationflow.message_id":"abc","integrationflow.correlation_id":"xyz","integrationflow.delivery_tag":42,"integrationflow.kind":"listener","integrationflow.outcome":"ack"}
+```
+
+Поля добавляются автоматически при `AddIntegrationFlow()` + стандартном `ILogger` host. Без `ILoggerFactory` используется `NullIntegrationLogger` (scope no-op).
+
+### Consumer outcome metrics (P3-6)
+
+Counter `integrationflow.message.consumer.outcome` с тегами `profile`, `reason`:
+
+| `reason` | Когда |
+|----------|-------|
+| `nack` | `BasicNack` без requeue (ошибка обработки, `RequeueOnFailure=false` / DLQ) |
+| `requeue` | `BasicNack` с requeue после ошибки обработки |
+| `dedup_skip` | Сообщение уже обработано (`IMessageDeduplicationStore`) |
+| `in_progress_requeue` | Параллельная доставка того же `MessageId` (`MessageProcessingInProgressException`) |
+
+`shutdown_requeue` по-прежнему учитывается отдельным counter `integrationflow.message.shutdown_requeue`.
+
+### Distributed tracing (P3-4)
+
+RabbitMQ transport propagates W3C `traceparent` / `tracestate` через AMQP headers и создаёт `Activity` spans:
+
+| Operation | Span | Kind |
+|-----------|------|------|
+| SentAndForgot / outbox publish | `rabbitmq.publish` | Producer |
+| SentAndWait RPC request | `rabbitmq.request` | Producer |
+| RPC reply (server) | `rabbitmq.reply` | Producer |
+| Inbox consume | `rabbitmq.receive` | Consumer |
+| Sync RPC response (client) | `rabbitmq.response` | Consumer |
+| AsyncOutbox response correlation | `rabbitmq.response` | Consumer |
+
+Регистрация в host app (OpenTelemetry .NET SDK):
+
+```csharp
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
+using OpenTelemetry.Trace;
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddSource(IntegrationFlowRabbitMqActivitySource.Name)
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter());
+```
+
+Пример сквозного trace: HTTP request → `rabbitmq.publish` → `rabbitmq.receive` (другой сервис) → handler → `rabbitmq.reply` → `rabbitmq.response`.
+
+> Parent context extraction (`ActivityContext.TryParse`) доступен на **net8.0**. На netstandard2.0 spans создаются, inject работает при наличии `Activity.Current`, extract parent — best-effort.
 
 ## NuGet
 

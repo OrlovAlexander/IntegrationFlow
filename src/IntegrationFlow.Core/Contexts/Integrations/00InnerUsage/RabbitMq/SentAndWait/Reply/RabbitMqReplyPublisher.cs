@@ -4,6 +4,7 @@ using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndPro
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -127,44 +128,53 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             byte[] responseBody,
             bool waitForReturn)
         {
-            var properties = channel.CreateBasicProperties();
-            properties.ContentType = contentType;
-            if (!string.IsNullOrWhiteSpace(correlationId))
+            using (RabbitMqDistributedTracing.StartProducerActivity(
+                       "reply",
+                       pooledConfiguration?.Name ?? "rpc_reply",
+                       replyTo,
+                       correlationId: correlationId))
             {
-                properties.CorrelationId = correlationId;
-            }
+                var properties = channel.CreateBasicProperties();
+                properties.ContentType = contentType;
+                if (!string.IsNullOrWhiteSpace(correlationId))
+                {
+                    properties.CorrelationId = correlationId;
+                }
 
-            using var returnSignal = waitForReturn ? new ManualResetEventSlim(false) : null;
-            EventHandler<BasicReturnEventArgs>? onReturn = null;
-            if (waitForReturn)
-            {
-                onReturn = (_, _) => returnSignal!.Set();
-                channel.BasicReturn += onReturn;
-            }
+                RabbitMqTracePropagation.Inject(properties);
 
-            try
-            {
-                channel.BasicPublish(
-                    exchange: string.Empty,
-                    routingKey: replyTo,
-                    mandatory: waitForReturn,
-                    basicProperties: properties,
-                    body: responseBody ?? Array.Empty<byte>());
-
+                using var returnSignal = waitForReturn ? new ManualResetEventSlim(false) : null;
+                EventHandler<BasicReturnEventArgs>? onReturn = null;
                 if (waitForReturn)
                 {
-                    returnSignal!.Wait(TimeSpan.FromMilliseconds(100));
-                    if (returnSignal.IsSet)
+                    onReturn = (_, _) => returnSignal!.Set();
+                    channel.BasicReturn += onReturn;
+                }
+
+                try
+                {
+                    channel.BasicPublish(
+                        exchange: string.Empty,
+                        routingKey: replyTo,
+                        mandatory: waitForReturn,
+                        basicProperties: properties,
+                        body: responseBody ?? Array.Empty<byte>());
+
+                    if (waitForReturn)
                     {
-                        throw new UnroutableMessageException("RabbitMQ returned BasicReturn for mandatory RPC reply.");
+                        returnSignal!.Wait(TimeSpan.FromMilliseconds(100));
+                        if (returnSignal.IsSet)
+                        {
+                            throw new UnroutableMessageException("RabbitMQ returned BasicReturn for mandatory RPC reply.");
+                        }
                     }
                 }
-            }
-            finally
-            {
-                if (onReturn != null)
+                finally
                 {
-                    channel.BasicReturn -= onReturn;
+                    if (onReturn != null)
+                    {
+                        channel.BasicReturn -= onReturn;
+                    }
                 }
             }
         }

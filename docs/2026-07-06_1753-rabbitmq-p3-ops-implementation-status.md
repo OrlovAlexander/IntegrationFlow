@@ -1,56 +1,50 @@
-# Статус реализации RabbitMQ P3 — ops readiness (P3-1 … P3-3)
+# Статус реализации RabbitMQ P3 — ops readiness (P3-1 … P3-7)
 
-**Статус:** выполнено (частично — P3-1 … P3-3)  
+**Статус:** выполнено  
 **Создан:** 2026-07-06 17:53 (UTC+3)  
-**Обновлён:** 2026-07-06 17:53 (UTC+3)  
+**Обновлён:** 2026-07-06 18:16 (UTC+3)  
 **План:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **Предшественник:** [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) (P2 core ✅)  
-**Связанные документы:** [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md)
+**Runbook:** [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md)
 
 ---
 
 ## Итог
 
-Закрыты первые три задачи P3 ops readiness: **health checks**, **config overlay**, **broker connectivity gauge**. Остаются P3-4 … P3-7.
+Epic **P3 «Production observability & config»** закрыт. Все семь задач реализованы и задокументированы.
 
 | ID | Задача | Статус |
 |----|--------|--------|
 | P3-1 | Health checks (`IHealthCheck`) | ✅ |
 | P3-2 | Env / `IConfiguration` overlay | ✅ |
 | P3-3 | Gauge `integrationflow.broker.connected` | ✅ |
-| P3-4 | Distributed tracing | ⏸ Открыт |
-| P3-5 | Structured logging | ⏸ Открыт |
-| P3-6 | Consumer-level метрики | ⏸ Открыт |
-| P3-7 | Документация P3 (полная) | ⏸ Частично (README + runbook для P3-1/3) |
+| P3-4 | Distributed tracing | ✅ |
+| P3-5 | Structured logging | ✅ |
+| P3-6 | Consumer-level метрики | ✅ |
+| P3-7 | Документация P3 (полная) | ✅ |
 
 ---
 
 ## P3-1 — Health checks
-
-### Изменения в коде
 
 | Компонент | Изменение |
 |-----------|-----------|
 | `RabbitMqTransportHealthRegistry` | Реестр состояния transport endpoints |
 | `RabbitMqListenerHealthCheck` / `RabbitMqOutboxRelayHealthCheck` / `RabbitMqRpcCorrelationHealthCheck` | `IHealthCheck` для трёх workers |
 | `AddIntegrationFlowRabbitMqHealthChecks()` | DI extension, tag `ready` |
-| `RabbitMqListenerWorker` | Reporting connect / reconnect / disconnect |
-| `RabbitMqRpcResponseCorrelationHostedService` | Reconnect loop + health reporting |
-| `OutboxRelayService` | Batch success/failure reporting |
-
-### Конфигурация
 
 ```csharp
-services.AddIntegrationFlow();
-services.AddIntegrationFlowRabbitMqListener("Inbox", _ => { });
 services.AddIntegrationFlowRabbitMqHealthChecks(options =>
 {
     options.MaxReconnectAttemptsBeforeUnhealthy = 5;
     options.OutboxRelayMaxConsecutiveFailures = 5;
 });
-```
 
-### Health check names
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+```
 
 | Check | Имя |
 |-------|-----|
@@ -62,33 +56,14 @@ services.AddIntegrationFlowRabbitMqHealthChecks(options =>
 
 ## P3-2 — Env / IConfiguration overlay
 
-### Изменения в коде
-
-| Компонент | Изменение |
-|-----------|-----------|
-| `RabbitMqConfigurationComposition` | JSON → env vars → overlay |
-| `RabbitMqConfigurationLoader` / `RabbitMqPublishConfigurationLoader` / `RabbitMqRequestReplyConfigurationLoader` | `LoadProfile(name, IConfiguration)`, `LoadAll(IConfiguration)` |
-| `AddIntegrationFlowRabbitMq(IConfiguration)` | Host configuration overlay |
-
-### Приоритет источников
-
-```
-rabbitmq.json  →  environment variables  →  IConfiguration overlay
-```
-
-### Примеры
-
-**Environment variables:**
+Приоритет: `rabbitmq.json` → environment variables → `IConfiguration`.
 
 ```bash
 export RabbitMq__Inbox__HostName=rabbit.prod.internal
 export RabbitMq__Inbox__Password=secret
 ```
 
-**ASP.NET Core / Worker:**
-
 ```csharp
-services.AddIntegrationFlow();
 services.AddIntegrationFlowRabbitMq(context.Configuration);
 ```
 
@@ -96,35 +71,56 @@ services.AddIntegrationFlowRabbitMq(context.Configuration);
 
 ## P3-3 — Broker connectivity gauge
 
-### Изменения в коде
-
-| Компонент | Изменение |
-|-----------|-----------|
-| `IIntegrationFlowMetrics.RecordBrokerConnected` | API метрики |
-| `IntegrationFlowMeter` | Observable gauge `integrationflow.broker.connected` |
-| `RabbitMqTransportHealthRegistry` | Publish gauge при смене состояния |
-| `RabbitMqConnectionPoolsBootstrap` | `SetMetrics` для registry |
-| `AddIntegrationFlowOpenTelemetryMetrics` | Wire registry + pools |
-
-### Метрика
-
-| Имя | Тип | Tags | Значение |
-|-----|-----|------|----------|
-| `integrationflow.broker.connected` | Gauge | `profile`, `kind` | `1` = connected, `0` = disconnected |
-
-**kind:** `listener`, `outbox_relay`, `rpc_correlation`
-
-### Алерт (Prometheus)
-
-```promql
-integrationflow_broker_connected{kind="listener"} == 0
-```
-
-Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md)
+| Метрика | Тип | Tags |
+|---------|-----|------|
+| `integrationflow.broker.connected` | Gauge | `profile`, `kind` (`listener`, `outbox_relay`, `rpc_correlation`) |
 
 ---
 
-## Тесты
+## P3-4 — Distributed tracing
+
+| Компонент | Изменение |
+|-----------|-----------|
+| `IntegrationFlowRabbitMqActivitySource` | Публичное имя ActivitySource |
+| `RabbitMqTracePropagation` | W3C `traceparent` / `tracestate` в AMQP headers |
+| `RabbitMqDistributedTracing` | Spans publish/consume/RPC |
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t => t.AddSource(IntegrationFlowRabbitMqActivitySource.Name));
+```
+
+---
+
+## P3-5 — Structured logging
+
+Поля scope: `integrationflow.profile`, `integrationflow.message_id`, `integrationflow.correlation_id`, `integrationflow.delivery_tag`, `integrationflow.kind`, `integrationflow.outcome`.
+
+Работает через `ILogger.BeginScope` при `AddIntegrationFlow()` + host `ILoggerFactory`.
+
+---
+
+## P3-6 — Consumer outcome metrics
+
+| Метрика | Tags | `reason` values |
+|---------|------|-----------------|
+| `integrationflow.message.consumer.outcome` | `profile`, `reason` | `nack`, `requeue`, `dedup_skip`, `in_progress_requeue` |
+
+API: `IIntegrationFlowMetrics.RecordConsumerOutcome(profile, reason)`.
+
+---
+
+## P3-7 — Документация
+
+| Документ | Содержание |
+|----------|------------|
+| `README.md` | Production quick-start, P3 checklist, metrics/logging/tracing |
+| [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md) | Setup, health alerts, пороги P1–P3, PromQL, logging/tracing troubleshooting |
+| Этот документ | Статус реализации P3-1 … P3-7 |
+
+---
+
+## Тесты (P3)
 
 | Тест | ID |
 |------|-----|
@@ -133,17 +129,11 @@ Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-0
 | `RabbitMqHealthChecksRegistrationTests` | P3-1 |
 | `RabbitMqConfigurationOverlayTests` | P3-2 |
 | `RecordBrokerConnected_UpdatesGauge` | P3-3 |
-
-Unit-тесты: **159** passed (на момент реализации).
-
----
-
-## Документация
-
-| Документ | Обновление |
-|----------|------------|
-| `README.md` | Health checks, config overlay, gauge |
-| `runbooks/2026-07-04_0845-metrics-and-alerting.md` | `broker.connected` + алерты |
+| `IntegrationStructuredLoggingTests` | P3-5 |
+| `RabbitMqReceivedMessageHandlerStructuredLoggingTests` | P3-5 |
+| `RecordConsumerOutcome_*` | P3-6 |
+| `RabbitMqReceivedMessageHandlerTests` (metrics) | P3-6 |
+| `RabbitMqTracePropagationTests` | P3-4 |
 
 ---
 
@@ -151,9 +141,8 @@ Unit-тесты: **159** passed (на момент реализации).
 
 | Приоритет | Задача |
 |-----------|--------|
-| **P3-4** | Distributed tracing (`traceparent` через AMQP headers) |
-| **P3-5** | Structured logging |
-| **P3-6** | Consumer-level counters (`nack`, `requeue`, …) |
+| **P4** | Shared connection profiles, Headers API |
 | **Ops** | NuGet publish v1.0.0 / v1.0.1 |
+| **Tests** | T-1 chaos E2E, T-3 DLQ E2E |
 
 Backlog: [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md).

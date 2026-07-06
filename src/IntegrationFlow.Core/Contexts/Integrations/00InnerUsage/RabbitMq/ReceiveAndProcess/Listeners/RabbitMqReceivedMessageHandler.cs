@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Logging;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Workers;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
@@ -49,16 +52,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             IDictionary<string, object> headers,
             CancellationToken cancellationToken)
         {
-            if (ShouldStopAcceptingMessages(cancellationToken))
+            using (RabbitMqStructuredLogging.BeginMessageScope(
+                       logger,
+                       profileName,
+                       receivedMessage,
+                       RabbitMqTransportLogKind.Listener))
             {
-                NegativeAcknowledgeForShutdown(receivedMessage.DeliveryTag);
-                return;
-            }
-
-            inFlightTracker?.Increment();
-            try
-            {
-                await processMessageAsync(receivedMessage).ConfigureAwait(false);
+                using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "consume_started"))
+                {
+                    logger.Log(SR.T("RabbitMQ listener. Получено сообщение."));
+                }
 
                 if (ShouldStopAcceptingMessages(cancellationToken))
                 {
@@ -66,34 +69,68 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                     return;
                 }
 
-                acknowledgement.Acknowledge(receivedMessage.DeliveryTag);
-                logger.Log(SR.T("RabbitMQ listener. Сообщение подтверждено. DeliveryTag='{0}'.", receivedMessage.DeliveryTag));
-            }
-            catch (MessageProcessingInProgressException ex)
-            {
-                logger.Log(SR.T(
-                    "RabbitMQ listener. Сообщение обрабатывается параллельно. DeliveryTag='{0}', MessageId='{1}'.",
-                    receivedMessage.DeliveryTag,
-                    ex.MessageId));
+                using (RabbitMqDistributedTracing.StartConsumerActivity(
+                           headers,
+                           "receive",
+                           profileName,
+                           receivedMessage.MessageId,
+                           receivedMessage.CorrelationId,
+                           receivedMessage.DeliveryTag))
+                {
+                    inFlightTracker?.Increment();
+                    try
+                    {
+                        await processMessageAsync(receivedMessage).ConfigureAwait(false);
 
-                acknowledgement.NegativeAcknowledge(receivedMessage.DeliveryTag, requeue: true);
-            }
-            catch (Exception ex)
-            {
-                logger.LogException(
-                    SR.T("RabbitMQ listener. Ошибка обработки сообщения. DeliveryTag='{0}'.", receivedMessage.DeliveryTag),
-                    ex);
+                        if (ShouldStopAcceptingMessages(cancellationToken))
+                        {
+                            NegativeAcknowledgeForShutdown(receivedMessage.DeliveryTag);
+                            return;
+                        }
 
-                var requeue = RabbitMqDeliveryPolicy.ShouldRequeue(configuration, headers);
-                acknowledgement.NegativeAcknowledge(receivedMessage.DeliveryTag, requeue);
-                logger.Log(SR.T(
-                    "RabbitMQ listener. Сообщение отклонено. DeliveryTag='{0}', Requeue='{1}'.",
-                    receivedMessage.DeliveryTag,
-                    requeue));
-            }
-            finally
-            {
-                inFlightTracker?.Decrement();
+                        acknowledgement.Acknowledge(receivedMessage.DeliveryTag);
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "ack"))
+                        {
+                            logger.Log(SR.T("RabbitMQ listener. Сообщение подтверждено."));
+                        }
+                    }
+                    catch (MessageProcessingInProgressException ex)
+                    {
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "in_progress_requeue"))
+                        {
+                            logger.Log(SR.T(
+                                "RabbitMQ listener. Сообщение обрабатывается параллельно. MessageId='{0}'.",
+                                ex.MessageId));
+                        }
+
+                        acknowledgement.NegativeAcknowledge(receivedMessage.DeliveryTag, requeue: true);
+                        metrics?.RecordConsumerOutcome(profileName, ConsumerOutcomeReason.InProgressRequeue);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogException(
+                            SR.T("RabbitMQ listener. Ошибка обработки сообщения."),
+                            ex);
+
+                        var requeue = RabbitMqDeliveryPolicy.ShouldRequeue(configuration, headers);
+                        acknowledgement.NegativeAcknowledge(receivedMessage.DeliveryTag, requeue);
+                        metrics?.RecordConsumerOutcome(
+                            profileName,
+                            requeue ? ConsumerOutcomeReason.Requeue : ConsumerOutcomeReason.Nack);
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(
+                                   logger,
+                                   requeue ? "requeue" : "nack"))
+                        {
+                            logger.Log(SR.T(
+                                "RabbitMQ listener. Сообщение отклонено. Requeue='{0}'.",
+                                requeue));
+                        }
+                    }
+                    finally
+                    {
+                        inFlightTracker?.Decrement();
+                    }
+                }
             }
         }
 
@@ -104,9 +141,10 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         {
             acknowledgement.NegativeAcknowledge(deliveryTag, requeue: true);
             metrics?.RecordListenerShutdownRequeue(profileName);
-            logger.Log(SR.T(
-                "RabbitMQ listener. Сообщение возвращено в очередь при остановке. DeliveryTag='{0}'.",
-                deliveryTag));
+            using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "shutdown_requeue"))
+            {
+                logger.Log(SR.T("RabbitMQ listener. Сообщение возвращено в очередь при остановке."));
+            }
         }
     }
 }

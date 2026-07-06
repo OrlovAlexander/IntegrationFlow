@@ -6,9 +6,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Logging;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure;
+using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
 using Microsoft.Extensions.Hosting;
@@ -23,16 +26,19 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     internal sealed class RabbitMqRpcResponseCorrelationHostedService : BackgroundService
     {
         private readonly IRpcPendingStore pendingStore;
+        private readonly IIntegrationLogger logger;
         private readonly IIntegrationFlowMetrics? metrics;
         private readonly RabbitMqTransportHealthRegistry? healthRegistry;
         private readonly IReadOnlyList<RabbitMqRequestReplyConfiguration> profiles;
 
         public RabbitMqRpcResponseCorrelationHostedService(
             IRpcPendingStore pendingStore,
+            IIntegrationLogger logger,
             IIntegrationFlowMetrics? metrics = null,
             RabbitMqTransportHealthRegistry? healthRegistry = null)
         {
             this.pendingStore = pendingStore ?? throw new ArgumentNullException(nameof(pendingStore));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.metrics = metrics;
             this.healthRegistry = healthRegistry;
             profiles = LoadAsyncOutboxProfiles();
@@ -80,42 +86,78 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                         var acknowledgement = new RabbitMqChannelAcknowledgement(
                             channelSync,
                             () => channel,
-                            NullIntegrationLogger.Instance);
+                            logger);
 
                         channel.QueueDeclarePassive(configuration.ResponseQueueName);
                         var consumer = new AsyncEventingBasicConsumer(channel);
                         consumer.Received += async (_, eventArgs) =>
                         {
-                            try
+                            var correlationId = eventArgs.BasicProperties?.CorrelationId ?? string.Empty;
+                            var messageId = eventArgs.BasicProperties?.MessageId ?? correlationId;
+                            using (RabbitMqDistributedTracing.StartConsumerActivity(
+                                       eventArgs.BasicProperties?.Headers,
+                                       "response",
+                                       profileName,
+                                       messageId,
+                                       correlationId,
+                                       eventArgs.DeliveryTag))
+                            using (IntegrationStructuredLogging.BeginScope(
+                                       logger,
+                                       (IntegrationStructuredLogFields.Profile, profileName),
+                                       (IntegrationStructuredLogFields.MessageId, messageId),
+                                       (IntegrationStructuredLogFields.CorrelationId, correlationId),
+                                       (IntegrationStructuredLogFields.DeliveryTag, eventArgs.DeliveryTag),
+                                       (IntegrationStructuredLogFields.Kind, "rpc_correlation")))
                             {
-                                var correlationId = eventArgs.BasicProperties?.CorrelationId;
-                                if (!Guid.TryParse(correlationId, out var pendingId))
+                                try
                                 {
-                                    acknowledgement.Acknowledge(eventArgs.DeliveryTag);
-                                    return;
+                                    using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "consume_started"))
+                                    {
+                                        logger.Log("RabbitMQ rpc correlation. Получен ответ.");
+                                    }
+
+                                    if (!Guid.TryParse(correlationId, out var pendingId))
+                                    {
+                                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "ack"))
+                                        {
+                                            acknowledgement.Acknowledge(eventArgs.DeliveryTag);
+                                            logger.Log("RabbitMQ rpc correlation. Ответ без pending id подтверждён.");
+                                        }
+
+                                        return;
+                                    }
+
+                                    var pending = await pendingStore
+                                        .GetByIdAsync(pendingId, stoppingToken)
+                                        .ConfigureAwait(false);
+
+                                    await pendingStore
+                                        .CompleteAsync(pendingId, eventArgs.Body.ToArray(), stoppingToken)
+                                        .ConfigureAwait(false);
+
+                                    if (pending != null)
+                                    {
+                                        metrics?.RecordRpcPendingCompleted(
+                                            pending.ProfileName,
+                                            DateTimeOffset.UtcNow - pending.CreatedAt,
+                                            success: true);
+                                    }
+
+                                    using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "ack"))
+                                    {
+                                        acknowledgement.Acknowledge(eventArgs.DeliveryTag);
+                                        logger.Log("RabbitMQ rpc correlation. Ответ обработан.");
+                                    }
                                 }
-
-                                var pending = await pendingStore
-                                    .GetByIdAsync(pendingId, stoppingToken)
-                                    .ConfigureAwait(false);
-
-                                await pendingStore
-                                    .CompleteAsync(pendingId, eventArgs.Body.ToArray(), stoppingToken)
-                                    .ConfigureAwait(false);
-
-                                if (pending != null)
+                                catch (Exception ex)
                                 {
-                                    metrics?.RecordRpcPendingCompleted(
-                                        pending.ProfileName,
-                                        DateTimeOffset.UtcNow - pending.CreatedAt,
-                                        success: true);
+                                    logger.LogException("RabbitMQ rpc correlation. Ошибка обработки ответа.", ex);
+                                    using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "requeue"))
+                                    {
+                                        acknowledgement.NegativeAcknowledge(eventArgs.DeliveryTag, requeue: true);
+                                        logger.Log("RabbitMQ rpc correlation. Ответ возвращён в очередь.");
+                                    }
                                 }
-
-                                acknowledgement.Acknowledge(eventArgs.DeliveryTag);
-                            }
-                            catch
-                            {
-                                acknowledgement.NegativeAcknowledge(eventArgs.DeliveryTag, requeue: true);
                             }
                         };
 
@@ -126,6 +168,14 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
 
                         reconnectAttempt = 0;
                         healthRegistry?.ReportConnected(RabbitMqTransportKind.RpcCorrelation, profileName);
+                        using (RabbitMqStructuredLogging.BeginTransportScope(
+                                   logger,
+                                   profileName,
+                                   RabbitMqTransportLogKind.RpcCorrelation))
+                        {
+                            logger.LogInfo(
+                                $"RabbitMQ rpc correlation. Подключение к очереди '{configuration.ResponseQueueName}' установлено.");
+                        }
 
                         var sessionEndedByCancellation = await RabbitMqConsumerSessionLifecycle
                             .WaitForSessionEndAsync(connection, stoppingToken)
@@ -157,6 +207,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                             profileName,
                             reconnectAttempt,
                             ex.Message);
+                        using (RabbitMqStructuredLogging.BeginTransportScope(
+                                   logger,
+                                   profileName,
+                                   RabbitMqTransportLogKind.RpcCorrelation))
+                        {
+                            logger.LogException(
+                                $"RabbitMQ rpc correlation. Ошибка прослушивания очереди '{configuration.ResponseQueueName}'.",
+                                ex);
+                        }
 
                         if (stoppingToken.IsCancellationRequested)
                         {

@@ -73,6 +73,9 @@ internal sealed class IntegrationFlowMeter : IDisposable
         ListenerShutdownRequeue = meter.CreateCounter<long>(
             "integrationflow.message.shutdown_requeue",
             description: "Inbox messages nack-requeued during listener shutdown.");
+        ConsumerOutcome = meter.CreateCounter<long>(
+            "integrationflow.message.consumer.outcome",
+            description: "RabbitMQ consumer acknowledgement outcomes.");
         meter.CreateObservableGauge(
             "integrationflow.connection.pool.size",
             ObserveConnectionPoolSize,
@@ -112,6 +115,8 @@ internal sealed class IntegrationFlowMeter : IDisposable
     public Counter<long> ListenerReconnect { get; }
 
     public Counter<long> ListenerShutdownRequeue { get; }
+
+    public Counter<long> ConsumerOutcome { get; }
 
     public void SetPendingCount(int count)
     {

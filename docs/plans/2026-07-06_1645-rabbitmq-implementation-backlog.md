@@ -2,10 +2,10 @@
 
 **Статус:** открыт  
 **Создан:** 2026-07-06 16:45 (UTC+3)  
-**Обновлён:** 2026-07-06 17:53 (UTC+3)  
+**Обновлён:** 2026-07-06 18:16 (UTC+3)  
 **Основание:** [`../2026-07-04_2352-rabbitmq-full-analysis.md`](../2026-07-04_2352-rabbitmq-full-analysis.md), [`../2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md)  
 **Предшественники:** P1 G1–G5 ✅, P2 core ✅ — [`../2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](../2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`../2026-07-06_1617-rabbitmq-p2-implementation-status.md`](../2026-07-06_1617-rabbitmq-p2-implementation-status.md)  
-**P3 status (P3-1…P3-3):** [`../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
+**P3 status (P3-1…P3-7):** [`../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
 **Связанные планы:** [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md), [`2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](2026-07-06_1519-rabbitmq-p2-resilience-hardening.md)
 
 Детализированный перечень задач после закрытия P1 transport gaps и P2 resilience core. Приоритеты: **P3** → **P4** → **v1.1** → **тесты/CI** → **tech debt** → **ops**.
@@ -19,7 +19,7 @@
 | Функциональность | ★★★★★ | Три паттерна, outbox, RPC sync+async, dedup |
 | Корректность | ★★★★☆ | P1 закрыт; семантика RPC — adoption-риск |
 | Resilience | ★★★★☆ | Reconnect, pool, TLS; нет HA/CB/eviction |
-| Observability | ★★★★☆ | Health checks, broker gauge; tracing — P3-4 |
+| Observability | ★★★★★ | Health, metrics, logging, tracing — P3 ✅ |
 | DX / Config | ★★★★☆ | Env/IConfiguration overlay ✅; shared profiles — P4 |
 | Тесты | ★★★★☆ | Unit + E2E; chaos/DLQ/load — gaps |
 
@@ -34,12 +34,12 @@
 | **P3-1** | Health checks | `IHealthCheck` для listener, outbox relay, RPC correlation worker | `AddHealthChecks()` + extension methods; unhealthy при отсутствии соединения / N последовательных reconnect | 1 дн | ✅ |
 | **P3-2** | Env / IConfiguration overlay | Поддержка env vars и `IConfiguration` в loaders (не только `rabbitmq.json`) | `RabbitMq__Inbox__HostName`; `AddIntegrationFlowRabbitMq(IConfiguration)` | 1 дн | ✅ |
 | **P3-3** | Broker connectivity gauge | Gauge `integrationflow.broker.connected` (profile, kind) | Обновление при connect/disconnect/reconnect; README + runbook | 0.5 дн | ✅ |
-| **P3-4** | Distributed tracing | Propagate `traceparent` / `tracestate` через AMQP headers | `Activity` на publish/consume/RPC; sample в README | 2 дн | ⏸ |
-| **P3-5** | Structured logging | Поля `MessageId`, `CorrelationId`, `DeliveryTag`, `profile` в логах | Единый enricher или scope; без breaking changes | 0.5 дн | ⏸ |
-| **P3-6** | Consumer-level метрики | Counters: `nack`, `requeue`, `dedup_skip`, `in_progress_requeue` | Теги `profile`, `reason`; алерты в runbook | 0.5 дн | ⏸ |
-| **P3-7** | Документация P3 | README + runbook metrics/alerting | Примеры конфигурации, пороги алертов | 0.5 дн | ⏸ частично |
+| **P3-4** | Distributed tracing | Propagate `traceparent` / `tracestate` через AMQP headers | `Activity` на publish/consume/RPC; sample в README | 2 дн | ✅ |
+| **P3-5** | Structured logging | Поля `MessageId`, `CorrelationId`, `DeliveryTag`, `profile` в логах | Единый enricher или scope; без breaking changes | 0.5 дн | ✅ |
+| **P3-6** | Consumer-level метрики | Counters: `nack`, `requeue`, `dedup_skip`, `in_progress_requeue` | Теги `profile`, `reason`; алерты в runbook | 0.5 дн | ✅ |
+| **P3-7** | Документация P3 | README + runbook metrics/alerting | Примеры конфигурации, пороги алертов | 0.5 дн | ✅ |
 
-**Epic P3:** «Production observability & config» — ~6 дн.
+**Epic P3:** «Production observability & config» — ✅ закрыт.
 
 ---
 
@@ -207,8 +207,7 @@ Blocks: T-7
 | Приоритет | Следующий шаг |
 |-----------|---------------|
 | **Сейчас** | OPS-1/2 — NuGet publish |
-| **Sprint 1** | ~~P3-1 … P3-3~~ ✅ — [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
-| **Sprint 2** | P3-4 … P3-7 — tracing, logging, consumer metrics |
-| **Sprint 3+** | P4, chaos/DLQ E2E, optional v1.1 resilience |
+| **Sprint 3+** | P4-1, P4-2, T-1, T-3 |
+| **Backlog v1.1+** | P2-CB, P2-HA, chaos/DLQ E2E |
 
 Краткий указатель: [`../2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md).

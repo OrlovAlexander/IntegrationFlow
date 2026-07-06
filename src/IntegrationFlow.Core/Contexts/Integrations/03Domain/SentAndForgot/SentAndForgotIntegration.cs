@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Connection;
@@ -156,8 +157,22 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                         return IntegrateResult.Failed("Transmitter was not provided.");
                     }
 
-                    var transmitResult = TransmitWithResult(transmitter, destinationData);
-                    logger.LogInfo(SR.T("SendAndForgot - '{0}' - Обмен данными состоялся", sideCode));
+                    var transmitMessageId = ResolveTransmitMessageId(destinationData);
+                    TransmitResult transmitResult;
+                    using (IntegrationStructuredLogging.BeginScope(
+                               logger,
+                               (IntegrationStructuredLogFields.Profile, sideCode),
+                               (IntegrationStructuredLogFields.MessageId, transmitMessageId),
+                               (IntegrationStructuredLogFields.CorrelationId, destinationData.CorrelationId),
+                               (IntegrationStructuredLogFields.Kind, "publish")))
+                    {
+                        transmitResult = TransmitWithResult(transmitter, destinationData);
+                        using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "published"))
+                        {
+                            logger.LogInfo(SR.T("SendAndForgot - '{0}' - Обмен данными состоялся", sideCode));
+                        }
+                    }
+
                     return IntegrateResult.Succeeded(transmitResult.MessageId);
                 }
                 finally
@@ -189,5 +204,10 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
             transmitter.Transmit(destinationData);
             return TransmitResult.Create(destinationData.MessageId);
         }
+
+        private static string ResolveTransmitMessageId(TransmitData destinationData)
+            => string.IsNullOrWhiteSpace(destinationData.MessageId)
+                ? Guid.NewGuid().ToString("N")
+                : destinationData.MessageId;
     }
 }

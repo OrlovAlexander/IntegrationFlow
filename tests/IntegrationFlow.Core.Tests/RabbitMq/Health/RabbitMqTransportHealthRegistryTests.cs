@@ -139,6 +139,10 @@ public sealed class RabbitMqTransportHealthRegistryTests
         {
         }
 
+        public void RecordConsumerOutcome(string profileName, string reason)
+        {
+        }
+
         public void RecordConnectionPoolSize(string kind, int size)
         {
         }

@@ -31,7 +31,7 @@
 | 2026-07-05 14:55 | 2026-07-05 14:55 | [Полный анализ IntegrationFlow и рисков (v12, актуально)](2026-07-05_1455-integrationflow-full-analysis.md) |
 | 2026-07-03 22:16 | 2026-07-03 22:16 | [Runbook: replay abandoned outbox](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | 2026-07-04 08:36 | 2026-07-04 08:36 | [План: P1 metrics + P2 NuGet publish (выполнено)](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md) |
-| 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: metrics and alerting](runbooks/2026-07-04_0845-metrics-and-alerting.md) |
+| 2026-07-04 08:45 | 2026-07-06 18:16 | [Runbook: metrics and alerting (P3)](runbooks/2026-07-04_0845-metrics-and-alerting.md) |
 | 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: NuGet release](runbooks/2026-07-04_0845-nuget-release.md) |
 | 2026-07-04 09:04 | 2026-07-04 09:15 | [План: RabbitMQ SentAndWait (request-reply, выполнено)](plans/2026-07-04_0904-rabbitmq-sentandwait.md) |
 | 2026-07-04 09:30 | 2026-07-04 09:30 | [План: post-analysis roadmap P3 (открыт)](plans/2026-07-04_0930-post-analysis-roadmap.md) |
@@ -46,8 +46,8 @@
 | 2026-07-04 23:52 | 2026-07-06 14:56 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
 | 2026-07-06 14:45 | 2026-07-06 14:56 | [План: RabbitMQ transport gaps G1–G5 (P1, выполнено)](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
 | 2026-07-06 14:56 | 2026-07-06 14:56 | [Статус реализации G1–G5 (актуально)](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
-| 2026-07-06 15:19 | 2026-07-06 16:17 | [Актуальный backlog после P2 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
+| 2026-07-06 15:19 | 2026-07-06 18:16 | [Актуальный backlog после P3 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
 | 2026-07-06 15:19 | 2026-07-06 16:17 | [План: RabbitMQ P2 resilience (core выполнено)](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) |
 | 2026-07-06 16:17 | 2026-07-06 16:17 | [Статус реализации P2 core (актуально)](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
 | 2026-07-06 16:45 | 2026-07-06 16:45 | [План: RabbitMQ backlog задач (открыт, актуально)](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
-| 2026-07-06 17:53 | 2026-07-06 17:53 | [Статус реализации P3 ops P3-1…P3-3 (актуально)](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
+| 2026-07-06 17:53 | 2026-07-06 18:16 | [Статус реализации P3 ops P3-1…P3-7 (актуально)](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
