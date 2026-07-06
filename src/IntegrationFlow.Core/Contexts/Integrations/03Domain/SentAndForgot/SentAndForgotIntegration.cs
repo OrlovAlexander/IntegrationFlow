@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Cfg;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Connection;
@@ -136,7 +137,8 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     }
                 }
 
-                using (connection)
+                var leaveOpen = connection is ILeaveOpenOnDispose { LeaveOpenOnDispose: true };
+                try
                 {
                     if (connection.NeedReconnect())
                     {
@@ -157,6 +159,13 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot
                     var transmitResult = TransmitWithResult(transmitter, destinationData);
                     logger.LogInfo(SR.T("SendAndForgot - '{0}' - Обмен данными состоялся", sideCode));
                     return IntegrateResult.Succeeded(transmitResult.MessageId);
+                }
+                finally
+                {
+                    if (!leaveOpen)
+                    {
+                        connection.Dispose();
+                    }
                 }
             }
             catch (Exception ex)

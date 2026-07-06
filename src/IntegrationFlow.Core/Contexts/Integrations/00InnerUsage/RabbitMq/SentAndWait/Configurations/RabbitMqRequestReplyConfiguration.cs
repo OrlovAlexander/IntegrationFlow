@@ -95,6 +95,21 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         public bool Mandatory { get; set; }
 
         /// <summary>
+        /// Включить publisher confirms для request publish.
+        /// </summary>
+        public bool PublisherConfirmsEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Таймаут ожидания publisher confirm для request (секунды).
+        /// </summary>
+        public int ConfirmTimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// Флаг mandatory для server-side RPC reply publish.
+        /// </summary>
+        public bool ReplyMandatory { get; set; }
+
+        /// <summary>
         /// Проверять существование очереди/exchange перед publish (passive declare).
         /// </summary>
         public bool ValidateTopology { get; set; } = true;
@@ -157,6 +172,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             if (ResponseTimeoutSeconds <= 0)
             {
                 throw new InvalidOperationException("ResponseTimeoutSeconds должен быть больше 0.");
+            }
+
+            if (ConfirmTimeoutSeconds <= 0)
+            {
+                throw new InvalidOperationException("ConfirmTimeoutSeconds должен быть больше 0.");
             }
 
             if (RequestTarget == RabbitMqRequestReplyTarget.Queue)

@@ -220,6 +220,10 @@ public sealed class IntegrationFlowMetricsTests
         public void RecordListenerShutdownRequeue(string profileName)
         {
         }
+
+        public void RecordConnectionPoolSize(string kind, int size)
+        {
+        }
     }
 
     private sealed class MetricsOutboxStore : IOutboxStore

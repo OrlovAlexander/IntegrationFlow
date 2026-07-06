@@ -13,7 +13,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
     /// <summary>
     /// Подключение к RabbitMQ для публикации сообщений.
     /// </summary>
-    internal sealed class RabbitMqPublishConnection : DomainConnection
+    internal sealed class RabbitMqPublishConnection : DomainConnection, ILeaveOpenOnDispose
     {
         private RabbitMQ.Client.IConnection connection;
         private IModel channel;
@@ -23,18 +23,29 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         private readonly ManualResetEventSlim unroutableSignal = new(initialState: false);
 
         public RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration)
-            : this(configuration, openConnection: true)
+            : this(configuration, leaveOpenOnDispose: false, openConnection: true)
         {
         }
 
-        internal RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration, bool openConnection)
+        internal RabbitMqPublishConnection(RabbitMqPublishConfiguration configuration, bool leaveOpenOnDispose)
+            : this(configuration, leaveOpenOnDispose, openConnection: true)
+        {
+        }
+
+        internal RabbitMqPublishConnection(
+            RabbitMqPublishConfiguration configuration,
+            bool leaveOpenOnDispose,
+            bool openConnection)
         {
             this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            LeaveOpenOnDispose = leaveOpenOnDispose;
             if (openConnection)
             {
                 Open();
             }
         }
+
+        public bool LeaveOpenOnDispose { get; }
 
         internal IModel Channel => channel;
 
@@ -51,6 +62,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         }
 
         public void Dispose()
+        {
+            if (disposed || LeaveOpenOnDispose)
+            {
+                return;
+            }
+
+            disposed = true;
+            DisposeInternal();
+        }
+
+        internal void ForceDispose()
         {
             if (disposed)
             {

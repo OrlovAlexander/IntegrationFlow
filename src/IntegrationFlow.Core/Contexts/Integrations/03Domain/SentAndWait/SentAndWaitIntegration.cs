@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;

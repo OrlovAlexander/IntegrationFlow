@@ -101,6 +101,21 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         public bool ValidateTopology { get; set; } = true;
 
         /// <summary>
+        /// Переиспользовать TCP-подключение между вызовами интеграции (direct publish).
+        /// </summary>
+        public bool ReuseConnection { get; set; }
+
+        /// <summary>
+        /// Использовать TLS (AMQPS) при подключении к брокеру.
+        /// </summary>
+        public bool SslEnabled { get; set; }
+
+        /// <summary>
+        /// Имя сервера для проверки TLS-сертификата (SNI).
+        /// </summary>
+        public string SslServerName { get; set; } = string.Empty;
+
+        /// <summary>
         /// Проверяет корректность конфигурации.
         /// </summary>
         public void Validate()
@@ -155,7 +170,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 VirtualHost = VirtualHost,
                 AutomaticRecoveryEnabled = AutomaticRecoveryEnabled,
                 ClientProvidedName = ClientProvidedName,
-                DispatchConsumersAsync = false
+                DispatchConsumersAsync = false,
+                SslEnabled = SslEnabled,
+                SslServerName = SslServerName
             };
         }
 
@@ -170,7 +187,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 VirtualHost = configuration.VirtualHost,
                 AutomaticRecoveryEnabled = configuration.AutomaticRecoveryEnabled,
                 ClientProvidedName = configuration.ClientProvidedName,
-                DispatchConsumersAsync = true
+                DispatchConsumersAsync = true,
+                SslEnabled = configuration.SslEnabled,
+                SslServerName = configuration.SslServerName
             };
         }
     }

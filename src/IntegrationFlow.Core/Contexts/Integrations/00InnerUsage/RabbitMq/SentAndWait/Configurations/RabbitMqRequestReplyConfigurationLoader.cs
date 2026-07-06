@@ -248,6 +248,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             target.ContentType = source.ContentType;
             target.Persistent = source.Persistent;
             target.Mandatory = source.Mandatory;
+            target.PublisherConfirmsEnabled = source.PublisherConfirmsEnabled;
+            target.ConfirmTimeoutSeconds = source.ConfirmTimeoutSeconds;
+            target.ReplyMandatory = source.ReplyMandatory;
             target.ValidateTopology = source.ValidateTopology;
             target.MaxConcurrentRequests = source.MaxConcurrentRequests;
             target.ReuseConnection = source.ReuseConnection;

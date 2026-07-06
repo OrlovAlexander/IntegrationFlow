@@ -249,6 +249,8 @@ Chaos-сценарии из [`2026-07-04_2352-rabbitmq-full-analysis.md`](../202
 
 | После G1–G5 | Следующий шаг |
 |-------------|---------------|
+| **P2** | [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) — ✅ core |
+| **P2 status** | [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](../2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
 | Ops | NuGet publish (единственный ops-blocker v1.0) |
 | P2 | SentAndForgot connection pool, TLS для listener/publish |
 | P3 | Health checks, distributed tracing |

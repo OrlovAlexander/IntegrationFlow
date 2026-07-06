@@ -149,6 +149,32 @@ public sealed class RabbitMqConfigurationLoaderTests
     }
 
     [Fact]
+    public void PopulateProfile_CopiesSslFields()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMq": {
+                "Inbox": {
+                  "HostName": "rabbit.example.com",
+                  "Port": 5671,
+                  "QueueName": "integration.inbox",
+                  "SslEnabled": true,
+                  "SslServerName": "rabbit.example.com"
+                }
+              }
+            }
+            """);
+
+        var configuration = new RabbitMqConfiguration();
+        RabbitMqConfigurationLoader.PopulateProfile(configuration, "Inbox", configPath);
+
+        Assert.True(configuration.SslEnabled);
+        Assert.Equal("rabbit.example.com", configuration.SslServerName);
+        Assert.Equal(5671, configuration.Port);
+    }
+
+    [Fact]
     public void PopulateProfile_CopiesRetryPolicyFields()
     {
         var configPath = CreateConfigFile(

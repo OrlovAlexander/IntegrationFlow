@@ -81,4 +81,9 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     public void RecordListenerShutdownRequeue(string profileName)
     {
     }
+
+    /// <inheritdoc />
+    public void RecordConnectionPoolSize(string kind, int size)
+    {
+    }
 }

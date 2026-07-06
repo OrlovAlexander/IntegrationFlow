@@ -284,6 +284,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             target.Persistent = source.Persistent;
             target.Mandatory = source.Mandatory;
             target.ValidateTopology = source.ValidateTopology;
+            target.PublisherConfirmsEnabled = source.PublisherConfirmsEnabled;
+            target.ConfirmTimeoutSeconds = source.ConfirmTimeoutSeconds;
+            target.ReuseConnection = source.ReuseConnection;
+            target.SslEnabled = source.SslEnabled;
+            target.SslServerName = source.SslServerName;
         }
     }
 }

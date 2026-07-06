@@ -69,5 +69,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// Максимальное количество попыток доставки (0 = без ограничения).
         /// </summary>
         public int MaxRetryCount { get; set; }
+
+        /// <summary>
+        /// Использовать TLS (AMQPS) при подключении к брокеру.
+        /// </summary>
+        public bool SslEnabled { get; set; }
+
+        /// <summary>
+        /// Имя сервера для проверки TLS-сертификата (SNI).
+        /// </summary>
+        public string SslServerName { get; set; } = string.Empty;
     }
 }

@@ -12,6 +12,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         private static readonly ConcurrentDictionary<string, RabbitMqReplyPublisherChannel> Channels =
             new(StringComparer.OrdinalIgnoreCase);
 
+        static RabbitMqReplyPublisherPool()
+        {
+            RabbitMqConnectionPoolRegistry.Register(DisposeAll);
+        }
+
         public static RabbitMqReplyPublisherChannel GetOrAdd(RabbitMqRequestReplyConfiguration configuration)
         {
             if (configuration == null)
@@ -48,6 +53,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             if (Channels.TryRemove(BuildKey(configuration), out var stale))
             {
                 stale.Dispose();
+            }
+        }
+
+        internal static void DisposeAll()
+        {
+            foreach (var key in Channels.Keys.ToArray())
+            {
+                if (Channels.TryRemove(key, out var channel))
+                {
+                    channel.Dispose();
+                }
             }
         }
 

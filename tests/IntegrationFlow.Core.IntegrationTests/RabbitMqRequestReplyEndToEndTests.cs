@@ -327,6 +327,10 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
         public void RecordListenerShutdownRequeue(string profileName)
         {
         }
+
+        public void RecordConnectionPoolSize(string kind, int size)
+        {
+        }
     }
 
     private void ServeOneRequestAndReply()

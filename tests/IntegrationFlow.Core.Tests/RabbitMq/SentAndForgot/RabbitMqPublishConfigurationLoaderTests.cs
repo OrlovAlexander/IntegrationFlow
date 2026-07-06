@@ -136,6 +136,34 @@ public sealed class RabbitMqPublishConfigurationLoaderTests
     }
 
     [Fact]
+    public void PopulateProfile_CopiesSslAndReuseConnectionFields()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMqPublish": {
+                "OrdersOut": {
+                  "HostName": "rabbit.example.com",
+                  "Port": 5671,
+                  "PublishTarget": "Queue",
+                  "QueueName": "orders.outbox",
+                  "SslEnabled": true,
+                  "SslServerName": "rabbit.example.com",
+                  "ReuseConnection": true
+                }
+              }
+            }
+            """);
+
+        var configuration = new RabbitMqPublishConfiguration();
+        RabbitMqPublishConfigurationLoader.PopulateProfile(configuration, "OrdersOut", configPath);
+
+        Assert.True(configuration.SslEnabled);
+        Assert.Equal("rabbit.example.com", configuration.SslServerName);
+        Assert.True(configuration.ReuseConnection);
+    }
+
+    [Fact]
     public void Validate_ThrowsWhenQueueTargetWithoutQueueName()
     {
         var configuration = new RabbitMqPublishConfiguration

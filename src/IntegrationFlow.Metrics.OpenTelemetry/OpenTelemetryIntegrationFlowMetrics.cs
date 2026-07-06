@@ -168,6 +168,10 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
     }
 
     /// <inheritdoc />
+    public void RecordConnectionPoolSize(string kind, int size)
+        => meter.SetConnectionPoolSize(kind, size);
+
+    /// <inheritdoc />
     public void Dispose()
     {
         meter.Dispose();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._02Application;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
@@ -31,6 +32,7 @@ namespace IntegrationFlow.Contexts.Integrations._01Infrastructure
         public OrgIntegration(IIntegrationFlowMetrics metrics)
         {
             this.metrics = metrics ?? NullIntegrationFlowMetrics.Instance;
+            RabbitMqConnectionPoolsBootstrap.Configure(this.metrics);
             SentAndForgotProvider = new ConcurrentDictionary<Type, ISentAndForgotIntegrationOppositeSideProvider>();
             SentAndWaitProvider = new ConcurrentDictionary<Type, ISentAndWaitIntegrationOppositeSideProvider>();
         }

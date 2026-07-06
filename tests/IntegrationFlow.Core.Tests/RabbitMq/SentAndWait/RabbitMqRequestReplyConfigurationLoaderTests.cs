@@ -126,6 +126,33 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
     }
 
     [Fact]
+    public void PopulateProfile_CopiesPublisherConfirmsAndReplyMandatory()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMqRequestReply": {
+                "OrdersRpc": {
+                  "HostName": "localhost",
+                  "RequestTarget": "Queue",
+                  "QueueName": "orders.rpc",
+                  "PublisherConfirmsEnabled": false,
+                  "ConfirmTimeoutSeconds": 45,
+                  "ReplyMandatory": true
+                }
+              }
+            }
+            """);
+
+        var configuration = new RabbitMqRequestReplyConfiguration();
+        RabbitMqRequestReplyConfigurationLoader.PopulateProfile(configuration, "OrdersRpc", configPath);
+
+        Assert.False(configuration.PublisherConfirmsEnabled);
+        Assert.Equal(45, configuration.ConfirmTimeoutSeconds);
+        Assert.True(configuration.ReplyMandatory);
+    }
+
+    [Fact]
     public void Validate_ThrowsWhenQueueTargetWithoutQueueName()
     {
         var configuration = new RabbitMqRequestReplyConfiguration

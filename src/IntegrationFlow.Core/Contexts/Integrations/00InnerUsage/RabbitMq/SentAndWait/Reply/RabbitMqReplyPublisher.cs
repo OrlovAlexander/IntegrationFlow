@@ -1,9 +1,11 @@
 using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Reply
 {
@@ -15,6 +17,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         private readonly RabbitMqConnectionSettings connectionSettings;
         private readonly string contentType;
         private readonly RabbitMqRequestReplyConfiguration? pooledConfiguration;
+        private readonly bool replyMandatory;
 
         /// <summary>
         /// Creates publisher from request-reply profile configuration.
@@ -29,6 +32,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             configuration.Validate();
             connectionSettings = configuration.ToConnectionSettings();
             contentType = configuration.ContentType;
+            replyMandatory = configuration.ReplyMandatory;
             pooledConfiguration = configuration.ReuseReplyConnection ? configuration : null;
         }
 
@@ -110,10 +114,18 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var factory = RabbitMqConnectionFactory.Create(connectionSettings);
             using var connection = factory.CreateConnection();
             using var channel = connection.CreateModel();
-            PublishReply(channel, replyTo, correlationId, responseBody);
+            PublishReply(channel, replyTo, correlationId, responseBody, waitForReturn: replyMandatory);
         }
 
         private void PublishReply(IModel channel, string replyTo, string correlationId, byte[] responseBody)
+            => PublishReply(channel, replyTo, correlationId, responseBody, waitForReturn: replyMandatory);
+
+        private void PublishReply(
+            IModel channel,
+            string replyTo,
+            string correlationId,
+            byte[] responseBody,
+            bool waitForReturn)
         {
             var properties = channel.CreateBasicProperties();
             properties.ContentType = contentType;
@@ -122,12 +134,39 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 properties.CorrelationId = correlationId;
             }
 
-            channel.BasicPublish(
-                exchange: string.Empty,
-                routingKey: replyTo,
-                mandatory: false,
-                basicProperties: properties,
-                body: responseBody ?? Array.Empty<byte>());
+            using var returnSignal = waitForReturn ? new ManualResetEventSlim(false) : null;
+            EventHandler<BasicReturnEventArgs>? onReturn = null;
+            if (waitForReturn)
+            {
+                onReturn = (_, _) => returnSignal!.Set();
+                channel.BasicReturn += onReturn;
+            }
+
+            try
+            {
+                channel.BasicPublish(
+                    exchange: string.Empty,
+                    routingKey: replyTo,
+                    mandatory: waitForReturn,
+                    basicProperties: properties,
+                    body: responseBody ?? Array.Empty<byte>());
+
+                if (waitForReturn)
+                {
+                    returnSignal!.Wait(TimeSpan.FromMilliseconds(100));
+                    if (returnSignal.IsSet)
+                    {
+                        throw new UnroutableMessageException("RabbitMQ returned BasicReturn for mandatory RPC reply.");
+                    }
+                }
+            }
+            finally
+            {
+                if (onReturn != null)
+                {
+                    channel.BasicReturn -= onReturn;
+                }
+            }
         }
     }
 }

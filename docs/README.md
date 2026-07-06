@@ -46,3 +46,6 @@
 | 2026-07-04 23:52 | 2026-07-06 14:56 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
 | 2026-07-06 14:45 | 2026-07-06 14:56 | [План: RabbitMQ transport gaps G1–G5 (P1, выполнено)](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
 | 2026-07-06 14:56 | 2026-07-06 14:56 | [Статус реализации G1–G5 (актуально)](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
+| 2026-07-06 15:19 | 2026-07-06 16:17 | [Актуальный backlog после P2 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
+| 2026-07-06 15:19 | 2026-07-06 16:17 | [План: RabbitMQ P2 resilience (core выполнено)](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) |
+| 2026-07-06 16:17 | 2026-07-06 16:17 | [Статус реализации P2 core (актуально)](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |

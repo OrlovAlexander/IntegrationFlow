@@ -2,8 +2,8 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:52 (UTC+3)  
-**Обновлён:** 2026-07-06 14:56 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
+**Обновлён:** 2026-07-06 15:19 (UTC+3)  
+**Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md), [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
 
 Отчёт описывает текущую реализацию RabbitMQ в каркасе IntegrationFlow, сильные стороны, выявленные gaps и приоритизированный roadmap улучшений. Актуален на состояние репозитория после реализации фаз 1–3 SentAndWait RPC.
 
@@ -134,16 +134,18 @@ Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-0
 
 ### 3.2 Надёжность и production-hardening (P2)
 
-| Область | Текущее состояние | Улучшение |
-|---------|-------------------|-----------|
-| SentAndForgot direct publish | Новое TCP на каждый `Integrate()` | Connection pool по профилю (как RPC `ReuseConnection`) |
-| Publisher confirms на RPC | Только SentAndForgot | Confirms для request/reply publish |
-| Mandatory на RPC reply | Всегда `false` | Опциональный `Mandatory` + `BasicReturn` |
-| Static connection pools | `ConcurrentDictionary`, без TTL | Idle eviction, max lifetime, метрики pool size |
-| Health checks | Нет `IHealthCheck` | Passive queue declare в health endpoint |
-| Circuit breaker | Нет | Пауза при серии ошибок publish/consume + метрика |
-| Cluster / HA | Один `HostName` | Список endpoints (`AmqpTcpEndpoint[]`) |
-| TLS | Только `RabbitMqRequestReply` | `SslEnabled` для listener и publish профилей |
+**Статус core:** ✅ Закрыт — [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md)
+
+| Область | Было | Сейчас |
+|---------|------|--------|
+| SentAndForgot direct publish | Новое TCP на каждый `Integrate()` | ✅ `ReuseConnection` + `RabbitMqPublishConnectionPool` |
+| Publisher confirms на RPC | Только SentAndForgot | ✅ Confirms на request publish (`P2-RPC-C`) |
+| Mandatory на RPC reply | Всегда `false` | ✅ Opt-in `ReplyMandatory` + `BasicReturn` |
+| Static connection pools | Без shutdown/metrics | ✅ Shutdown hook + gauge `connection.pool.size`; idle eviction — optional |
+| TLS | Только `RabbitMqRequestReply` | ✅ `SslEnabled` для listener и publish |
+| Health checks | Нет `IHealthCheck` | ⏸ P3 |
+| Circuit breaker | Нет | ⏸ P2-CB optional |
+| Cluster / HA | Один `HostName` | ⏸ P2-HA optional |
 
 ---
 
@@ -156,7 +158,7 @@ Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-0
 | Environment overlay | `AddEnvironmentVariables()` в loader |
 | ASP.NET Core `IConfiguration` | DI вместо file-only loaders |
 | Shared connection profile | Убрать дублирование `HostName`/`UserName`/`Password` между тремя секциями |
-| AMQPS samples | TLS для всех трёх секций (сейчас в README только для RPC) |
+| AMQPS samples | TLS для всех трёх секций | ✅ README (P2-F); shared profile — P4 |
 
 Пример shared profile:
 
@@ -266,9 +268,10 @@ flowchart LR
 | **P1** | Reconnect loop для listener | 1–2 дн | ✅ Закрыт |
 | **P1** | Fix `Copy()` для retry-полей | 0.5 ч | ✅ Закрыт |
 | **P1** | Sync ack в correlation service | 0.5 дн | ✅ Закрыт |
-| **P2** | Connection pool для SentAndForgot | 1 дн | Средний — latency/throughput |
-| **P2** | Graceful shutdown | 1 дн | ✅ Закрыт |
-| **P2** | TLS на listener/publish | 0.5 дн | Средний — security |
+| **P2** | Connection pool для SentAndForgot | 1 дн | ✅ Закрыт — [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
+| **P2** | Graceful shutdown | 1 дн | ✅ Закрыт (G2) |
+| **P2** | TLS на listener/publish | 0.5 дн | ✅ Закрыт (P2-F) |
+| **P2** | RPC confirms + reply mandatory + pool lifecycle | 1–2 дн | ✅ Закрыт (core) |
 | **P3** | Health checks + env config | 1 дн | Ops readiness |
 | **P3** | OTel tracing через headers | 2 дн | Debuggability |
 | **P4** | Headers API, shared profiles | 1–2 дн | DX |
@@ -281,7 +284,9 @@ flowchart LR
 | PF2 (pool eviction) | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
 | O3 (tracing) | [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) |
 | SEC1/SEC2 | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), волна 4 |
-| G1–G5 (P1 transport) | [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
+| G1–G5 (P1 transport) | [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) — ✅ |
+| P2 resilience | [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) — ✅ core |
+| P2 status | [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
 
 ---
 
@@ -296,9 +301,9 @@ RabbitMQ-слой в IntegrationFlow **функционально зрелый**
 **Главные gaps — operational hardening, не отсутствие базовой функциональности:**
 
 1. Listener переживает reconnect — ✅ reconnect loop в worker (G1)
-2. Конфигурация file-only; SSL только для RPC
-3. Connection reuse есть для RPC, нет для SentAndForgot direct publish
-4. Метрики есть; tracing и health checks — нет
+2. TLS для всех профилей — ✅ P2-F; env overlay / shared profiles — P3/P4
+3. Connection reuse для SentAndForgot direct publish — ✅ P2-D (`ReuseConnection`)
+4. Метрики pool size — ✅ P2-PF; tracing и health checks — P3
 5. ~~Мелкий баг: `PopulateProfile` теряет retry-настройки~~ — ✅ закрыт (G3)
 
 Adoption-риски (DLQ topology, server ack order, sync RPC semantics) уже описаны в runbooks — правильный подход для framework-библиотеки.

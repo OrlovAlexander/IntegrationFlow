@@ -83,4 +83,11 @@ public interface IIntegrationFlowMetrics
     /// Records messages nack-requeued during listener shutdown.
     /// </summary>
     void RecordListenerShutdownRequeue(string profileName);
+
+    /// <summary>
+    /// Records current RabbitMQ connection pool size.
+    /// </summary>
+    /// <param name="kind">Pool kind: <c>rpc</c> or <c>publish</c>.</param>
+    /// <param name="size">Number of pooled connections.</param>
+    void RecordConnectionPoolSize(string kind, int size);
 }

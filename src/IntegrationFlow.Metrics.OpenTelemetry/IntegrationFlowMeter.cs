@@ -7,6 +7,8 @@ internal sealed class IntegrationFlowMeter : IDisposable
     private readonly Meter meter;
     private long pendingCount;
     private long rpcPendingAwaitingCount;
+    private long connectionPoolRpcSize;
+    private long connectionPoolPublishSize;
 
     public IntegrationFlowMeter(string meterName)
     {
@@ -67,6 +69,10 @@ internal sealed class IntegrationFlowMeter : IDisposable
         ListenerShutdownRequeue = meter.CreateCounter<long>(
             "integrationflow.message.shutdown_requeue",
             description: "Inbox messages nack-requeued during listener shutdown.");
+        meter.CreateObservableGauge(
+            "integrationflow.connection.pool.size",
+            ObserveConnectionPoolSize,
+            description: "Current RabbitMQ connection pool size.");
     }
 
     public Counter<long> MessagesProcessed { get; }
@@ -109,6 +115,20 @@ internal sealed class IntegrationFlowMeter : IDisposable
         Interlocked.Exchange(ref rpcPendingAwaitingCount, count);
     }
 
+    public void SetConnectionPoolSize(string kind, int size)
+    {
+        if (string.Equals(kind, "rpc", StringComparison.OrdinalIgnoreCase))
+        {
+            Interlocked.Exchange(ref connectionPoolRpcSize, size);
+            return;
+        }
+
+        if (string.Equals(kind, "publish", StringComparison.OrdinalIgnoreCase))
+        {
+            Interlocked.Exchange(ref connectionPoolPublishSize, size);
+        }
+    }
+
     public void Dispose()
     {
         meter.Dispose();
@@ -119,4 +139,14 @@ internal sealed class IntegrationFlowMeter : IDisposable
 
     private Measurement<long> ObserveRpcPendingAwaitingCount()
         => new(Interlocked.Read(ref rpcPendingAwaitingCount));
+
+    private IEnumerable<Measurement<long>> ObserveConnectionPoolSize()
+    {
+        yield return new Measurement<long>(
+            Interlocked.Read(ref connectionPoolRpcSize),
+            new KeyValuePair<string, object?>("kind", "rpc"));
+        yield return new Measurement<long>(
+            Interlocked.Read(ref connectionPoolPublishSize),
+            new KeyValuePair<string, object?>("kind", "publish"));
+    }
 }

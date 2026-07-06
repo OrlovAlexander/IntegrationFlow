@@ -163,6 +163,21 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         Assert.Equal(1, collector.GetCounterSum("integrationflow.message.shutdown_requeue"));
     }
 
+    [Fact]
+    public void RecordConnectionPoolSize_UpdatesGauge()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordConnectionPoolSize("rpc", 2);
+        metrics.RecordConnectionPoolSize("publish", 3);
+        collector.Collect();
+
+        var measurements = collector.GetGaugeMeasurements("integrationflow.connection.pool.size");
+        Assert.Contains(measurements, item => item.Value == 2 && item.Tags["kind"]?.ToString() == "rpc");
+        Assert.Contains(measurements, item => item.Value == 3 && item.Tags["kind"]?.ToString() == "publish");
+    }
+
     [Theory]
     [InlineData("Orders.Inbox", "orders_inbox")]
     [InlineData("", "unknown")]
@@ -190,6 +205,7 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         private readonly Dictionary<string, int> histogramCounts = new();
         private readonly Dictionary<string, long> gaugeValues = new();
         private readonly List<IReadOnlyDictionary<string, object?>> counterTagSets = new();
+        private readonly List<(string InstrumentName, long Value, IReadOnlyDictionary<string, object?> Tags)> gaugeTagMeasurements = new();
 
         public MetricCollector(string meterName)
         {
@@ -223,6 +239,12 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         public long GetGaugeValue(string instrumentName)
             => gaugeValues.TryGetValue(instrumentName, out var value) ? value : 0;
 
+        public IReadOnlyList<(long Value, IReadOnlyDictionary<string, object?> Tags)> GetGaugeMeasurements(string instrumentName)
+            => gaugeTagMeasurements
+                .Where(item => item.InstrumentName == instrumentName)
+                .Select(item => (item.Value, item.Tags))
+                .ToList();
+
         public IReadOnlyList<IReadOnlyDictionary<string, object?>> GetCounterTags(string instrumentName)
             => counterTagSets;
 
@@ -245,6 +267,10 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
             else if (instrument.Name.Contains("pending", StringComparison.Ordinal))
             {
                 gaugeValues[instrument.Name] = measurement;
+            }
+            else
+            {
+                gaugeTagMeasurements.Add((instrument.Name, measurement, ToDictionary(tags)));
             }
         }
 

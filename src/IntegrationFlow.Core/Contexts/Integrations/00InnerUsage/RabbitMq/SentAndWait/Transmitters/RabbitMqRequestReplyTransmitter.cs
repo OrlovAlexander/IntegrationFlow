@@ -162,6 +162,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 mandatory: configuration.Mandatory,
                 basicProperties: properties,
                 body: body);
+
+            RabbitMqPublisherConfirms.EnsureConfirmed(
+                channel,
+                configuration.PublisherConfirmsEnabled,
+                TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds)));
         }
 
         private static SemaphoreSlim? CreateConcurrencyGate(int maxConcurrentRequests)

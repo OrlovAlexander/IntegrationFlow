@@ -48,6 +48,6 @@ public sealed class RabbitMqPublishConnectionMandatoryTests
             PublisherConfirmsEnabled = false
         };
 
-        return new RabbitMqPublishConnection(configuration, openConnection: false);
+        return new RabbitMqPublishConnection(configuration, leaveOpenOnDispose: false, openConnection: false);
     }
 }

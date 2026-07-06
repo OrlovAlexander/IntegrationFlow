@@ -20,6 +20,7 @@
 | `integrationflow.requestreply.duration` | Histogram | Latency RPC (секунды) |
 | `integrationflow.listener.reconnect` | Counter | Переподключения listener (`profile`) |
 | `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при shutdown listener (`profile`) |
+| `integrationflow.connection.pool.size` | Gauge | Размер TCP pool (`kind=rpc|publish`) |
 
 ---
 

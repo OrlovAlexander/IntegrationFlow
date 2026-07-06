@@ -369,6 +369,8 @@ gantt
 | [`2026-07-04_2244-sentandwait-rpc-implementation.md`](2026-07-04_2244-sentandwait-rpc-implementation.md) | P4: фазы реализации, PR-ы |
 | [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md) | Детализация задач D/O/R/A по волнам |
 | [`2026-07-04_2104-sentandwait-async-execution.md`](2026-07-04_2104-sentandwait-async-execution.md) | R5, R8 закрыты |
-| [`2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) | P1 transport gaps G1–G5 (следующий этап после v1.0) |
+| [`2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) | P1 transport gaps G1–G5 (✅) |
+| [`2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) | P2 resilience (✅ core) |
+| [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) | P2 status |
 | [`runbooks/2026-07-04_0845-nuget-release.md`](../runbooks/2026-07-04_0845-nuget-release.md) | D1 |
 | [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](../runbooks/2026-07-04_0845-metrics-and-alerting.md) | O2 |

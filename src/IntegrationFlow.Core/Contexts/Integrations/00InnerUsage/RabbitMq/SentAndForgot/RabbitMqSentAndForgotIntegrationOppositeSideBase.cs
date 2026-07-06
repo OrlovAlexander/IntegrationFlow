@@ -1,7 +1,6 @@
 using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Cfg;
@@ -31,11 +30,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
 
         /// <inheritdoc />
         public override IConnection GetConnection(IConfiguration configuration, IIntegrationLogger logger)
-            => new RabbitMqPublishConnection((RabbitMqPublishConfiguration)configuration);
+        {
+            var publishConfiguration = (RabbitMqPublishConfiguration)configuration;
+            return publishConfiguration.ReuseConnection
+                ? RabbitMqPublishConnectionPool.GetOrAdd(publishConfiguration)
+                : new RabbitMqPublishConnection(publishConfiguration);
+        }
 
         /// <inheritdoc />
         public override ITransmitter GetTransmitter(IConfiguration configuration, IConnection connection, IIntegrationLogger logger)
-            => new RabbitMqPublishTransmitter(
+            => new Transmitters.RabbitMqPublishTransmitter(
                 (RabbitMqPublishConfiguration)configuration,
                 (RabbitMqPublishConnection)connection);
 

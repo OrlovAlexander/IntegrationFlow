@@ -193,6 +193,7 @@ internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherS
 | `RequeueOnFailure` | `false` | Повторно ставить сообщение в очередь при ошибке обработки |
 | `MaxRetryCount` | `0` | Лимит попыток (0 = без ограничения); после лимита nack без requeue (DLQ) |
 | `AutomaticRecoveryEnabled` | `true` | Client-level recovery в `ConnectionFactory`; long-running listener также использует reconnect loop каркаса |
+| `SslEnabled` / `SslServerName` | `false` / — | AMQPS (обычно порт `5671`) |
 
 Очередь должна существовать на брокере — слушатель подключается к ней через `QueueDeclarePassive`.
 
@@ -230,6 +231,8 @@ integration.Integrate();
 | `ConfirmTimeoutSeconds` | `30` | Таймаут ожидания confirm |
 | `Persistent` | `true` | `DeliveryMode=2` |
 | `Mandatory` | `false` | При `true` — ошибка, если сообщение не маршрутизируется |
+| `ReuseConnection` | `false` | Переиспользовать TCP для high-frequency direct publish |
+| `SslEnabled` / `SslServerName` | `false` / — | AMQPS (обычно порт `5671`) |
 
 ### Transactional Outbox
 
@@ -277,6 +280,9 @@ dotnet test --filter "Category=Integration"
 Полный анализ RabbitMQ (gaps и roadmap): [`docs/2026-07-04_2352-rabbitmq-full-analysis.md`](docs/2026-07-04_2352-rabbitmq-full-analysis.md).  
 План закрытия RabbitMQ transport gaps G1–G5 (P1): [`docs/plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](docs/plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md).  
 Статус реализации G1–G5: [`docs/2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](docs/2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md).  
+Актуальный backlog: [`docs/2026-07-06_1519-remaining-backlog-summary.md`](docs/2026-07-06_1519-remaining-backlog-summary.md).  
+План RabbitMQ P2 (resilience): [`docs/plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](docs/plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md).  
+Статус реализации P2 core: [`docs/2026-07-06_1617-rabbitmq-p2-implementation-status.md`](docs/2026-07-06_1617-rabbitmq-p2-implementation-status.md).  
 План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
 План закрытия главных рисков (v1.0): [`docs/plans/2026-07-04_2130-remaining-risks-mitigation.md`](docs/plans/2026-07-04_2130-remaining-risks-mitigation.md).  
@@ -322,6 +328,7 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.rpc.pending.duration` | Histogram | AsyncOutbox: round-trip от staging (секунды) |
 | `integrationflow.listener.reconnect` | Counter | Переподключения listener после разрыва (`profile`) |
 | `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при graceful shutdown (`profile`) |
+| `integrationflow.connection.pool.size` | Gauge | Размер pool TCP-подключений (`kind=rpc|publish`) |
 
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
 
@@ -375,7 +382,7 @@ if (!result.Success)
 }
 ```
 
-Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `ManualReplyAck` (default `false` — при `true` reply ack'ится вручную после корреляции; рекомендуется для unstable process), `SslEnabled` / `SslServerName` (AMQPS).
+Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `ManualReplyAck` (default `false` — при `true` reply ack'ится вручную после корреляции; рекомендуется для unstable process), `PublisherConfirmsEnabled` / `ConfirmTimeoutSeconds` (confirm request publish), `ReplyMandatory` (opt-in mandatory на server-side reply), `SslEnabled` / `SslServerName` (AMQPS).
 
 **Idempotent sync RPC (фаза 1):** задайте `MessageId` через `WithMessageId()` или `TransmitData(data, messageId)`; на server — `IRequestReplyResponseStore` + `RabbitMqRpcServerPipeline`. При timeout включите `SentAndWaitIntegrationOptions.RetryOnTimeout = true` (retry с тем же MessageId).
 
@@ -407,6 +414,25 @@ Runbooks: [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/run
 
 ```json
 {
+  "RabbitMq": {
+    "Inbox": {
+      "HostName": "rabbit.example.com",
+      "Port": 5671,
+      "SslEnabled": true,
+      "SslServerName": "rabbit.example.com",
+      "QueueName": "integration.inbox"
+    }
+  },
+  "RabbitMqPublish": {
+    "OrdersOut": {
+      "HostName": "rabbit.example.com",
+      "Port": 5671,
+      "SslEnabled": true,
+      "SslServerName": "rabbit.example.com",
+      "PublishTarget": "Queue",
+      "QueueName": "orders.outbox"
+    }
+  },
   "RabbitMqRequestReply": {
     "OrdersRpc": {
       "HostName": "rabbit.example.com",

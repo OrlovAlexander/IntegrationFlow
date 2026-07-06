@@ -88,3 +88,11 @@ Default `false` — backward compatible.
 |------------|-----|
 | Counter | `integrationflow.listener.reconnect` (`profile`) |
 | Counter | `integrationflow.message.shutdown_requeue` (`profile`) |
+
+---
+
+## Следующий шаг
+
+P3 ops readiness: [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md).  
+P2 status: [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md).  
+Backlog: [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md).

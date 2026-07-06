@@ -158,6 +158,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             publishChannel = connection.CreateModel();
             consumeChannel = connection.CreateModel();
 
+            if (configuration.PublisherConfirmsEnabled)
+            {
+                publishChannel.ConfirmSelect();
+            }
+
             replyAddress = configuration.ReplyMode switch
             {
                 RabbitMqReplyMode.DirectReplyTo => RabbitMqRequestReplyConstants.DirectReplyToAddress,

@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Text.Json;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
@@ -62,12 +63,10 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
 
             if (configuration.PublisherConfirmsEnabled)
             {
-                var timeout = TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds));
-                if (!channel.WaitForConfirms(timeout))
-                {
-                    throw new PublishNotConfirmedException(
-                        $"RabbitMQ broker did not confirm publish within {configuration.ConfirmTimeoutSeconds} seconds.");
-                }
+                RabbitMqPublisherConfirms.EnsureConfirmed(
+                    channel,
+                    configuration.PublisherConfirmsEnabled,
+                    TimeSpan.FromSeconds(Math.Max(1, configuration.ConfirmTimeoutSeconds)));
             }
 
             if (configuration.Mandatory)

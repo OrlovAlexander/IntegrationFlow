@@ -304,6 +304,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             target.ClientProvidedName = source.ClientProvidedName;
             target.RequeueOnFailure = source.RequeueOnFailure;
             target.MaxRetryCount = source.MaxRetryCount;
+            target.SslEnabled = source.SslEnabled;
+            target.SslServerName = source.SslServerName;
         }
     }
 }
