@@ -46,7 +46,7 @@
 | Асинхронный API | `IntegrateAsync()` / `IntegrateWithResultAsync()` для ASP.NET |
 | Идемпотентный RPC | `MessageId` + `RabbitMqRpcServerPipeline` + retry после timeout |
 | AsyncOutbox RPC | Критичные запросы: staging в БД → relay → correlation ответа |
-| Server handler | `RabbitMqReplyPublisher` — ответ **до return** из handler |
+| Server handler | `AddIntegrationFlowRabbitMqRpcServer` — reply до ack |
 | Connection reuse | `ReuseConnection`, `ReuseReplyConnection` |
 | Publisher confirms | Confirm на publish request |
 
@@ -303,6 +303,66 @@ services.AddIntegrationFlowEfDeduplication<MyDbContext>();
 
 Request–response через RabbitMQ.
 
+### End-to-end: hosted RPC server + client
+
+**1. Конфигурация** (`rabbitmq.json`) — один профиль в `RabbitMqRequestReply`:
+
+```json
+{
+  "RabbitMqRequestReply": {
+    "OrdersRpc": {
+      "HostName": "localhost",
+      "QueueName": "orders.rpc.requests",
+      "RequestTarget": "Queue",
+      "ReplyMode": "DirectReplyTo",
+      "ResponseTimeoutSeconds": 30
+    }
+  }
+}
+```
+
+Очередь `orders.rpc.requests` должна существовать на брокере.
+
+**2. RPC server** (Worker / `IHost`, .NET 8+):
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services =>
+    {
+        services.AddIntegrationFlow();
+        services.AddIntegrationFlowRabbitMqRpcServer("OrdersRpc");
+        // Кастомный ответ:
+        // services.AddIntegrationFlowRabbitMqRpcServer("OrdersRpc",
+        //     buildResponseAsync: request => Task.FromResult($"{{\"echo\":{request.BodyText}}}"));
+    })
+    .Build();
+
+await host.RunAsync();
+```
+
+`AddIntegrationFlowRabbitMqRpcServer` слушает request-очередь из профиля `RabbitMqRequestReply` и публикует reply **до** consumer ack через `RabbitMqRpcServerPipeline`.
+
+**3. RPC client** (другой процесс или тот же host без listener):
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+
+services.AddIntegrationFlow();
+
+SentAndWaitIntegrationOptions.ThrowOnFailure = true;
+
+var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRabbitMqSentAndWaitProvider>(
+    oppositeSideCode: "OrdersRpc",
+    srcData: new { OrderId = 42 });
+
+var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWaitProvider>("OrdersRpc");
+await integration.IntegrateAsync(handler, cancellationToken);
+```
+
+Полный sample: `SampleHostedRabbitMqSentAndWaitRpcApplication` в `00Samples/SentAndWait`.
+
 ### Синхронный RPC (клиент)
 
 ```csharp
@@ -316,15 +376,9 @@ var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWa
 await integration.IntegrateAsync(handler, cancellationToken);
 ```
 
-### Server-side handler
+### Server-side handler (низкоуровневый)
 
-Reply публикуется **до return** из handler:
-
-```csharp
-services.AddIntegrationFlow();
-services.AddIntegrationFlowRabbitMqListener("OrdersRpc",
-    SampleRabbitMqSentAndWaitRpcServer.CreateHandler("OrdersRpc"));
-```
+Для кастомной логики используйте `RabbitMqRpcServerInboxMessageProcessing` или `AddIntegrationFlowRabbitMqRpcServer` с `buildResponseAsync`.
 
 ### Идемпотентный sync RPC
 

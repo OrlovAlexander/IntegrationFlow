@@ -1,3 +1,4 @@
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
@@ -5,8 +6,24 @@ using Xunit;
 
 namespace IntegrationFlow.Core.Tests.RabbitMq;
 
-public sealed class RabbitMqSharedConnectionProfileTests
+public sealed class RabbitMqSharedConnectionProfileTests : IDisposable
 {
+    private readonly string? previousSharedHostName;
+    private readonly string? previousInboxPassword;
+
+    public RabbitMqSharedConnectionProfileTests()
+    {
+        previousSharedHostName = Environment.GetEnvironmentVariable("RabbitMqConnections__Prod__HostName");
+        previousInboxPassword = Environment.GetEnvironmentVariable("RabbitMq__Inbox__Password");
+        RabbitMqConfigurationComposition.ResetOverlayConfiguration();
+    }
+
+    public void Dispose()
+    {
+        RabbitMqConfigurationComposition.ResetOverlayConfiguration();
+        Environment.SetEnvironmentVariable("RabbitMqConnections__Prod__HostName", previousSharedHostName);
+        Environment.SetEnvironmentVariable("RabbitMq__Inbox__Password", previousInboxPassword);
+    }
     [Fact]
     public void LoadProfile_ReceiveAndProcess_AppliesSharedConnection()
     {
@@ -153,9 +170,20 @@ public sealed class RabbitMqSharedConnectionProfileTests
             }
             """);
 
-        var configuration = RabbitMqConfigurationLoader.LoadProfile("Inbox", configPath);
+        var previousHostName = Environment.GetEnvironmentVariable("RabbitMqConnections__Prod__HostName");
 
-        Assert.Equal("rabbit.prod.internal", configuration.HostName);
+        try
+        {
+            Environment.SetEnvironmentVariable("RabbitMqConnections__Prod__HostName", null);
+
+            var configuration = RabbitMqConfigurationLoader.LoadProfile("Inbox", configPath);
+
+            Assert.Equal("rabbit.prod.internal", configuration.HostName);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("RabbitMqConnections__Prod__HostName", previousHostName);
+        }
     }
 
     [Fact]
