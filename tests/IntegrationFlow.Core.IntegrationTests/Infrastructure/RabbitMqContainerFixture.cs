@@ -21,6 +21,8 @@ internal sealed class RabbitMqContainerFixture : IAsyncLifetime
 
         Container = new RabbitMqBuilder()
             .WithImage("rabbitmq:3.13-management")
+            .WithUsername(RabbitMqTestCredentials.Username)
+            .WithPassword(RabbitMqTestCredentials.Password)
             .Build();
 
         await Container.StartAsync();
@@ -45,8 +47,8 @@ internal sealed class RabbitMqContainerFixture : IAsyncLifetime
         {
             HostName = Container.Hostname,
             Port = Container.GetMappedPublicPort(5672),
-            UserName = "guest",
-            Password = "guest"
+            UserName = RabbitMqTestCredentials.Username,
+            Password = RabbitMqTestCredentials.Password
         };
     }
 }

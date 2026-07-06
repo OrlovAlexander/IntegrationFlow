@@ -10,6 +10,7 @@ using Xunit;
 namespace IntegrationFlow.IntegrationTests;
 
 [Trait("Category", "Integration")]
+[Collection(RabbitMqIntegrationCollection.Name)]
 public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
 {
     private const string ProfileName = "HostedE2E";

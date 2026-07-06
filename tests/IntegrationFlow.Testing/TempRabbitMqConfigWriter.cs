@@ -43,8 +43,8 @@ public static class TempRabbitMqConfigWriter
                 "{{profile.ProfileName}}": {
                   "HostName": "{{hostName}}",
                   "Port": {{port}},
-                  "UserName": "guest",
-                  "Password": "guest",
+                  "UserName": "{{RabbitMqTestCredentials.Username}}",
+                  "Password": "{{RabbitMqTestCredentials.Password}}",
                   "VirtualHost": "/",
                   "QueueName": "{{profile.QueueName}}",
                   "PrefetchCount": {{prefetchCount}},
@@ -79,8 +79,8 @@ public static class TempRabbitMqConfigWriter
                 "{{profileName}}": {
                   "HostName": "{{hostName}}",
                   "Port": {{port}},
-                  "UserName": "guest",
-                  "Password": "guest",
+                  "UserName": "{{RabbitMqTestCredentials.Username}}",
+                  "Password": "{{RabbitMqTestCredentials.Password}}",
                   "QueueName": "{{queueName}}",
                   "PublishTarget": "Queue",
                   "PublisherConfirmsEnabled": true,

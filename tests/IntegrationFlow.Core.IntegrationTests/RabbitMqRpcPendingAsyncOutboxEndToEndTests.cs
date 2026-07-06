@@ -12,6 +12,7 @@ using Xunit;
 namespace IntegrationFlow.IntegrationTests;
 
 [Trait("Category", "Integration")]
+[Collection(RabbitMqIntegrationCollection.Name)]
 public sealed class RabbitMqRpcPendingAsyncOutboxEndToEndTests : IAsyncLifetime
 {
     private const string ProfileName = "OrdersRpcAsync";
