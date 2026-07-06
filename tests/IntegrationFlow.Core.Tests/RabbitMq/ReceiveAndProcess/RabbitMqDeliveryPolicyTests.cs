@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using Xunit;
 
 namespace IntegrationFlow.Tests.RabbitMq.ReceiveAndProcess;
@@ -18,7 +19,7 @@ public sealed class RabbitMqDeliveryPolicyTests
             MaxRetryCount = 0
         };
 
-        Assert.True(RabbitMqDeliveryPolicy.ShouldRequeue(configuration, null));
+        Assert.True(RabbitMqDeliveryPolicy.ShouldRequeue(configuration, RabbitMqMessageHeaders.Empty));
     }
 
     [Fact]
@@ -30,13 +31,13 @@ public sealed class RabbitMqDeliveryPolicyTests
             MaxRetryCount = 2
         };
 
-        var headers = new Dictionary<string, object>
+        var headers = RabbitMqMessageHeaders.Snapshot(new Dictionary<string, object>
         {
             ["x-death"] = new ArrayList
             {
                 new Dictionary<string, object> { ["count"] = 2L }
             }
-        };
+        });
 
         Assert.False(RabbitMqDeliveryPolicy.ShouldRequeue(configuration, headers));
     }
@@ -44,20 +45,20 @@ public sealed class RabbitMqDeliveryPolicyTests
     [Fact]
     public void GetDeathCount_ReturnsZero_WhenHeaderMissing()
     {
-        Assert.Equal(0, RabbitMqDeliveryPolicy.GetDeathCount(null));
+        Assert.Equal(0, RabbitMqMessageHeaders.GetDeathCount(RabbitMqMessageHeaders.Empty));
     }
 
     [Fact]
     public void GetDeathCount_ReadsCountFromHeader()
     {
-        var headers = new Dictionary<string, object>
+        var headers = RabbitMqMessageHeaders.Snapshot(new Dictionary<string, object>
         {
             ["x-death"] = new ArrayList
             {
                 new Dictionary<string, object> { ["count"] = 3L }
             }
-        };
+        });
 
-        Assert.Equal(3, RabbitMqDeliveryPolicy.GetDeathCount(headers));
+        Assert.Equal(3, RabbitMqMessageHeaders.GetDeathCount(headers));
     }
 }

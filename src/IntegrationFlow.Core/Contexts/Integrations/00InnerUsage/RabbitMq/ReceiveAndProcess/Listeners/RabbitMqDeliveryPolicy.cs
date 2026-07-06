@@ -1,7 +1,6 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners
 {
@@ -10,7 +9,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// </summary>
     internal static class RabbitMqDeliveryPolicy
     {
-        internal static bool ShouldRequeue(RabbitMqConfiguration configuration, IDictionary<string, object> headers)
+        internal static bool ShouldRequeue(RabbitMqConfiguration configuration, IReadOnlyDictionary<string, object> headers)
         {
             if (configuration == null)
             {
@@ -19,7 +18,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 
             if (configuration.MaxRetryCount > 0)
             {
-                var deathCount = GetDeathCount(headers);
+                var deathCount = RabbitMqMessageHeaders.GetDeathCount(headers);
                 if (deathCount >= configuration.MaxRetryCount)
                 {
                     return false;
@@ -27,24 +26,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             }
 
             return configuration.RequeueOnFailure;
-        }
-
-        internal static int GetDeathCount(IDictionary<string, object> headers)
-        {
-            if (headers == null || !headers.TryGetValue("x-death", out var deathHeader))
-            {
-                return 0;
-            }
-
-            if (deathHeader is IList deathList && deathList.Count > 0 && deathList[0] is IDictionary deathEntry)
-            {
-                if (deathEntry.Contains("count"))
-                {
-                    return Convert.ToInt32(Convert.ToInt64(deathEntry["count"]));
-                }
-            }
-
-            return 0;
         }
     }
 }

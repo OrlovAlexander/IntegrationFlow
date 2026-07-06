@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +24,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 42),
             new RabbitMqConfiguration { RequeueOnFailure = false },
-            null,
             CancellationToken.None);
 
         Assert.Equal(42UL, acknowledgement.AckedTag);
@@ -41,7 +41,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 7),
             new RabbitMqConfiguration { RequeueOnFailure = true },
-            null,
             CancellationToken.None);
 
         Assert.Null(acknowledgement.AckedTag);
@@ -60,7 +59,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 8),
             new RabbitMqConfiguration { RequeueOnFailure = false },
-            null,
             CancellationToken.None);
 
         Assert.False(acknowledgement.NackRequeue);
@@ -77,7 +75,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 9),
             new RabbitMqConfiguration(),
-            null,
             CancellationToken.None);
 
         Assert.Equal(9UL, acknowledgement.NackedTag);
@@ -95,7 +92,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 11),
             new RabbitMqConfiguration(),
-            null,
             cts.Token);
 
         Assert.Null(acknowledgement.AckedTag);
@@ -116,7 +112,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 12),
             new RabbitMqConfiguration(),
-            null,
             CancellationToken.None);
 
         Assert.Null(acknowledgement.AckedTag);
@@ -141,7 +136,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 13),
             new RabbitMqConfiguration(),
-            null,
             cts.Token);
 
         Assert.Null(acknowledgement.AckedTag);
@@ -163,7 +157,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 7),
             new RabbitMqConfiguration { RequeueOnFailure = true },
-            null,
             CancellationToken.None);
 
         Assert.Equal(1, metrics.OutcomeCount);
@@ -185,7 +178,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 8),
             new RabbitMqConfiguration { RequeueOnFailure = false },
-            null,
             CancellationToken.None);
 
         Assert.Equal(ConsumerOutcomeReason.Nack, metrics.LastReason);
@@ -205,7 +197,6 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 9),
             new RabbitMqConfiguration(),
-            null,
             CancellationToken.None);
 
         Assert.Equal(ConsumerOutcomeReason.InProgressRequeue, metrics.LastReason);
@@ -218,8 +209,32 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         string? profileName = null)
         => new(process, acknowledgement, NullIntegrationLogger.Instance, metrics: metrics, profileName: profileName);
 
-    private static RabbitMqReceivedMessage CreateMessage(ulong deliveryTag)
-        => new(new byte[] { 1 }, deliveryTag, "rk", "msg-id", "corr-id");
+    [Fact]
+    public async Task HandleAsync_NacksWithoutRequeueWhenDeathCountReached()
+    {
+        var acknowledgement = new RecordingAcknowledgement();
+        var handler = CreateHandler(
+            acknowledgement,
+            _ => Task.FromException(new InvalidOperationException("fail")));
+
+        var headers = new Dictionary<string, object>
+        {
+            ["x-death"] = new ArrayList
+            {
+                new Dictionary<string, object> { ["count"] = 2L }
+            }
+        };
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 10, headers),
+            new RabbitMqConfiguration { RequeueOnFailure = true, MaxRetryCount = 2 },
+            CancellationToken.None);
+
+        Assert.False(acknowledgement.NackRequeue);
+    }
+
+    private static RabbitMqReceivedMessage CreateMessage(ulong deliveryTag, IDictionary<string, object>? headers = null)
+        => new(new byte[] { 1 }, deliveryTag, "rk", "msg-id", "corr-id", headers: headers);
 
     private sealed class RecordingConsumerMetrics : IIntegrationFlowMetrics
     {

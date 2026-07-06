@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using RabbitMQ.Client;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
@@ -32,6 +32,11 @@ internal static class RabbitMqTracePropagation
     public static bool TryExtractParentContext(
         IDictionary<string, object>? headers,
         out ActivityContext parentContext)
+        => TryExtractParentContext(RabbitMqMessageHeaders.Snapshot(headers), out parentContext);
+
+    public static bool TryExtractParentContext(
+        IReadOnlyDictionary<string, object>? headers,
+        out ActivityContext parentContext)
     {
         parentContext = default;
         if (headers == null || headers.Count == 0)
@@ -39,12 +44,12 @@ internal static class RabbitMqTracePropagation
             return false;
         }
 
-        if (!TryGetStringHeader(headers, RabbitMqTraceHeaders.TraceParent, out var traceParent))
+        if (!RabbitMqMessageHeaders.TryGetString(headers, RabbitMqTraceHeaders.TraceParent, out var traceParent))
         {
             return false;
         }
 
-        TryGetStringHeader(headers, RabbitMqTraceHeaders.TraceState, out var traceState);
+        RabbitMqMessageHeaders.TryGetString(headers, RabbitMqTraceHeaders.TraceState, out var traceState);
 
 #if NET8_0_OR_GREATER
         return ActivityContext.TryParse(traceParent, traceState, out parentContext);
@@ -59,37 +64,6 @@ internal static class RabbitMqTracePropagation
         return $"00-{activity.TraceId}-{activity.SpanId}-{flags}";
     }
 
-    internal static bool TryGetStringHeader(IDictionary<string, object> headers, string key, out string value)
-    {
-        value = string.Empty;
-        if (!headers.TryGetValue(key, out var raw))
-        {
-            foreach (var entry in headers)
-            {
-                if (string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase))
-                {
-                    raw = entry.Value;
-                    break;
-                }
-            }
-        }
-
-        if (raw == null)
-        {
-            return false;
-        }
-
-        value = raw switch
-        {
-            string text => text,
-            byte[] bytes => Encoding.UTF8.GetString(bytes),
-#if NET8_0_OR_GREATER
-            ReadOnlyMemory<byte> memory => Encoding.UTF8.GetString(memory.Span),
-            Memory<byte> memory => Encoding.UTF8.GetString(memory.Span),
-#endif
-            _ => raw.ToString() ?? string.Empty,
-        };
-
-        return !string.IsNullOrWhiteSpace(value);
-    }
+    internal static bool TryGetStringHeader(IReadOnlyDictionary<string, object> headers, string key, out string value)
+        => RabbitMqMessageHeaders.TryGetString(headers, key, out value);
 }

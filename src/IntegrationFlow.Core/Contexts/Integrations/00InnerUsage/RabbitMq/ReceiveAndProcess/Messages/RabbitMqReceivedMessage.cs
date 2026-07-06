@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 
@@ -8,6 +9,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
     /// </summary>
     public sealed class RabbitMqReceivedMessage : IIntegrationMessageMetadata
     {
+        private static readonly IReadOnlyDictionary<string, object> EmptyHeaders = RabbitMqMessageHeaders.Empty;
+
         /// <summary>
         /// Тело сообщения.
         /// </summary>
@@ -39,6 +42,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         public string ReplyTo { get; }
 
         /// <summary>
+        /// AMQP headers сообщения (read-only снимок).
+        /// </summary>
+        public IReadOnlyDictionary<string, object> Headers { get; }
+
+        /// <summary>
         /// Сообщение является RPC-запросом с ожиданием ответа.
         /// </summary>
         public bool IsRequestReply => !string.IsNullOrWhiteSpace(ReplyTo);
@@ -54,7 +62,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             string routingKey,
             string messageId,
             string correlationId,
-            string replyTo = "")
+            string replyTo = "",
+            IDictionary<string, object>? headers = null)
         {
             Body = body;
             DeliveryTag = deliveryTag;
@@ -62,6 +71,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             MessageId = messageId ?? string.Empty;
             CorrelationId = correlationId ?? string.Empty;
             ReplyTo = replyTo ?? string.Empty;
+            Headers = headers == null || headers.Count == 0
+                ? EmptyHeaders
+                : RabbitMqMessageHeaders.Snapshot(headers);
         }
     }
 }

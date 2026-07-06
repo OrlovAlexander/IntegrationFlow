@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 
@@ -27,6 +28,15 @@ internal static class RabbitMqDistributedTracing
 
     public static Activity? StartConsumerActivity(
         IDictionary<string, object>? headers,
+        string operation,
+        string profile,
+        string? messageId = null,
+        string? correlationId = null,
+        ulong? deliveryTag = null)
+        => StartConsumerActivity(RabbitMqMessageHeaders.Snapshot(headers), operation, profile, messageId, correlationId, deliveryTag);
+
+    public static Activity? StartConsumerActivity(
+        IReadOnlyDictionary<string, object>? headers,
         string operation,
         string profile,
         string? messageId = null,

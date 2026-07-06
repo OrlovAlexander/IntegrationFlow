@@ -29,7 +29,6 @@ public sealed class RabbitMqReceivedMessageHandlerStructuredLoggingTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 42),
             new RabbitMqConfiguration(),
-            null,
             CancellationToken.None);
 
         Assert.Contains(capture.Scopes, scope => ContainsField(scope, IntegrationStructuredLogFields.Profile, "Inbox"));
@@ -56,7 +55,6 @@ public sealed class RabbitMqReceivedMessageHandlerStructuredLoggingTests
         await handler.HandleAsync(
             CreateMessage(deliveryTag: 9),
             new RabbitMqConfiguration(),
-            null,
             CancellationToken.None);
 
         Assert.Contains(

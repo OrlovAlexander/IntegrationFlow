@@ -49,7 +49,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         public async Task HandleAsync(
             RabbitMqReceivedMessage receivedMessage,
             RabbitMqConfiguration configuration,
-            IDictionary<string, object> headers,
             CancellationToken cancellationToken)
         {
             using (RabbitMqStructuredLogging.BeginMessageScope(
@@ -70,7 +69,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                 }
 
                 using (RabbitMqDistributedTracing.StartConsumerActivity(
-                           headers,
+                           receivedMessage.Headers,
                            "receive",
                            profileName,
                            receivedMessage.MessageId,
@@ -112,7 +111,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                             SR.T("RabbitMQ listener. Ошибка обработки сообщения."),
                             ex);
 
-                        var requeue = RabbitMqDeliveryPolicy.ShouldRequeue(configuration, headers);
+                        var requeue = RabbitMqDeliveryPolicy.ShouldRequeue(configuration, receivedMessage.Headers);
                         acknowledgement.NegativeAcknowledge(receivedMessage.DeliveryTag, requeue);
                         metrics?.RecordConsumerOutcome(
                             profileName,

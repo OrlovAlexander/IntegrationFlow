@@ -120,9 +120,10 @@ public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
             delivery.RoutingKey,
             delivery.BasicProperties?.MessageId,
             delivery.BasicProperties?.CorrelationId,
-            delivery.BasicProperties?.ReplyTo);
+            delivery.BasicProperties?.ReplyTo,
+            delivery.BasicProperties?.Headers);
 
-        await handler.HandleAsync(receivedMessage, configuration, delivery.BasicProperties?.Headers, CancellationToken.None);
+        await handler.HandleAsync(receivedMessage, configuration, CancellationToken.None);
     }
 
     private static ProcessorBase CreateProcessor()

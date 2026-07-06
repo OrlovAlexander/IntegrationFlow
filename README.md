@@ -25,6 +25,7 @@
 | DLQ | `MaxRetryCount` + `x-dead-letter-exchange` на брокере |
 | Hosted listener | `AddIntegrationFlowRabbitMqListener` (.NET 8+, рекомендуется) |
 | TLS | AMQPS через `SslEnabled` / `SslServerName` |
+| AMQP headers | `RabbitMqReceivedMessage.Headers`, `RabbitMqMessageHeaders.TryGetString` |
 
 ### SentAndForgot — исходящие сообщения
 
@@ -211,6 +212,27 @@ await host.RunAsync();
 | `MaxRetryCount` | `0` | Лимит попыток (0 = без лимита); после — nack без requeue → DLQ |
 | `AutomaticRecoveryEnabled` | `true` | Client-level recovery + reconnect loop каркаса |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
+
+### AMQP headers
+
+В обработчике `message` — `RabbitMqReceivedMessage` с read-only `Headers`:
+
+```csharp
+services.AddIntegrationFlowRabbitMqListener("Inbox", message =>
+{
+    if (message is RabbitMqReceivedMessage received)
+    {
+        if (RabbitMqMessageHeaders.TryGetString(received.Headers, "x-tenant-id", out var tenantId))
+        {
+            // маршрутизация по tenant
+        }
+
+        var deathCount = RabbitMqMessageHeaders.GetDeathCount(received.Headers);
+    }
+});
+```
+
+Пример: `SampleRabbitMqHeaderAwareReceiveAndProcessHandler`. Distributed tracing (`traceparent`) читается автоматически каркасом; headers доступны и для custom logic.
 
 ### Идемпотентность
 

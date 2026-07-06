@@ -108,12 +108,12 @@ internal sealed class RabbitMqListenerWorker
                                 eventArgs.RoutingKey,
                                 eventArgs.BasicProperties?.MessageId,
                                 eventArgs.BasicProperties?.CorrelationId,
-                                eventArgs.BasicProperties?.ReplyTo);
+                                eventArgs.BasicProperties?.ReplyTo,
+                                eventArgs.BasicProperties?.Headers);
 
                             await messageHandler.HandleAsync(
                                     receivedMessage,
                                     configuration,
-                                    eventArgs.BasicProperties?.Headers,
                                     cancellationToken)
                                 .ConfigureAwait(false);
                         };
