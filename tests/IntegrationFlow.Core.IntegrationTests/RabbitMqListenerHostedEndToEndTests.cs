@@ -117,6 +117,49 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task HostedService_BrokerRestartDuringSlowProcessing_RedeliversAndProcessesMessage()
+    {
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
+        {
+            return;
+        }
+
+        ResetProcessorState();
+        ResetSlowProcessingState();
+        slowProcessingEnabled = true;
+        DeclareQueue();
+        WriteConsumeProfile();
+
+        var host = BuildHost(ProfileName);
+        await host.StartAsync();
+        try
+        {
+            Publish("payload-mid-restart", "msg-mid-restart");
+            Assert.True(
+                SlowProcessingStarted.Wait(TimeSpan.FromSeconds(15)),
+                "Slow processing did not start before broker restart.");
+
+            await rabbitMq.Container.StopAsync();
+            await rabbitMq.Container.StartAsync();
+            DeclareQueue();
+            WriteConsumeProfile();
+
+            SlowProcessingRelease.Set();
+            await WaitForProcessCountAsync(1, TimeSpan.FromSeconds(90));
+
+            Assert.Equal(1, EndToEndProcessorSide.ProcessCallCount);
+        }
+        finally
+        {
+            slowProcessingEnabled = false;
+            SlowProcessingRelease.Set();
+            await host.StopAsync();
+            host.Dispose();
+            ResetSlowProcessingState();
+        }
+    }
+
+    [Fact]
     public async Task HostedService_ReconnectsAfterBrokerRestart_AndProcessesMessages()
     {
         if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)

@@ -10,20 +10,26 @@ public static class TempRabbitMqConfigWriter
         string queueName,
         string hostName,
         int port,
-        ushort prefetchCount = 1)
+        ushort prefetchCount = 1,
+        bool requeueOnFailure = false,
+        int maxRetryCount = 0)
     {
         return WriteConsumeProfiles(
             new[] { (profileName, queueName) },
             hostName,
             port,
-            prefetchCount);
+            prefetchCount,
+            requeueOnFailure,
+            maxRetryCount);
     }
 
     public static string WriteConsumeProfiles(
         IReadOnlyList<(string ProfileName, string QueueName)> profiles,
         string hostName,
         int port,
-        ushort prefetchCount = 1)
+        ushort prefetchCount = 1,
+        bool requeueOnFailure = false,
+        int maxRetryCount = 0)
     {
         if (profiles.Count == 0)
         {
@@ -44,7 +50,8 @@ public static class TempRabbitMqConfigWriter
                   "PrefetchCount": {{prefetchCount}},
                   "Asynchronously": true,
                   "AutomaticRecoveryEnabled": true,
-                  "RequeueOnFailure": false
+                  "RequeueOnFailure": {{requeueOnFailure.ToString().ToLowerInvariant()}},
+                  "MaxRetryCount": {{maxRetryCount}}
                 }
                 """));
 
