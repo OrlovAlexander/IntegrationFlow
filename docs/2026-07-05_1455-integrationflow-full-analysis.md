@@ -3,7 +3,7 @@
 **Статус:** актуально (v12)  
 **Создан:** 2026-07-05 14:55 (UTC+3)  
 **Обновлён:** 2026-07-05 14:55 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md) (superseded, v11), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) (код/docs выполнены; NuGet publish — ops)
+**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md) (superseded, v11), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) (код/docs выполнены; NuGet publish — ops), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) (P1 transport ✅)
 
 Актуальное состояние после коммита `d4832ca` (фазы 1–3 SentAndWait RPC: idempotent sync, AsyncOutbox, compensation, maintenance). Локально **153 теста** (97 + 14 + 17 + 22 + 3) — все зелёные в Release, CI на GitHub Actions (unit → integration → pack).
 
@@ -242,11 +242,11 @@ Inherent-риски **#1–#4** по-прежнему требуют прави�
 
 | # | Gap | Приоритет | Статус |
 |---|-----|-----------|--------|
-| G1 | Listener завершается при `ConnectionShutdown` | P1 | Открыт |
-| G2 | Graceful shutdown без ack/nack in-flight | P1 | Открыт |
-| G3 | `PopulateProfile` не копирует retry-настройки | P1 | Открыт |
-| G4 | RPC reply consumer `autoAck: true` | P1 | Открыт |
-| G5 | AsyncOutbox correlation ack без lock channel | P1 | Открыт |
+| G1 | Listener завершается при `ConnectionShutdown` | P1 | **Закрыт** |
+| G2 | Graceful shutdown без ack/nack in-flight | P1 | **Закрыт** |
+| G3 | `PopulateProfile` не копирует retry-настройки | P1 | **Закрыт** |
+| G4 | RPC reply consumer `autoAck: true` | P1 | **Закрыт** (`ManualReplyAck`) |
+| G5 | AsyncOutbox correlation ack без lock channel | P1 | **Закрыт** |
 
 ### Безопасность
 
@@ -324,9 +324,10 @@ Runbooks: [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026
 | **P4** | SentAndWait RPC critical flows (R1/R2) | **Закрыт** — фазы 1–3 ✅ — [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md) |
 | **P3** | NuGet publish (`NUGET_API_KEY` + tag) | **Открыт — ops** |
 | **P3** | Distributed tracing | **Открыт — optional** |
-| **P1** | RabbitMQ transport gaps (G1–G5) | **Открыт** — [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md) |
+| **P1** | RabbitMQ transport gaps (G1–G5) | **Закрыт** — [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
 
-План: [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md).
+План v1.0 adoption/ops: [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md).  
+План P1 transport: [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md).
 
 ---
 
@@ -342,7 +343,7 @@ Runbooks: [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026
 |-----------|--------------|----------|
 | **Adoption** | `ThrowOnFailure=false` по умолчанию; server должен reply до ack | Высокий |
 | **Sync RPC без adoption** | Timeout без MessageId/cache → unknown state | Высокий (mitigated при правильном adoption) |
-| **RabbitMQ transport** | Reconnect, graceful shutdown, channel races (G1–G5) | Средний–высокий |
+| **RabbitMQ transport** | Reconnect, graceful shutdown, channel races (G1–G5) | **Закрыт** |
 | **Operations** | NuGet не опубликован | Средний |
 | **Async adoption** | Sync `Integrate()` в ASP.NET → thread pool starvation | Средний |
 | **Security** | Plain credentials в dev defaults | Средний (при правильном adoption — низкий) |

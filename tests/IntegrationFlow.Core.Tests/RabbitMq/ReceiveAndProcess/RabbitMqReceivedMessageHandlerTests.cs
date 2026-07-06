@@ -83,6 +83,71 @@ public sealed class RabbitMqReceivedMessageHandlerTests
         Assert.True(acknowledgement.NackRequeue);
     }
 
+    [Fact]
+    public async Task HandleAsync_NacksRequeueWhenCancellationRequestedBeforeProcess()
+    {
+        var acknowledgement = new RecordingAcknowledgement();
+        var handler = CreateHandler(acknowledgement, _ => Task.CompletedTask);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 11),
+            new RabbitMqConfiguration(),
+            null,
+            cts.Token);
+
+        Assert.Null(acknowledgement.AckedTag);
+        Assert.Equal(11UL, acknowledgement.NackedTag);
+        Assert.True(acknowledgement.NackRequeue);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NacksRequeueWhenConsumerStoppingBeforeProcess()
+    {
+        var acknowledgement = new RecordingAcknowledgement();
+        var handler = new RabbitMqReceivedMessageHandler(
+            _ => Task.CompletedTask,
+            acknowledgement,
+            NullIntegrationLogger.Instance,
+            isConsumerStopping: () => true);
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 12),
+            new RabbitMqConfiguration(),
+            null,
+            CancellationToken.None);
+
+        Assert.Null(acknowledgement.AckedTag);
+        Assert.Equal(12UL, acknowledgement.NackedTag);
+        Assert.True(acknowledgement.NackRequeue);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NacksRequeueWhenCancellationRequestedAfterProcess()
+    {
+        var acknowledgement = new RecordingAcknowledgement();
+        using var cts = new CancellationTokenSource();
+        var handler = new RabbitMqReceivedMessageHandler(
+            _ =>
+            {
+                cts.Cancel();
+                return Task.CompletedTask;
+            },
+            acknowledgement,
+            NullIntegrationLogger.Instance);
+
+        await handler.HandleAsync(
+            CreateMessage(deliveryTag: 13),
+            new RabbitMqConfiguration(),
+            null,
+            cts.Token);
+
+        Assert.Null(acknowledgement.AckedTag);
+        Assert.Equal(13UL, acknowledgement.NackedTag);
+        Assert.True(acknowledgement.NackRequeue);
+    }
+
     private static RabbitMqReceivedMessageHandler CreateHandler(
         IRabbitMqMessageAcknowledgement acknowledgement,
         Func<object, Task> process)

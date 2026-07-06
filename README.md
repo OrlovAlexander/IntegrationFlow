@@ -192,11 +192,15 @@ internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherS
 | `PrefetchCount` | `1` | Количество неподтверждённых сообщений |
 | `RequeueOnFailure` | `false` | Повторно ставить сообщение в очередь при ошибке обработки |
 | `MaxRetryCount` | `0` | Лимит попыток (0 = без ограничения); после лимита nack без requeue (DLQ) |
-| `AutomaticRecoveryEnabled` | `true` | Автовосстановление соединения |
+| `AutomaticRecoveryEnabled` | `true` | Client-level recovery в `ConnectionFactory`; long-running listener также использует reconnect loop каркаса |
 
 Очередь должна существовать на брокере — слушатель подключается к ней через `QueueDeclarePassive`.
 
 **Гарантии доставки (consumer):** ack выполняется **после** завершения обработки (в том числе при `Asynchronously=true`). При ошибке — `BasicNack` с настраиваемым `RequeueOnFailure`. Для poison messages настройте DLQ на брокере (`x-dead-letter-exchange` на основной очереди).
+
+**Reconnect при разрыве соединения:** `RabbitMqListenerWorker` автоматически переподключается при `ConnectionShutdown` или ошибке сессии (exponential backoff 1–30 с). Завершение приложения — только по `CancellationToken` (`host.StopAsync()`). Флаг `AutomaticRecoveryEnabled` в `ConnectionFactory` дополняет client-level recovery; long-running consumer опирается на reconnect loop каркаса.
+
+**Graceful shutdown:** при остановке host listener отменяет consumer (`BasicCancel`), ждёт завершения in-flight обработок (до 30 с), затем закрывает channel. Сообщения, полученные во время shutdown, возвращаются в очередь через **nack requeue** (безопасно с dedup). Метрика: `integrationflow.message.shutdown_requeue`.
 
 **Идемпотентность:** реализуйте `IMessageDeduplicationStore` и верните его из `IntegrationProcessorSideBase.GetMessageDeduplicationStore`. Sample: `InMemoryMessageDeduplicationStore`. При сбое обработки lock снимается через `ReleaseProcessingAsync`; параллельная доставка того же `MessageId` получает nack requeue.
 
@@ -271,6 +275,8 @@ dotnet test --filter "Category=Integration"
 Полный анализ решения и рисков: [`docs/2026-07-04_2234-integrationflow-full-analysis.md`](docs/2026-07-04_2234-integrationflow-full-analysis.md).  
 Отчёт по видам интеграций, сценариям и gap-листу: [`docs/2026-07-04_2338-integration-types-full-report.md`](docs/2026-07-04_2338-integration-types-full-report.md).  
 Полный анализ RabbitMQ (gaps и roadmap): [`docs/2026-07-04_2352-rabbitmq-full-analysis.md`](docs/2026-07-04_2352-rabbitmq-full-analysis.md).  
+План закрытия RabbitMQ transport gaps G1–G5 (P1): [`docs/plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](docs/plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md).  
+Статус реализации G1–G5: [`docs/2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](docs/2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md).  
 План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
 Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
 План закрытия главных рисков (v1.0): [`docs/plans/2026-07-04_2130-remaining-risks-mitigation.md`](docs/plans/2026-07-04_2130-remaining-risks-mitigation.md).  
@@ -314,6 +320,8 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.rpc.pending.awaiting` | Gauge | AsyncOutbox: awaiting response |
 | `integrationflow.rpc.pending.completed` | Counter | AsyncOutbox: завершённые pending (`profile`, `success`, `timeout`) |
 | `integrationflow.rpc.pending.duration` | Histogram | AsyncOutbox: round-trip от staging (секунды) |
+| `integrationflow.listener.reconnect` | Counter | Переподключения listener после разрыва (`profile`) |
+| `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при graceful shutdown (`profile`) |
 
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
 
@@ -367,7 +375,7 @@ if (!result.Success)
 }
 ```
 
-Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `SslEnabled` / `SslServerName` (AMQPS).
+Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `ManualReplyAck` (default `false` — при `true` reply ack'ится вручную после корреляции; рекомендуется для unstable process), `SslEnabled` / `SslServerName` (AMQPS).
 
 **Idempotent sync RPC (фаза 1):** задайте `MessageId` через `WithMessageId()` или `TransmitData(data, messageId)`; на server — `IRequestReplyResponseStore` + `RabbitMqRpcServerPipeline`. При timeout включите `SentAndWaitIntegrationOptions.RetryOnTimeout = true` (retry с тем же MessageId).
 

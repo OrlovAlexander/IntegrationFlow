@@ -2,8 +2,8 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:52 (UTC+3)  
-**Обновлён:** 2026-07-04 23:52 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
+**Обновлён:** 2026-07-06 14:56 (UTC+3)  
+**Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
 
 Отчёт описывает текущую реализацию RabbitMQ в каркасе IntegrationFlow, сильные стороны, выявленные gaps и приоритизированный roadmap улучшений. Актуален на состояние репозитория после реализации фаз 1–3 SentAndWait RPC.
 
@@ -100,43 +100,35 @@ Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-0
 
 #### A. Listener завершается при `ConnectionShutdown`, игнорируя `AutomaticRecoveryEnabled`
 
+**Статус:** ✅ Закрыт — reconnect loop в `RabbitMqListenerWorker` (2026-07-06).
+
 Файл: [`RabbitMqListenerWorker.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Workers/RabbitMqListenerWorker.cs)
 
-`WaitForShutdownAsync` подписывается на `ConnectionShutdown` и завершает worker. В `finally` connection/channel закрываются. Флаг `AutomaticRecoveryEnabled` в конфиге не даёт устойчивого long-running consumer при кратковременном разрыве.
-
-**Предложение:** reconnect loop с backoff внутри `RunAsync` (пока не отменён `CancellationToken`), либо не трактовать shutdown как сигнал завершения — только `CancellationToken`.
+~~`WaitForShutdownAsync` подписывается на `ConnectionShutdown` и завершает worker.~~ Worker переподключается при `ConnectionShutdown`; выход только по `CancellationToken`.
 
 #### B. Graceful shutdown без ack/nack
 
+**Статус:** ✅ Закрыт — in-flight drain + nack requeue (2026-07-06).
+
 Файл: [`RabbitMqReceivedMessageHandler.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Listeners/RabbitMqReceivedMessageHandler.cs)
-
-При `cancellationToken.IsCancellationRequested` handler возвращается без ack/nack. Сообщение остаётся unacked → redelivery после закрытия канала.
-
-**Предложение:** счётчик in-flight обработок + дождаться завершения текущих задач перед закрытием channel, либо явный nack requeue при shutdown.
 
 #### C. Баг в `PopulateProfile`: не копируются `RequeueOnFailure` и `MaxRetryCount`
 
-Файл: [`RabbitMqConfigurationLoader.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Configurations/RabbitMqConfigurationLoader.cs), метод `Copy()`.
+**Статус:** ✅ Закрыт — `Copy()` дополнен (2026-07-06).
 
-`LoadProfile()` работает через `Bind`, но `PopulateProfile()` / `PopulateFromFile()` теряют retry-настройки — типичный паттерн в side-классах через `PopulateProfile(this, "Inbox")`.
-
-**Предложение:** добавить поля в `Copy()` + unit-тест.
+Файл: [`RabbitMqConfigurationLoader.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Configurations/RabbitMqConfigurationLoader.cs)
 
 #### D. RPC reply consumer с `autoAck: true`
 
+**Статус:** ✅ Закрыт — `ManualReplyAck` (default `false`, opt-in `true`) (2026-07-06).
+
 Файл: [`RabbitMqRequestReplyConnection.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/SentAndWait/Connections/RabbitMqRequestReplyConnection.cs)
-
-Ответ теряется, если процесс упадёт между получением reply и `TrySetResult`. Редкий edge case для sync RPC, но риск для critical flows.
-
-**Предложение:** manual ack после корреляции (опционально через конфиг).
 
 #### E. `RabbitMqRpcResponseCorrelationHostedService` — ack без синхронизации channel
 
+**Статус:** ✅ Закрыт — `RabbitMqChannelAcknowledgement` (2026-07-06).
+
 Файл: [`RabbitMqRpcResponseCorrelationHostedService.cs`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/SentAndWait/Response/RabbitMqRpcResponseCorrelationHostedService.cs)
-
-Listener использует `lock (channelSync)` для ack/nack; correlation service вызывает `BasicAck`/`BasicNack` напрямую из async handler. Возможны race conditions на `IModel` под нагрузкой.
-
-**Предложение:** единый паттерн синхронизации channel, как в [`RabbitMqChannelAcknowledgement`](../src/IntegrationFlow.Core/Contexts/Integrations/00InnerUsage/RabbitMq/ReceiveAndProcess/Listeners/RabbitMqChannelAcknowledgement.cs).
 
 ---
 
@@ -271,11 +263,11 @@ flowchart LR
 
 | Приоритет | Задача | Effort | Impact |
 |-----------|--------|--------|--------|
-| **P1** | Reconnect loop для listener | 1–2 дн | Высокий — стабильность prod consumer |
-| **P1** | Fix `Copy()` для retry-полей | 0.5 ч | Средний — silent misconfiguration |
-| **P1** | Sync ack в correlation service | 0.5 дн | Средний — race under load |
+| **P1** | Reconnect loop для listener | 1–2 дн | ✅ Закрыт |
+| **P1** | Fix `Copy()` для retry-полей | 0.5 ч | ✅ Закрыт |
+| **P1** | Sync ack в correlation service | 0.5 дн | ✅ Закрыт |
 | **P2** | Connection pool для SentAndForgot | 1 дн | Средний — latency/throughput |
-| **P2** | Graceful shutdown | 1 дн | Средний — clean deploys |
+| **P2** | Graceful shutdown | 1 дн | ✅ Закрыт |
 | **P2** | TLS на listener/publish | 0.5 дн | Средний — security |
 | **P3** | Health checks + env config | 1 дн | Ops readiness |
 | **P3** | OTel tracing через headers | 2 дн | Debuggability |
@@ -289,6 +281,7 @@ flowchart LR
 | PF2 (pool eviction) | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
 | O3 (tracing) | [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md) |
 | SEC1/SEC2 | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), волна 4 |
+| G1–G5 (P1 transport) | [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
 
 ---
 
@@ -302,10 +295,10 @@ RabbitMQ-слой в IntegrationFlow **функционально зрелый**
 
 **Главные gaps — operational hardening, не отсутствие базовой функциональности:**
 
-1. Listener не переживает reconnect — главный технический риск для long-running consumer
+1. Listener переживает reconnect — ✅ reconnect loop в worker (G1)
 2. Конфигурация file-only; SSL только для RPC
 3. Connection reuse есть для RPC, нет для SentAndForgot direct publish
 4. Метрики есть; tracing и health checks — нет
-5. Мелкий баг: `PopulateProfile` теряет retry-настройки
+5. ~~Мелкий баг: `PopulateProfile` теряет retry-настройки~~ — ✅ закрыт (G3)
 
 Adoption-риски (DLQ topology, server ack order, sync RPC semantics) уже описаны в runbooks — правильный подход для framework-библиотеки.

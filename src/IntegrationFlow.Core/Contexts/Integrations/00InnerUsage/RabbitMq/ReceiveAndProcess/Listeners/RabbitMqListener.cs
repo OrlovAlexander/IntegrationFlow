@@ -30,7 +30,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
                     listening = true;
                     postStartAction?.Invoke();
                 },
-                () => listening = false);
+                () => listening = false,
+                Publisher.Metrics);
         }
 
         /// <inheritdoc />

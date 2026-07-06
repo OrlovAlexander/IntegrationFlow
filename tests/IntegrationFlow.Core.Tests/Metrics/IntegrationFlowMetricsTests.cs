@@ -212,6 +212,14 @@ public sealed class IntegrationFlowMetricsTests
         public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
         {
         }
+
+        public void RecordListenerReconnect(string profileName)
+        {
+        }
+
+        public void RecordListenerShutdownRequeue(string profileName)
+        {
+        }
     }
 
     private sealed class MetricsOutboxStore : IOutboxStore

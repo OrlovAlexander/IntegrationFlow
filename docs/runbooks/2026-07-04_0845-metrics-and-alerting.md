@@ -18,6 +18,8 @@
 | `integrationflow.message.processing.duration` | Histogram | Latency обработки |
 | `integrationflow.requestreply.completed` | Counter | RPC round-trip (`profile`, `success`, `timeout`) |
 | `integrationflow.requestreply.duration` | Histogram | Latency RPC (секунды) |
+| `integrationflow.listener.reconnect` | Counter | Переподключения listener (`profile`) |
+| `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при shutdown listener (`profile`) |
 
 ---
 
@@ -63,6 +65,18 @@ increase(integrationflow_requestreply_completed_total{timeout="true"}[5m]) > 0
 
 ```promql
 histogram_quantile(0.99, rate(integrationflow_requestreply_duration_bucket[5m])) > 5
+```
+
+**Listener reconnects (за 5 мин):**
+
+```promql
+increase(integrationflow_listener_reconnect_total[5m]) > 0
+```
+
+**Shutdown requeues (за 5 мин):**
+
+```promql
+increase(integrationflow_message_shutdown_requeue_total[5m]) > 10
 ```
 
 > Имена серий зависят от Prometheus exporter (underscore vs dot). Проверьте `/metrics` endpoint приложения.

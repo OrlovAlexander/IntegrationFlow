@@ -5,7 +5,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
 using Microsoft.Extensions.Hosting;
@@ -53,6 +55,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var factory = RabbitMqConnectionFactory.Create(configuration.ToConnectionSettings());
             using var connection = factory.CreateConnection();
             using var channel = connection.CreateModel();
+            var channelSync = new object();
+            var acknowledgement = new RabbitMqChannelAcknowledgement(
+                channelSync,
+                () => channel,
+                NullIntegrationLogger.Instance);
 
             channel.QueueDeclarePassive(configuration.ResponseQueueName);
             var consumer = new AsyncEventingBasicConsumer(channel);
@@ -63,7 +70,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                     var correlationId = eventArgs.BasicProperties?.CorrelationId;
                     if (!Guid.TryParse(correlationId, out var pendingId))
                     {
-                        channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
+                        acknowledgement.Acknowledge(eventArgs.DeliveryTag);
                         return;
                     }
 
@@ -83,11 +90,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                             success: true);
                     }
 
-                    channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
+                    acknowledgement.Acknowledge(eventArgs.DeliveryTag);
                 }
                 catch
                 {
-                    channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: true);
+                    acknowledgement.NegativeAcknowledge(eventArgs.DeliveryTag, requeue: true);
                 }
             };
 

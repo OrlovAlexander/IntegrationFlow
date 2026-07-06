@@ -115,6 +115,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         public bool ReuseReplyConnection { get; set; } = true;
 
         /// <summary>
+        /// Подтверждать reply вручную после успешной корреляции (manual ack на consume channel).
+        /// </summary>
+        public bool ManualReplyAck { get; set; }
+
+        /// <summary>
         /// Использовать TLS (AMQPS) при подключении к брокеру.
         /// </summary>
         public bool SslEnabled { get; set; }

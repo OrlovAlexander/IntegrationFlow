@@ -61,6 +61,12 @@ internal sealed class IntegrationFlowMeter : IDisposable
             "integrationflow.rpc.pending.duration",
             unit: "s",
             description: "Async RPC pending round-trip duration in seconds.");
+        ListenerReconnect = meter.CreateCounter<long>(
+            "integrationflow.listener.reconnect",
+            description: "RabbitMQ listener reconnects after connection loss.");
+        ListenerShutdownRequeue = meter.CreateCounter<long>(
+            "integrationflow.message.shutdown_requeue",
+            description: "Inbox messages nack-requeued during listener shutdown.");
     }
 
     public Counter<long> MessagesProcessed { get; }
@@ -88,6 +94,10 @@ internal sealed class IntegrationFlowMeter : IDisposable
     public Counter<long> RpcPendingCompleted { get; }
 
     public Histogram<double> RpcPendingDuration { get; }
+
+    public Counter<long> ListenerReconnect { get; }
+
+    public Counter<long> ListenerShutdownRequeue { get; }
 
     public void SetPendingCount(int count)
     {

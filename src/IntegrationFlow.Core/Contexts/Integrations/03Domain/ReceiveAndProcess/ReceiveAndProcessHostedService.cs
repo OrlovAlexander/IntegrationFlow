@@ -29,6 +29,7 @@ internal sealed class ReceiveAndProcessHostedService : BackgroundService
             options.Configuration,
             options.ProcessMessageAsync,
             logger,
-            stoppingToken);
+            stoppingToken,
+            metrics: options.Metrics);
 }
 #endif

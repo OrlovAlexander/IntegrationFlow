@@ -319,6 +319,14 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
         public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
         {
         }
+
+        public void RecordListenerReconnect(string profileName)
+        {
+        }
+
+        public void RecordListenerShutdownRequeue(string profileName)
+        {
+        }
     }
 
     private void ServeOneRequestAndReply()

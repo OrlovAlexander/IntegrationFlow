@@ -73,4 +73,14 @@ public interface IIntegrationFlowMetrics
     /// Records async RPC pending round-trip duration and outcome.
     /// </summary>
     void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false);
+
+    /// <summary>
+    /// Records RabbitMQ listener reconnect after connection loss.
+    /// </summary>
+    void RecordListenerReconnect(string profileName);
+
+    /// <summary>
+    /// Records messages nack-requeued during listener shutdown.
+    /// </summary>
+    void RecordListenerShutdownRequeue(string profileName);
 }

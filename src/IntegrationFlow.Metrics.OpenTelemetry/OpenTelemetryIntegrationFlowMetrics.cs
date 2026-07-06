@@ -154,6 +154,20 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
     }
 
     /// <inheritdoc />
+    public void RecordListenerReconnect(string profileName)
+    {
+        var profile = SanitizeProfile(profileName);
+        meter.ListenerReconnect.Add(1, new KeyValuePair<string, object?>("profile", profile));
+    }
+
+    /// <inheritdoc />
+    public void RecordListenerShutdownRequeue(string profileName)
+    {
+        var profile = SanitizeProfile(profileName);
+        meter.ListenerShutdownRequeue.Add(1, new KeyValuePair<string, object?>("profile", profile));
+    }
+
+    /// <inheritdoc />
     public void Dispose()
     {
         meter.Dispose();

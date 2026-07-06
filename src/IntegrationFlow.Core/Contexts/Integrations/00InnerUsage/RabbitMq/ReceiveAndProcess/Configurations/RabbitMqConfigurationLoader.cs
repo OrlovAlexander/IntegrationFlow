@@ -302,6 +302,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             target.PrefetchCount = source.PrefetchCount;
             target.AutomaticRecoveryEnabled = source.AutomaticRecoveryEnabled;
             target.ClientProvidedName = source.ClientProvidedName;
+            target.RequeueOnFailure = source.RequeueOnFailure;
+            target.MaxRetryCount = source.MaxRetryCount;
         }
     }
 }

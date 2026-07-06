@@ -71,4 +71,14 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     public void RecordRpcPendingCompleted(string profileName, TimeSpan duration, bool success, bool timedOut = false)
     {
     }
+
+    /// <inheritdoc />
+    public void RecordListenerReconnect(string profileName)
+    {
+    }
+
+    /// <inheritdoc />
+    public void RecordListenerShutdownRequeue(string profileName)
+    {
+    }
 }

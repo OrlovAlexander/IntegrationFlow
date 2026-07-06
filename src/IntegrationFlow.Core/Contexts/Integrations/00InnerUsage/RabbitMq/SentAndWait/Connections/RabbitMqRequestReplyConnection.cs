@@ -20,6 +20,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
     {
         private readonly RabbitMqRequestReplyConfiguration configuration;
         private readonly ConcurrentDictionary<string, TaskCompletionSource<byte[]>> pendingReplies = new();
+        private readonly object consumeChannelSync = new();
         private RabbitMQ.Client.IConnection connection;
         private IModel publishChannel;
         private IModel consumeChannel;
@@ -168,7 +169,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             consumer.Received += OnReplyReceivedAsync;
             consumeChannel.BasicConsume(
                 queue: replyAddress,
-                autoAck: true,
+                autoAck: !configuration.ManualReplyAck,
                 consumer: consumer);
         }
 
@@ -190,15 +191,54 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var correlationId = eventArgs.BasicProperties?.CorrelationId;
             if (string.IsNullOrWhiteSpace(correlationId))
             {
+                if (configuration.ManualReplyAck)
+                {
+                    AcknowledgeReply(eventArgs.DeliveryTag);
+                }
+
                 return Task.CompletedTask;
             }
 
             if (pendingReplies.TryRemove(correlationId, out var pending))
             {
                 pending.TrySetResult(eventArgs.Body.ToArray());
+                if (configuration.ManualReplyAck)
+                {
+                    AcknowledgeReply(eventArgs.DeliveryTag);
+                }
+            }
+            else if (configuration.ManualReplyAck)
+            {
+                NegativeAcknowledgeReply(eventArgs.DeliveryTag, requeue: false);
             }
 
             return Task.CompletedTask;
+        }
+
+        private void AcknowledgeReply(ulong deliveryTag)
+        {
+            lock (consumeChannelSync)
+            {
+                if (consumeChannel == null || !consumeChannel.IsOpen)
+                {
+                    return;
+                }
+
+                consumeChannel.BasicAck(deliveryTag, multiple: false);
+            }
+        }
+
+        private void NegativeAcknowledgeReply(ulong deliveryTag, bool requeue)
+        {
+            lock (consumeChannelSync)
+            {
+                if (consumeChannel == null || !consumeChannel.IsOpen)
+                {
+                    return;
+                }
+
+                consumeChannel.BasicNack(deliveryTag, multiple: false, requeue: requeue);
+            }
         }
 
         private void DisposeInternal(bool deleteExclusiveQueue)

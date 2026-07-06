@@ -20,6 +20,8 @@ internal sealed class ReceiveAndProcessHostedServiceOptions
 
     public Func<object, Task> ProcessMessageAsync { get; set; } = null!;
 
+    public IIntegrationFlowMetrics? Metrics { get; set; }
+
     internal static ReceiveAndProcessHostedServiceOptions CreateForProfile(
         string profileName,
         IIntegrationLogger logger,
@@ -72,7 +74,8 @@ internal sealed class ReceiveAndProcessHostedServiceOptions
         return new ReceiveAndProcessHostedServiceOptions
         {
             Configuration = rabbitMqConfiguration,
-            ProcessMessageAsync = message => processor.ProcessMessageAsync(message)
+            ProcessMessageAsync = message => processor.ProcessMessageAsync(message),
+            Metrics = metrics
         };
     }
 }

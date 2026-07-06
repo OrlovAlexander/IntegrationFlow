@@ -15,6 +15,10 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
     private const string ProfileName = "HostedE2E";
     private const string QueueName = "integration.hosted.listener.e2e";
 
+    private static readonly ManualResetEventSlim SlowProcessingStarted = new(false);
+    private static readonly ManualResetEventSlim SlowProcessingRelease = new(false);
+    private static volatile bool slowProcessingEnabled;
+
     private readonly RabbitMqContainerFixture rabbitMq = new();
 
     public Task InitializeAsync() => rabbitMq.InitializeAsync();
@@ -76,6 +80,79 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task HostedService_StopAsync_DuringSlowProcessing_CompletesWithoutHang()
+    {
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
+        {
+            return;
+        }
+
+        ResetProcessorState();
+        ResetSlowProcessingState();
+        slowProcessingEnabled = true;
+        DeclareQueue();
+        WriteConsumeProfile();
+
+        var host = BuildHost(ProfileName);
+        await host.StartAsync();
+        try
+        {
+            Publish("payload-slow", "msg-slow-1");
+            Assert.True(
+                SlowProcessingStarted.Wait(TimeSpan.FromSeconds(15)),
+                "Slow processing did not start.");
+
+            var stopTask = host.StopAsync();
+            SlowProcessingRelease.Set();
+            await stopTask.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(stopTask.IsCompletedSuccessfully);
+        }
+        finally
+        {
+            slowProcessingEnabled = false;
+            SlowProcessingRelease.Set();
+            host.Dispose();
+            ResetSlowProcessingState();
+        }
+    }
+
+    [Fact]
+    public async Task HostedService_ReconnectsAfterBrokerRestart_AndProcessesMessages()
+    {
+        if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
+        {
+            return;
+        }
+
+        ResetProcessorState();
+        DeclareQueue();
+        WriteConsumeProfile();
+
+        var host = BuildHost(ProfileName);
+        await host.StartAsync();
+        try
+        {
+            Publish("payload-before", "msg-before-restart");
+            await WaitForProcessCountAsync(1, TimeSpan.FromSeconds(15));
+
+            await rabbitMq.Container.StopAsync();
+            await rabbitMq.Container.StartAsync();
+            DeclareQueue();
+            WriteConsumeProfile();
+
+            Publish("payload-after", "msg-after-restart");
+            await WaitForProcessCountAsync(2, TimeSpan.FromSeconds(60));
+
+            Assert.Equal(2, EndToEndProcessorSide.ProcessCallCount);
+        }
+        finally
+        {
+            await host.StopAsync();
+            host.Dispose();
+        }
+    }
+
+    [Fact]
     public async Task HostedService_MultiProfile_TwoQueuesIndependent()
     {
         if (!rabbitMq.DockerAvailable || rabbitMq.Container == null)
@@ -126,6 +203,12 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
                         profileName,
                         _ => new DelegateInboxMessageProcessing(_ =>
                         {
+                            if (slowProcessingEnabled)
+                            {
+                                SlowProcessingStarted.Set();
+                                SlowProcessingRelease.Wait();
+                            }
+
                             EndToEndProcessorSide.ProcessCallCount++;
                             if (EndToEndProcessorSide.ShouldThrow)
                             {
@@ -143,6 +226,12 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
         EndToEndProcessorSide.ProcessCallCount = 0;
         EndToEndProcessorSide.ShouldThrow = false;
         EndToEndProcessorSide.CurrentStore = null;
+    }
+
+    private static void ResetSlowProcessingState()
+    {
+        SlowProcessingStarted.Reset();
+        SlowProcessingRelease.Reset();
     }
 
     private void DeclareQueue(string queueName = QueueName)

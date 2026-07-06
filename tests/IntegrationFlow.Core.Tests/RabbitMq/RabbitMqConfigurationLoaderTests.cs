@@ -149,6 +149,30 @@ public sealed class RabbitMqConfigurationLoaderTests
     }
 
     [Fact]
+    public void PopulateProfile_CopiesRetryPolicyFields()
+    {
+        var configPath = CreateConfigFile(
+            """
+            {
+              "RabbitMq": {
+                "Inbox": {
+                  "HostName": "localhost",
+                  "QueueName": "integration.inbox",
+                  "RequeueOnFailure": true,
+                  "MaxRetryCount": 5
+                }
+              }
+            }
+            """);
+
+        var configuration = new RabbitMqConfiguration { RequeueOnFailure = false, MaxRetryCount = 0 };
+        RabbitMqConfigurationLoader.PopulateProfile(configuration, "Inbox", configPath);
+
+        Assert.True(configuration.RequeueOnFailure);
+        Assert.Equal(5, configuration.MaxRetryCount);
+    }
+
+    [Fact]
     public void LoadFromFile_ThrowsWhenFileDoesNotExist()
     {
         var missingPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".json");

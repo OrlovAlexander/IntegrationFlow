@@ -149,6 +149,20 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         Assert.True(collector.GetHistogramCount("integrationflow.rpc.pending.duration") >= 1);
     }
 
+    [Fact]
+    public void RecordListenerTransportMetrics_IncrementsCounters()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordListenerReconnect("Inbox");
+        metrics.RecordListenerShutdownRequeue("Inbox");
+        collector.Collect();
+
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.listener.reconnect"));
+        Assert.Equal(1, collector.GetCounterSum("integrationflow.message.shutdown_requeue"));
+    }
+
     [Theory]
     [InlineData("Orders.Inbox", "orders_inbox")]
     [InlineData("", "unknown")]

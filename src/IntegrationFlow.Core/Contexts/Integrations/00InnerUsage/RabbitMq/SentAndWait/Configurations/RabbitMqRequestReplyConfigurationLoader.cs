@@ -252,6 +252,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             target.MaxConcurrentRequests = source.MaxConcurrentRequests;
             target.ReuseConnection = source.ReuseConnection;
             target.ReuseReplyConnection = source.ReuseReplyConnection;
+            target.ManualReplyAck = source.ManualReplyAck;
             target.SslEnabled = source.SslEnabled;
             target.SslServerName = source.SslServerName;
         }
