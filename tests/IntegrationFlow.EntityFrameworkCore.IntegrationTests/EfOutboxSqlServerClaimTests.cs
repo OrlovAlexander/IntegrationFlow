@@ -23,7 +23,7 @@ public sealed class EfOutboxSqlServerClaimTests : IAsyncLifetime
         }
 
         container = new MsSqlBuilder()
-            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+            .WithImage("mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04")
             .Build();
 
         await container.StartAsync();
