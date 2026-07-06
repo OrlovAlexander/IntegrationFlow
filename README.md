@@ -79,6 +79,38 @@ var host = Host.CreateDefaultBuilder(args)
 await host.RunAsync();
 ```
 
+### Health checks (.NET 8+)
+
+Для Kubernetes readiness и мониторинга доступны health checks транспортных workers:
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
+services.AddIntegrationFlow();
+services.AddIntegrationFlowRabbitMqListener("Inbox", message => { /* ... */ });
+services.AddIntegrationFlowOutboxRelay();
+services.AddIntegrationFlowRabbitMqHealthChecks(options =>
+{
+    options.MaxReconnectAttemptsBeforeUnhealthy = 5;
+    options.OutboxRelayMaxConsecutiveFailures = 5;
+});
+
+// ASP.NET Core:
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+```
+
+| Check | Имя | Unhealthy когда |
+|-------|-----|-----------------|
+| Listener | `integrationflow.rabbitmq.listener` | Нет активного соединения или reconnect attempts ≥ порога |
+| Outbox relay | `integrationflow.rabbitmq.outbox_relay` | Подряд ≥ N неудачных relay batch |
+| RPC correlation | `integrationflow.rabbitmq.rpc_correlation` | AsyncOutbox response consumer отключён / reconnect ≥ порога |
+
+Если компонент не зарегистрирован в DI, соответствующий check возвращает **Healthy** (no-op).
+
 Legacy `IReceiveAndProcessLauncher` + `BeginReceiving()` сохранён для обратной совместимости, но помечен `[Obsolete]` на net8.0.
 
 ### Пример запуска (legacy launcher)
@@ -116,6 +148,36 @@ public sealed class SampleRabbitMqAllProfilesReceiveAndProcessLauncher : IReceiv
 ### Настройка подключения
 
 Настройки хранятся в `rabbitmq.json` рядом с приложением. Поддерживаются **именованные профили** и **legacy flat**-формат.
+
+**Приоритет источников** (от низкого к высокому): `rabbitmq.json` → **environment variables** → **host `IConfiguration`** (appsettings, user secrets).
+
+Environment variables используют разделитель `__` (двойное подчёркивание):
+
+```bash
+# Linux / Docker / Kubernetes
+export RabbitMq__Inbox__HostName=rabbit.prod.internal
+export RabbitMq__Inbox__Password=secret
+export RabbitMqPublish__OrdersOut__HostName=rabbit.prod.internal
+```
+
+В ASP.NET Core / Worker передайте host configuration:
+
+```csharp
+var builder = Host.CreateDefaultBuilder(args);
+
+builder.ConfigureServices((context, services) =>
+{
+    services.AddIntegrationFlow();
+    services.AddIntegrationFlowRabbitMq(context.Configuration);
+    services.AddIntegrationFlowRabbitMqListener("Inbox", message => { /* ... */ });
+});
+```
+
+Loaders также поддерживают прямую загрузку из `IConfiguration`:
+
+```csharp
+var profile = RabbitMqConfigurationLoader.LoadProfile("Inbox", hostConfiguration);
+```
 
 **Именованные профили** (рекомендуется):
 
@@ -329,6 +391,7 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 | `integrationflow.listener.reconnect` | Counter | Переподключения listener после разрыва (`profile`) |
 | `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при graceful shutdown (`profile`) |
 | `integrationflow.connection.pool.size` | Gauge | Размер pool TCP-подключений (`kind=rpc|publish`) |
+| `integrationflow.broker.connected` | Gauge | Подключение к брокеру (`profile`, `kind=listener|outbox_relay|rpc_correlation`; 1=connected, 0=disconnected) |
 
 Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
 

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Listeners;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
@@ -20,7 +21,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
 internal sealed class RabbitMqListenerWorker
 {
     private const int ShutdownDrainTimeoutSeconds = 30;
-    private const int ReconnectMaxDelaySeconds = 30;
 
     private readonly object channelSync = new();
 
@@ -31,7 +31,8 @@ internal sealed class RabbitMqListenerWorker
         CancellationToken cancellationToken,
         Action? onStarted = null,
         Action? onStopped = null,
-        IIntegrationFlowMetrics? metrics = null)
+        IIntegrationFlowMetrics? metrics = null,
+        RabbitMqTransportHealthRegistry? healthRegistry = null)
     {
         if (configuration == null)
         {
@@ -138,10 +139,10 @@ internal sealed class RabbitMqListenerWorker
                     }
 
                     reconnectAttempt = 0;
+                    healthRegistry?.ReportConnected(RabbitMqTransportKind.Listener, profileName);
 
-                    var sessionEndedByCancellation = await WaitForSessionEndAsync(
-                            connection,
-                            cancellationToken)
+                    var sessionEndedByCancellation = await RabbitMqConsumerSessionLifecycle
+                        .WaitForSessionEndAsync(connection, cancellationToken)
                         .ConfigureAwait(false);
 
                     if (sessionEndedByCancellation)
@@ -151,11 +152,17 @@ internal sealed class RabbitMqListenerWorker
 
                     reconnectAttempt++;
                     metrics?.RecordListenerReconnect(profileName);
+                    healthRegistry?.ReportReconnecting(
+                        RabbitMqTransportKind.Listener,
+                        profileName,
+                        reconnectAttempt);
                     logger.Log(SR.T(
                         "RabbitMQ listener. Соединение с очередью '{0}' разорвано. Повторное подключение через {1} с.",
                         configuration.QueueName,
-                        GetReconnectDelaySeconds(reconnectAttempt)));
-                    await DelayReconnectAsync(reconnectAttempt, cancellationToken).ConfigureAwait(false);
+                        RabbitMqConsumerSessionLifecycle.GetReconnectDelaySeconds(reconnectAttempt)));
+                    await RabbitMqConsumerSessionLifecycle
+                        .DelayReconnectAsync(reconnectAttempt, cancellationToken)
+                        .ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -165,6 +172,11 @@ internal sealed class RabbitMqListenerWorker
                 {
                     reconnectAttempt++;
                     metrics?.RecordListenerReconnect(profileName);
+                    healthRegistry?.ReportReconnecting(
+                        RabbitMqTransportKind.Listener,
+                        profileName,
+                        reconnectAttempt,
+                        ex.Message);
                     logger.LogException(
                         SR.T("RabbitMQ listener. Ошибка прослушивания очереди '{0}'.", configuration.QueueName),
                         ex);
@@ -174,7 +186,9 @@ internal sealed class RabbitMqListenerWorker
                         break;
                     }
 
-                    await DelayReconnectAsync(reconnectAttempt, cancellationToken).ConfigureAwait(false);
+                    await RabbitMqConsumerSessionLifecycle
+                        .DelayReconnectAsync(reconnectAttempt, cancellationToken)
+                        .ConfigureAwait(false);
                 }
                 finally
                 {
@@ -212,6 +226,7 @@ internal sealed class RabbitMqListenerWorker
                         CloseChannelAndConnection(channel, connection, logger);
                     }
 
+                    healthRegistry?.ReportDisconnected(RabbitMqTransportKind.Listener, profileName);
                     consumerStopping = false;
                 }
             }
@@ -221,43 +236,13 @@ internal sealed class RabbitMqListenerWorker
         }
         finally
         {
+            healthRegistry?.ReportStopped(RabbitMqTransportKind.Listener, profileName);
             onStopped?.Invoke();
         }
     }
 
-    private static async Task<bool> WaitForSessionEndAsync(
-        IConnection connection,
-        CancellationToken cancellationToken)
-    {
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        EventHandler<ShutdownEventArgs>? onShutdown = (_, _) => completion.TrySetResult(false);
-
-        connection.ConnectionShutdown += onShutdown;
-
-        var registration = cancellationToken.Register(() => completion.TrySetResult(true));
-
-        try
-        {
-            return await completion.Task.ConfigureAwait(false);
-        }
-        finally
-        {
-            connection.ConnectionShutdown -= onShutdown;
-            registration.Dispose();
-        }
-    }
-
-    private static int GetReconnectDelaySeconds(int attempt)
-        => Math.Min(ReconnectMaxDelaySeconds, Math.Max(1, (int)Math.Pow(2, Math.Min(attempt - 1, 5))));
-
     private static string GetProfileName(RabbitMqConfiguration configuration)
         => string.IsNullOrWhiteSpace(configuration.Name) ? configuration.QueueName : configuration.Name;
-
-    private static async Task DelayReconnectAsync(int attempt, CancellationToken cancellationToken)
-    {
-        var delaySeconds = GetReconnectDelaySeconds(attempt);
-        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken).ConfigureAwait(false);
-    }
 
     private static void CloseChannelAndConnection(
         IModel? channel,

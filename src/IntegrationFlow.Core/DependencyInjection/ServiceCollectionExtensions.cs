@@ -4,6 +4,7 @@ using IntegrationFlow.Contexts.Integrations._02Application;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -35,6 +36,12 @@ public static partial class ServiceCollectionExtensions
                 loggerFactory.CreateLogger("IntegrationFlow"));
         });
         services.TryAddSingleton<IIntegrationFlowMetrics, NullIntegrationFlowMetrics>();
+        services.TryAddSingleton(sp =>
+        {
+            var registry = new RabbitMqTransportHealthRegistry();
+            registry.SetMetrics(sp.GetService<IIntegrationFlowMetrics>());
+            return registry;
+        });
 
 #if NET8_0_OR_GREATER
         services.AddHostedService<RabbitMqConnectionPoolsShutdownHostedService>();

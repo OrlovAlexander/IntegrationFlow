@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 
 namespace IntegrationFlow.Metrics.OpenTelemetry;
@@ -9,6 +10,9 @@ internal sealed class IntegrationFlowMeter : IDisposable
     private long rpcPendingAwaitingCount;
     private long connectionPoolRpcSize;
     private long connectionPoolPublishSize;
+    private readonly ConcurrentDictionary<string, BrokerConnectedMeasurement> brokerConnectedStates = new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly record struct BrokerConnectedMeasurement(string Profile, string Kind, long Value);
 
     public IntegrationFlowMeter(string meterName)
     {
@@ -73,6 +77,10 @@ internal sealed class IntegrationFlowMeter : IDisposable
             "integrationflow.connection.pool.size",
             ObserveConnectionPoolSize,
             description: "Current RabbitMQ connection pool size.");
+        meter.CreateObservableGauge(
+            "integrationflow.broker.connected",
+            ObserveBrokerConnected,
+            description: "RabbitMQ broker connectivity per transport endpoint (1=connected, 0=disconnected).");
     }
 
     public Counter<long> MessagesProcessed { get; }
@@ -129,6 +137,17 @@ internal sealed class IntegrationFlowMeter : IDisposable
         }
     }
 
+    public void SetBrokerConnected(string profileName, string kind, bool connected)
+    {
+        var profile = OpenTelemetryIntegrationFlowMetrics.SanitizeProfile(profileName);
+        var normalizedKind = string.IsNullOrWhiteSpace(kind) ? "unknown" : kind.ToLowerInvariant();
+        var key = $"{normalizedKind}:{profile}";
+        brokerConnectedStates[key] = new BrokerConnectedMeasurement(
+            profile,
+            normalizedKind,
+            connected ? 1 : 0);
+    }
+
     public void Dispose()
     {
         meter.Dispose();
@@ -148,5 +167,16 @@ internal sealed class IntegrationFlowMeter : IDisposable
         yield return new Measurement<long>(
             Interlocked.Read(ref connectionPoolPublishSize),
             new KeyValuePair<string, object?>("kind", "publish"));
+    }
+
+    private IEnumerable<Measurement<long>> ObserveBrokerConnected()
+    {
+        foreach (var measurement in brokerConnectedStates.Values)
+        {
+            yield return new Measurement<long>(
+                measurement.Value,
+                new KeyValuePair<string, object?>("profile", measurement.Profile),
+                new KeyValuePair<string, object?>("kind", measurement.Kind));
+        }
     }
 }

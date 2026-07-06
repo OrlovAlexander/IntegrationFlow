@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._02Application;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.RpcPending;
@@ -29,10 +30,12 @@ namespace IntegrationFlow.Contexts.Integrations._01Infrastructure
         /// <summary>
         /// Ctor
         /// </summary>
-        public OrgIntegration(IIntegrationFlowMetrics metrics)
+        public OrgIntegration(
+            IIntegrationFlowMetrics metrics,
+            RabbitMqTransportHealthRegistry? healthRegistry = null)
         {
             this.metrics = metrics ?? NullIntegrationFlowMetrics.Instance;
-            RabbitMqConnectionPoolsBootstrap.Configure(this.metrics);
+            RabbitMqConnectionPoolsBootstrap.Configure(this.metrics, healthRegistry);
             SentAndForgotProvider = new ConcurrentDictionary<Type, ISentAndForgotIntegrationOppositeSideProvider>();
             SentAndWaitProvider = new ConcurrentDictionary<Type, ISentAndWaitIntegrationOppositeSideProvider>();
         }

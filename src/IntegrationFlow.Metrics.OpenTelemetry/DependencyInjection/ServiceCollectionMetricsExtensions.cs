@@ -1,3 +1,5 @@
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,7 +22,12 @@ public static class ServiceCollectionMetricsExtensions
         configure?.Invoke(options);
         services.TryAddSingleton(options);
         services.RemoveAll<IIntegrationFlowMetrics>();
-        services.AddSingleton<IIntegrationFlowMetrics, OpenTelemetryIntegrationFlowMetrics>();
+        services.AddSingleton<IIntegrationFlowMetrics>(sp =>
+        {
+            var metrics = new OpenTelemetryIntegrationFlowMetrics(options);
+            RabbitMqConnectionPoolsBootstrap.Configure(metrics, sp.GetService<RabbitMqTransportHealthRegistry>());
+            return metrics;
+        });
         return services;
     }
 }

@@ -86,4 +86,9 @@ public sealed class NullIntegrationFlowMetrics : IIntegrationFlowMetrics
     public void RecordConnectionPoolSize(string kind, int size)
     {
     }
+
+    /// <inheritdoc />
+    public void RecordBrokerConnected(string profileName, string kind, bool connected)
+    {
+    }
 }

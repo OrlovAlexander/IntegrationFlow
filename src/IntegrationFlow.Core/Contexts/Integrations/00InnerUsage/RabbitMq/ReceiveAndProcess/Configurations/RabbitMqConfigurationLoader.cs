@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Configurations;
 using Microsoft.Extensions.Configuration;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Configurations
@@ -94,19 +95,32 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// <param name="profileName">Имя профиля.</param>
         /// <param name="filePath">Путь к JSON-файлу конфигурации.</param>
         public static RabbitMqConfiguration LoadProfile(string profileName, string filePath)
+            => LoadProfile(profileName, BuildConfiguration(filePath));
+
+        /// <summary>
+        /// Загружает профиль RabbitMQ по имени из <see cref="IConfiguration"/>.
+        /// </summary>
+        /// <param name="profileName">Имя профиля.</param>
+        /// <param name="configuration">Источник конфигурации (appsettings, env overlay).</param>
+        public static RabbitMqConfiguration LoadProfile(string profileName, IConfiguration configuration)
         {
             if (string.IsNullOrWhiteSpace(profileName))
             {
                 throw new ArgumentException("Имя профиля RabbitMQ не задано.", nameof(profileName));
             }
 
-            var profile = ResolveProfiles(BuildConfiguration(filePath))
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            var profile = ResolveProfiles(configuration)
                 .FirstOrDefault(item => string.Equals(item.Name, profileName, StringComparison.OrdinalIgnoreCase));
 
             if (profile == null)
             {
                 throw new InvalidOperationException(
-                    $"Профиль RabbitMQ '{profileName}' не найден в файле '{filePath}'.");
+                    $"Профиль RabbitMQ '{profileName}' не найден в конфигурации.");
             }
 
             return profile;
@@ -123,7 +137,21 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// </summary>
         /// <param name="filePath">Путь к JSON-файлу конфигурации.</param>
         public static IReadOnlyList<RabbitMqConfiguration> LoadAll(string filePath)
-            => ResolveProfiles(BuildConfiguration(filePath));
+            => LoadAll(BuildConfiguration(filePath));
+
+        /// <summary>
+        /// Загружает все профили RabbitMQ из <see cref="IConfiguration"/>.
+        /// </summary>
+        /// <param name="configuration">Источник конфигурации.</param>
+        public static IReadOnlyList<RabbitMqConfiguration> LoadAll(IConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            return ResolveProfiles(configuration);
+        }
 
         /// <summary>
         /// Заполняет существующий экземпляр единственным профилем из файла по умолчанию.
@@ -166,9 +194,18 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// <param name="profileName">Имя профиля.</param>
         /// <param name="filePath">Путь к JSON-файлу конфигурации.</param>
         public static void PopulateProfile(RabbitMqConfiguration target, string profileName, string filePath)
+            => PopulateProfile(target, profileName, BuildConfiguration(filePath));
+
+        /// <summary>
+        /// Заполняет существующий экземпляр профилем по имени из <see cref="IConfiguration"/>.
+        /// </summary>
+        public static void PopulateProfile(
+            RabbitMqConfiguration target,
+            string profileName,
+            IConfiguration configuration)
         {
             ValidateTarget(target);
-            Copy(LoadProfile(profileName, filePath), target);
+            Copy(LoadProfile(profileName, configuration), target);
         }
 
         /// <summary>
@@ -217,7 +254,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             Copy(LoadSingleProfile(filePath), target);
         }
 
-        private static IReadOnlyList<RabbitMqConfiguration> ResolveProfiles(IConfigurationRoot configuration)
+        private static IReadOnlyList<RabbitMqConfiguration> ResolveProfiles(IConfiguration configuration)
         {
             var section = configuration.GetSection(ConfigurationSectionName);
             if (!section.Exists())
@@ -264,22 +301,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         }
 
         private static IConfigurationRoot BuildConfiguration(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException($"Не найден конфигурационный файл RabbitMQ '{filePath}'.", filePath);
-            }
-
-            var directory = Path.GetDirectoryName(filePath)
-                ?? throw new InvalidOperationException($"Не удалось определить каталог конфигурационного файла '{filePath}'.");
-
-            var fileName = Path.GetFileName(filePath);
-
-            return new ConfigurationBuilder()
-                .SetBasePath(directory)
-                .AddJsonFile(fileName, optional: false, reloadOnChange: false)
-                .Build();
-        }
+            => RabbitMqConfigurationComposition.BuildFromFile(filePath);
 
         private static void ValidateTarget(RabbitMqConfiguration target)
         {

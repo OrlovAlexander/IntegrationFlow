@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Configurations;
 using Microsoft.Extensions.Configuration;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations
@@ -71,19 +72,30 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             => LoadProfile(profileName, ResolveConfigFilePath());
 
         public static RabbitMqRequestReplyConfiguration LoadProfile(string profileName, string filePath)
+            => LoadProfile(profileName, BuildConfiguration(filePath));
+
+        /// <summary>
+        /// Загружает профиль по имени из <see cref="IConfiguration"/>.
+        /// </summary>
+        public static RabbitMqRequestReplyConfiguration LoadProfile(string profileName, IConfiguration configuration)
         {
             if (string.IsNullOrWhiteSpace(profileName))
             {
                 throw new ArgumentException("Имя профиля RabbitMQ request-reply не задано.", nameof(profileName));
             }
 
-            var profile = ResolveProfiles(BuildConfiguration(filePath))
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            var profile = ResolveProfiles(configuration)
                 .FirstOrDefault(item => string.Equals(item.Name, profileName, StringComparison.OrdinalIgnoreCase));
 
             if (profile == null)
             {
                 throw new InvalidOperationException(
-                    $"Профиль RabbitMQ request-reply '{profileName}' не найден в файле '{filePath}'.");
+                    $"Профиль RabbitMQ request-reply '{profileName}' не найден в конфигурации.");
             }
 
             return profile;
@@ -93,7 +105,20 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             => LoadAll(ResolveConfigFilePath());
 
         public static IReadOnlyList<RabbitMqRequestReplyConfiguration> LoadAll(string filePath)
-            => ResolveProfiles(BuildConfiguration(filePath));
+            => LoadAll(BuildConfiguration(filePath));
+
+        /// <summary>
+        /// Загружает все профили из <see cref="IConfiguration"/>.
+        /// </summary>
+        public static IReadOnlyList<RabbitMqRequestReplyConfiguration> LoadAll(IConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            return ResolveProfiles(configuration);
+        }
 
         public static void Populate(RabbitMqRequestReplyConfiguration target)
             => PopulateSingleProfile(target, ResolveConfigFilePath());
@@ -108,9 +133,18 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             => PopulateProfile(target, profileName, ResolveConfigFilePath());
 
         public static void PopulateProfile(RabbitMqRequestReplyConfiguration target, string profileName, string filePath)
+            => PopulateProfile(target, profileName, BuildConfiguration(filePath));
+
+        /// <summary>
+        /// Заполняет существующий экземпляр профилем по имени из <see cref="IConfiguration"/>.
+        /// </summary>
+        public static void PopulateProfile(
+            RabbitMqRequestReplyConfiguration target,
+            string profileName,
+            IConfiguration configuration)
         {
             ValidateTarget(target);
-            Copy(LoadProfile(profileName, filePath), target);
+            Copy(LoadProfile(profileName, configuration), target);
         }
 
         public static string ResolveConfigFilePath(string? filePath = null)
@@ -155,7 +189,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             Copy(LoadSingleProfile(filePath), target);
         }
 
-        private static IReadOnlyList<RabbitMqRequestReplyConfiguration> ResolveProfiles(IConfigurationRoot configuration)
+        private static IReadOnlyList<RabbitMqRequestReplyConfiguration> ResolveProfiles(IConfiguration configuration)
         {
             var section = configuration.GetSection(ConfigurationSectionName);
             if (!section.Exists())
@@ -204,22 +238,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
         }
 
         private static IConfigurationRoot BuildConfiguration(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException($"Не найден конфигурационный файл RabbitMQ '{filePath}'.", filePath);
-            }
-
-            var directory = Path.GetDirectoryName(filePath)
-                ?? throw new InvalidOperationException($"Не удалось определить каталог конфигурационного файла '{filePath}'.");
-
-            var fileName = Path.GetFileName(filePath);
-
-            return new ConfigurationBuilder()
-                .SetBasePath(directory)
-                .AddJsonFile(fileName, optional: false, reloadOnChange: false)
-                .Build();
-        }
+            => RabbitMqConfigurationComposition.BuildFromFile(filePath);
 
         private static void ValidateTarget(RabbitMqRequestReplyConfiguration target)
         {

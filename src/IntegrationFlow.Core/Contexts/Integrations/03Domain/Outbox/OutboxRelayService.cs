@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
@@ -19,18 +20,21 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
         private readonly IIntegrationLogger logger;
         private readonly OutboxRelayOptions options;
         private readonly IIntegrationFlowMetrics? metrics;
+        private readonly RabbitMqTransportHealthRegistry? healthRegistry;
         private readonly string workerId = Guid.NewGuid().ToString("N");
 
         public OutboxRelayService(
             IOutboxStore outboxStore,
             IIntegrationLogger logger,
             OutboxRelayOptions options,
-            IIntegrationFlowMetrics? metrics = null)
+            IIntegrationFlowMetrics? metrics = null,
+            RabbitMqTransportHealthRegistry? healthRegistry = null)
         {
             this.outboxStore = outboxStore ?? throw new ArgumentNullException(nameof(outboxStore));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.metrics = metrics;
+            this.healthRegistry = healthRegistry;
         }
 
         /// <summary>
@@ -38,34 +42,51 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
         /// </summary>
         public async Task RelayBatchAsync(int batchSize = 20, CancellationToken cancellationToken = default)
         {
-            await outboxStore.ReleaseExpiredClaimsAsync(cancellationToken).ConfigureAwait(false);
-
-            var claimed = await outboxStore
-                .ClaimPendingAsync(batchSize, workerId, options.LockDuration, cancellationToken)
-                .ConfigureAwait(false);
-
-            var publishedCount = 0;
-            var failedCount = 0;
-            var abandonedCount = 0;
-
-            foreach (var profileGroup in claimed.GroupBy(message => message.ProfileName))
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var result = await RelayProfileGroupAsync(profileGroup.Key, profileGroup, cancellationToken)
+                await outboxStore.ReleaseExpiredClaimsAsync(cancellationToken).ConfigureAwait(false);
+
+                var claimed = await outboxStore
+                    .ClaimPendingAsync(batchSize, workerId, options.LockDuration, cancellationToken)
                     .ConfigureAwait(false);
-                publishedCount += result.Published;
-                failedCount += result.Failed;
-                abandonedCount += result.Abandoned;
+
+                var publishedCount = 0;
+                var failedCount = 0;
+                var abandonedCount = 0;
+
+                foreach (var profileGroup in claimed.GroupBy(message => message.ProfileName))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var result = await RelayProfileGroupAsync(profileGroup.Key, profileGroup, cancellationToken)
+                        .ConfigureAwait(false);
+                    publishedCount += result.Published;
+                    failedCount += result.Failed;
+                    abandonedCount += result.Abandoned;
+                }
+
+                metrics?.RecordOutboxRelayPublished(publishedCount);
+                metrics?.RecordOutboxRelayFailed(failedCount);
+                metrics?.RecordOutboxRelayAbandoned(abandonedCount);
+
+                var pending = await outboxStore
+                    .GetPendingAsync(int.MaxValue, cancellationToken)
+                    .ConfigureAwait(false);
+                metrics?.RecordOutboxPending(pending.Count);
+
+                if (failedCount > 0 && publishedCount == 0 && claimed.Count > 0)
+                {
+                    healthRegistry?.ReportOutboxRelayBatchFailure("All publishes in batch failed.");
+                }
+                else
+                {
+                    healthRegistry?.ReportOutboxRelayBatchSuccess();
+                }
             }
-
-            metrics?.RecordOutboxRelayPublished(publishedCount);
-            metrics?.RecordOutboxRelayFailed(failedCount);
-            metrics?.RecordOutboxRelayAbandoned(abandonedCount);
-
-            var pending = await outboxStore
-                .GetPendingAsync(int.MaxValue, cancellationToken)
-                .ConfigureAwait(false);
-            metrics?.RecordOutboxPending(pending.Count);
+            catch (Exception ex)
+            {
+                healthRegistry?.ReportOutboxRelayBatchFailure(ex.Message);
+                throw;
+            }
         }
 
         internal TimeSpan CalculateRetryDelay(int attemptCount)

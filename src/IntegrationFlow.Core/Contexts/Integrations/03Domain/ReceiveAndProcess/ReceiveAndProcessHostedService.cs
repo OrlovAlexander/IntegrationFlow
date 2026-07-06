@@ -1,6 +1,7 @@
 #if NET8_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Workers;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using Microsoft.Extensions.Hosting;
@@ -14,14 +15,17 @@ internal sealed class ReceiveAndProcessHostedService : BackgroundService
 {
     private readonly ReceiveAndProcessHostedServiceOptions options;
     private readonly IIntegrationLogger logger;
+    private readonly RabbitMqTransportHealthRegistry? healthRegistry;
     private readonly RabbitMqListenerWorker worker = new();
 
     public ReceiveAndProcessHostedService(
         ReceiveAndProcessHostedServiceOptions options,
-        IIntegrationLogger logger)
+        IIntegrationLogger logger,
+        RabbitMqTransportHealthRegistry? healthRegistry = null)
     {
         this.options = options ?? throw new System.ArgumentNullException(nameof(options));
         this.logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
+        this.healthRegistry = healthRegistry;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,6 +34,7 @@ internal sealed class ReceiveAndProcessHostedService : BackgroundService
             options.ProcessMessageAsync,
             logger,
             stoppingToken,
-            metrics: options.Metrics);
+            metrics: options.Metrics,
+            healthRegistry: healthRegistry);
 }
 #endif

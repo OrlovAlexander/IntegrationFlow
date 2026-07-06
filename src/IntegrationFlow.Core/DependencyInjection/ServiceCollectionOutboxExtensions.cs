@@ -1,4 +1,5 @@
 using System;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._03Domain.Outbox;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -21,7 +22,14 @@ public static partial class ServiceCollectionExtensions
         services.TryAddSingleton<OutboxRelayService>();
 
 #if NET8_0_OR_GREATER
-        services.AddHostedService<OutboxRelayBackgroundService>();
+        services.AddHostedService(sp =>
+        {
+            sp.GetService<RabbitMqTransportHealthRegistry>()
+                ?.Register(RabbitMqTransportKind.OutboxRelay, RabbitMqTransportHealthRegistry.OutboxRelayProfileName);
+            return new OutboxRelayBackgroundService(
+                sp.GetRequiredService<OutboxRelayService>(),
+                sp.GetRequiredService<OutboxRelayOptions>());
+        });
 #endif
 
         return services;

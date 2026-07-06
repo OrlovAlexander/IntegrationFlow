@@ -1,4 +1,5 @@
 using System;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
 using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
@@ -59,6 +60,8 @@ public static partial class ServiceCollectionExtensions
         {
             var logger = sp.GetRequiredService<IIntegrationLogger>();
             var metrics = sp.GetService<IIntegrationFlowMetrics>();
+            var healthRegistry = sp.GetService<RabbitMqTransportHealthRegistry>();
+            healthRegistry?.Register(RabbitMqTransportKind.Listener, profileName);
             var processing = createProcessing(sp);
             var deduplicationStore = createDeduplicationStore?.Invoke(sp);
             var options = ReceiveAndProcessHostedServiceOptions.CreateForProfile(
@@ -67,7 +70,7 @@ public static partial class ServiceCollectionExtensions
                 processing,
                 deduplicationStore,
                 metrics);
-            return new ReceiveAndProcessHostedService(options, logger);
+            return new ReceiveAndProcessHostedService(options, logger, healthRegistry);
         });
 #endif
 

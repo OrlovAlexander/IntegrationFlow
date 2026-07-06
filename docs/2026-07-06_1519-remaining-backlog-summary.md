@@ -2,10 +2,11 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-06 15:19 (UTC+3)  
-**Обновлён:** 2026-07-06 16:45 (UTC+3)  
+**Обновлён:** 2026-07-06 17:53 (UTC+3)  
 **Основание:** [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md)  
 **Детальный backlog:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
-**Следующий план:** P3 — [`plans/2026-07-04_0930-post-analysis-roadmap.md`](plans/2026-07-04_0930-post-analysis-roadmap.md)
+**P3 status:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
+**Следующий план:** P3-4 — [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)
 
 ---
 
@@ -15,6 +16,7 @@
 |------|--------|----------|
 | P1 transport G1–G5 | ✅ | [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
 | P2 resilience core (F, D, RPC-C/M, PF) | ✅ | [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
+| P3 ops P3-1 … P3-3 (health, config, gauge) | ✅ | [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
 | P3/P4 RPC (sync + AsyncOutbox) | ✅ | [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md) |
 | v1.0 adoption/docs (runbooks, metrics, pools PF1) | ✅ | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
 
@@ -42,13 +44,14 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 ---
 
-## Следующий кодовый приоритет: P3
+## Следующий кодовый приоритет: P3 (продолжение)
 
 | P | Задача |
 |---|--------|
-| P3 | Health checks (`IHealthCheck`), env/`IConfiguration` overlay |
-| P3 optional | Distributed tracing через headers |
-| P4 | Shared connection profiles, Headers API, netstandard2.0 hosted listener |
+| P3-4 | Distributed tracing через headers |
+| P3-5 | Structured logging |
+| P3-6 | Consumer-level метрики |
+| P4 | Shared connection profiles, Headers API |
 
 ---
 
@@ -65,4 +68,4 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 ## Итог
 
-**P1 + P2 core закрыты.** До публичного release — **NuGet publish**. Следующая волна разработки — **P3 ops readiness** (health checks, config overlay). Полный перечень задач: [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md).
+**P1 + P2 core + P3-1…P3-3 закрыты.** До публичного release — **NuGet publish**. Следующая волна — **P3-4 tracing**. Статус: [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md). Backlog: [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md).

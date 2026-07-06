@@ -224,6 +224,10 @@ public sealed class IntegrationFlowMetricsTests
         public void RecordConnectionPoolSize(string kind, int size)
         {
         }
+
+        public void RecordBrokerConnected(string profileName, string kind, bool connected)
+        {
+        }
     }
 
     private sealed class MetricsOutboxStore : IOutboxStore

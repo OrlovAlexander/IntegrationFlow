@@ -172,6 +172,10 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
         => meter.SetConnectionPoolSize(kind, size);
 
     /// <inheritdoc />
+    public void RecordBrokerConnected(string profileName, string kind, bool connected)
+        => meter.SetBrokerConnected(profileName, kind, connected);
+
+    /// <inheritdoc />
     public void Dispose()
     {
         meter.Dispose();

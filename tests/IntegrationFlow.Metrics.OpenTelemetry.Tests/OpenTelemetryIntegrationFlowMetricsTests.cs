@@ -178,6 +178,24 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
         Assert.Contains(measurements, item => item.Value == 3 && item.Tags["kind"]?.ToString() == "publish");
     }
 
+    [Fact]
+    public void RecordBrokerConnected_UpdatesGauge()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordBrokerConnected("Inbox", "listener", connected: true);
+        metrics.RecordBrokerConnected("Inbox", "listener", connected: false);
+        collector.Collect();
+
+        var measurements = collector.GetGaugeMeasurements("integrationflow.broker.connected");
+        Assert.Contains(
+            measurements,
+            item => item.Value == 0
+                && item.Tags["profile"]?.ToString() == "inbox"
+                && item.Tags["kind"]?.ToString() == "listener");
+    }
+
     [Theory]
     [InlineData("Orders.Inbox", "orders_inbox")]
     [InlineData("", "unknown")]

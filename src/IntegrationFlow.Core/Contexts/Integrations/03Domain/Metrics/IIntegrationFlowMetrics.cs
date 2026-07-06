@@ -90,4 +90,12 @@ public interface IIntegrationFlowMetrics
     /// <param name="kind">Pool kind: <c>rpc</c> or <c>publish</c>.</param>
     /// <param name="size">Number of pooled connections.</param>
     void RecordConnectionPoolSize(string kind, int size);
+
+    /// <summary>
+    /// Records RabbitMQ broker connectivity for a transport endpoint.
+    /// </summary>
+    /// <param name="profileName">Integration profile name.</param>
+    /// <param name="kind">Transport kind: <c>listener</c>, <c>outbox_relay</c>, <c>rpc_correlation</c>.</param>
+    /// <param name="connected"><c>true</c> when broker session is active.</param>
+    void RecordBrokerConnected(string profileName, string kind, bool connected);
 }
