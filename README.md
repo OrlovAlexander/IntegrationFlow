@@ -1,49 +1,69 @@
 # IntegrationFlow
 
-Библиотека для построения интеграций между системами. Предоставляет единый каркас для трёх сценариев обмена данными и набор готовых реализаций транспортов.
+Библиотека для построения интеграций между системами на .NET. Единый каркас для трёх сценариев обмена данными и готовая реализация транспорта **RabbitMQ**.
 
-## Сценарии интеграции
+## Типы интеграций
 
-| Сценарий | Описание |
-|----------|----------|
-| **ReceiveAndProcess** | Получить входящее сообщение и обработать его (consumer). |
-| **SentAndWait** | Отправить данные и дождаться ответа (request/response). |
-| **SentAndForgot** | Отправить данные без ожидания ответа (fire-and-forget). |
+| Сценарий | Когда использовать | Направление | Конфигурация RabbitMQ |
+|----------|-------------------|-------------|------------------------|
+| **ReceiveAndProcess** | Обработка входящих сообщений из очереди | Consumer | `RabbitMq` |
+| **SentAndForgot** | Отправка события без ожидания ответа | Producer | `RabbitMqPublish` |
+| **SentAndWait** | Запрос–ответ (RPC) с ожиданием результата | Producer + consumer ответа | `RabbitMqRequestReply` |
 
-Каждый сценарий расширяется через набор интерфейсов: конфигурация, подключение, форматирование, валидация, логирование и т.д.
+Каждый сценарий расширяется через интерфейсы: конфигурация, подключение, форматирование, валидация, логирование.
 
-## Структура проекта
+## Возможности по типам интеграции
 
-```
-IntegrationFlow/
-├── src/IntegrationFlow.Core/          # Основная библиотека (net8.0, netstandard2.0)
-│   └── Contexts/Integrations/
-│       ├── 00Samples/                 # Примеры использования
-│       ├── 00InnerUsage/              # Встроенные реализации транспортов
-│       │   └── RabbitMq/                # Реализация для RabbitMQ
-│       ├── 01Infrastructure/          # Логирование, локализация
-│       ├── 02Application/             # Прикладные интерфейсы
-│       └── 03Domain/                    # Доменная модель и базовые классы
-├── src/IntegrationFlow.EntityFrameworkCore/  # EF stores (net8.0)
-├── src/IntegrationFlow.Metrics.OpenTelemetry/  # Metrics (net8.0)
-└── tests/                             # Модульные и integration-тесты (xUnit)
-```
+### ReceiveAndProcess — входящие сообщения
 
-## Требования
+| Возможность | Описание |
+|-------------|----------|
+| Manual ack | Подтверждение **после** завершения обработки |
+| Reconnect | Автоматическое переподключение при разрыве (backoff 1–30 с) |
+| Graceful shutdown | Ожидание in-flight обработок, nack requeue при остановке |
+| Идемпотентность | `IMessageDeduplicationStore` — пропуск дубликатов по `MessageId` |
+| DLQ | `MaxRetryCount` + `x-dead-letter-exchange` на брокере |
+| Hosted listener | `AddIntegrationFlowRabbitMqListener` (.NET 8+, рекомендуется) |
+| TLS | AMQPS через `SslEnabled` / `SslServerName` |
 
-- [.NET SDK 8.0](https://dotnet.microsoft.com/download) или новее
+### SentAndForgot — исходящие сообщения
 
-## Сборка и тесты
+| Возможность | Описание |
+|-------------|----------|
+| Publisher confirms | Подтверждение доставки от брокера (по умолчанию включено) |
+| Прямая публикация | `Integrate()` / `IntegrateWithResult()` в очередь или exchange |
+| Transactional outbox | Атомарная запись «БД + сообщение» через outbox relay |
+| EF Core store | `IntegrationFlow.EntityFrameworkCore` — production outbox и dedup |
+| Connection pool | `ReuseConnection` для high-frequency publish |
+| TLS | AMQPS |
+
+### SentAndWait — запрос–ответ (RPC)
+
+| Возможность | Описание |
+|-------------|----------|
+| Синхронный RPC | `ReplyTo` + `CorrelationId`, по умолчанию `DirectReplyTo` |
+| Асинхронный API | `IntegrateAsync()` / `IntegrateWithResultAsync()` для ASP.NET |
+| Идемпотентный RPC | `MessageId` + `RabbitMqRpcServerPipeline` + retry после timeout |
+| AsyncOutbox RPC | Критичные запросы: staging в БД → relay → correlation ответа |
+| Server handler | `RabbitMqReplyPublisher` — ответ **до return** из handler |
+| Connection reuse | `ReuseConnection`, `ReuseReplyConnection` |
+| Publisher confirms | Confirm на publish request |
+
+## NuGet-пакеты
+
+| Пакет | Назначение |
+|-------|------------|
+| `IntegrationFlow.Core` | Каркас интеграций, RabbitMQ transport (net8.0, netstandard2.0) |
+| `IntegrationFlow.EntityFrameworkCore` | EF outbox, dedup, AsyncOutbox RPC stores (net8.0) |
+| `IntegrationFlow.Metrics.OpenTelemetry` | Метрики через `System.Diagnostics.Metrics` (net8.0) |
 
 ```bash
-dotnet build IntegrationFlow.sln
-dotnet test IntegrationFlow.sln --filter "Category!=Integration"
-dotnet test IntegrationFlow.sln --filter "Category=Integration"
+dotnet pack IntegrationFlow.sln -c Release
 ```
 
-> Integration-тесты требуют Docker (Testcontainers).
+Release process: [`docs/runbooks/2026-07-04_0845-nuget-release.md`](docs/runbooks/2026-07-04_0845-nuget-release.md).
 
-## Подключение через DI
+## Быстрый старт
 
 ```csharp
 using IntegrationFlow.DependencyInjection;
@@ -51,116 +71,21 @@ using IntegrationFlow.DependencyInjection;
 services.AddIntegrationFlow();
 ```
 
-Метод `AddIntegrationFlow` регистрирует базовые сервисы интеграции и встраивает локализацию из resx-ресурсов.
+`AddIntegrationFlow` регистрирует базовые сервисы и локализацию из resx-ресурсов.
 
-## RabbitMQ (ReceiveAndProcess)
+## RabbitMQ: общая конфигурация
 
-Реализация прослушивания очереди RabbitMQ находится в `00InnerUsage/RabbitMq/ReceiveAndProcess/`. Слушатель работает асинхронно, потокобезопасно и подтверждает сообщения вручную (`manual ack`).
+Настройки — в `rabbitmq.json` рядом с приложением. Поддерживаются **именованные профили** и legacy flat-формат.
 
-### Запуск через IHost (рекомендуется, .NET 8+)
-
-```csharp
-using IntegrationFlow.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-
-var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
-    {
-        services.AddIntegrationFlow();
-        services.AddIntegrationFlowRabbitMqListener("Inbox", message =>
-        {
-            // обработка входящего сообщения
-        });
-        // services.AddIntegrationFlowRabbitMqListener("Orders", sp => sp.GetRequiredService<IOrdersInboxHandler>());
-    })
-    .Build();
-
-await host.RunAsync();
-```
-
-### Health checks (.NET 8+)
-
-Для Kubernetes readiness и мониторинга доступны health checks транспортных workers:
-
-```csharp
-using IntegrationFlow.DependencyInjection;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-
-services.AddIntegrationFlow();
-services.AddIntegrationFlowRabbitMqListener("Inbox", message => { /* ... */ });
-services.AddIntegrationFlowOutboxRelay();
-services.AddIntegrationFlowRabbitMqHealthChecks(options =>
-{
-    options.MaxReconnectAttemptsBeforeUnhealthy = 5;
-    options.OutboxRelayMaxConsecutiveFailures = 5;
-});
-
-// ASP.NET Core:
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = check => check.Tags.Contains("ready")
-});
-```
-
-| Check | Имя | Unhealthy когда |
-|-------|-----|-----------------|
-| Listener | `integrationflow.rabbitmq.listener` | Нет активного соединения или reconnect attempts ≥ порога |
-| Outbox relay | `integrationflow.rabbitmq.outbox_relay` | Подряд ≥ N неудачных relay batch |
-| RPC correlation | `integrationflow.rabbitmq.rpc_correlation` | AsyncOutbox response consumer отключён / reconnect ≥ порога |
-
-Если компонент не зарегистрирован в DI, соответствующий check возвращает **Healthy** (no-op).
-
-Legacy `IReceiveAndProcessLauncher` + `BeginReceiving()` сохранён для обратной совместимости, но помечен `[Obsolete]` на net8.0.
-
-### Пример запуска (legacy launcher)
-
-**Один профиль (Inbox):**
-
-```csharp
-public sealed class SampleRabbitMqReceiveAndProcessLauncher : IReceiveAndProcessLauncher
-{
-    public void Run()
-    {
-        var publisher = PublisherBase.Create<RabbitMqPublisher, InboxRabbitMqPublisherSide>(Logger.Create());
-        publisher.BeginReceiving();
-    }
-}
-```
-
-**Все профили параллельно:**
-
-```csharp
-public sealed class SampleRabbitMqAllProfilesReceiveAndProcessLauncher : IReceiveAndProcessLauncher
-{
-    public void Run()
-    {
-        foreach (var configuration in RabbitMqConfigurationLoader.LoadAll())
-        {
-            var side = new NamedRabbitMqIntegrationPublisherSide(configuration.Name);
-            var publisher = PublisherBase.Create<RabbitMqPublisher>(Logger.Create(), side);
-            publisher.BeginReceiving();
-        }
-    }
-}
-```
-
-### Настройка подключения
-
-Настройки хранятся в `rabbitmq.json` рядом с приложением. Поддерживаются **именованные профили** и **legacy flat**-формат.
-
-**Приоритет источников** (от низкого к высокому): `rabbitmq.json` → **environment variables** → **host `IConfiguration`** (appsettings, user secrets).
-
-Environment variables используют разделитель `__` (двойное подчёркивание):
+**Приоритет источников** (от низкого к высокому): `rabbitmq.json` → environment variables → `IConfiguration` (appsettings, user secrets).
 
 ```bash
 # Linux / Docker / Kubernetes
 export RabbitMq__Inbox__HostName=rabbit.prod.internal
 export RabbitMq__Inbox__Password=secret
 export RabbitMqPublish__OrdersOut__HostName=rabbit.prod.internal
+export RabbitMqRequestReply__OrdersRpc__Password=secret
 ```
-
-В ASP.NET Core / Worker передайте host configuration:
 
 ```csharp
 var builder = Host.CreateDefaultBuilder(args);
@@ -169,14 +94,7 @@ builder.ConfigureServices((context, services) =>
 {
     services.AddIntegrationFlow();
     services.AddIntegrationFlowRabbitMq(context.Configuration);
-    services.AddIntegrationFlowRabbitMqListener("Inbox", message => { /* ... */ });
 });
-```
-
-Loaders также поддерживают прямую загрузку из `IConfiguration`:
-
-```csharp
-var profile = RabbitMqConfigurationLoader.LoadProfile("Inbox", hostConfiguration);
 ```
 
 **Именованные профили** (рекомендуется):
@@ -186,90 +104,79 @@ var profile = RabbitMqConfigurationLoader.LoadProfile("Inbox", hostConfiguration
   "RabbitMq": {
     "Inbox": {
       "HostName": "localhost",
-      "Port": 5672,
-      "UserName": "guest",
-      "Password": "guest",
-      "VirtualHost": "/",
       "QueueName": "integration.inbox",
-      "PrefetchCount": 1,
-      "Asynchronously": true,
-      "AutomaticRecoveryEnabled": true,
-      "ClientProvidedName": "IntegrationFlow.InboxListener"
-    },
-    "Orders": {
+      "PrefetchCount": 1
+    }
+  },
+  "RabbitMqPublish": {
+    "OrdersOut": {
       "HostName": "localhost",
-      "QueueName": "orders.inbox",
-      "ClientProvidedName": "IntegrationFlow.OrdersListener"
+      "PublishTarget": "Queue",
+      "QueueName": "orders.outbox"
+    }
+  },
+  "RabbitMqRequestReply": {
+    "OrdersRpc": {
+      "HostName": "localhost",
+      "QueueName": "orders.rpc"
     }
   }
 }
 ```
 
-**Legacy flat** (один профиль `Default`):
+**AMQPS (TLS):** `SslEnabled: true`, `SslServerName`, порт `5671` — для всех трёх секций конфигурации.
 
-```json
-{
-  "RabbitMq": {
-    "HostName": "localhost",
-    "QueueName": "integration.inbox"
-  }
-}
-```
+Подробнее о секретах и overlay: разделы ниже и [`docs/runbooks/2026-07-04_2130-production-adoption.md`](docs/runbooks/2026-07-04_2130-production-adoption.md).
 
-### API загрузки
+---
 
-| Метод | Назначение |
-|-------|------------|
-| `LoadProfile("Inbox")` | Профиль по имени из default-файла |
-| `LoadAll()` | Все профили |
-| `Load()` / `LoadSingle(path)` | Единственный профиль (ошибка, если профилей несколько) |
-| `LoadFromFile(path)` | Только legacy flat-формат |
+## RabbitMQ: ReceiveAndProcess
+
+Consumer для входящих сообщений. Работает асинхронно, потокобезопасно, с manual ack.
+
+### Запуск (.NET 8+, рекомендуется)
 
 ```csharp
-var inbox = RabbitMqConfigurationLoader.LoadProfile("Inbox");
+using IntegrationFlow.DependencyInjection;
 
-public sealed class MyRabbitMqConfiguration : RabbitMqConfiguration
-{
-    public MyRabbitMqConfiguration()
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services =>
     {
-        RabbitMqConfigurationLoader.PopulateProfile(this, "Inbox");
-    }
-}
+        services.AddIntegrationFlow();
+        services.AddIntegrationFlowRabbitMqListener("Inbox", message =>
+        {
+            // обработка входящего сообщения
+        });
+    })
+    .Build();
 
-internal sealed class InboxRabbitMqPublisherSide : RabbitMqIntegrationPublisherSideBase
-{
-    protected override string ConfigurationName => "Inbox";
-}
+await host.RunAsync();
 ```
 
-Для параллельного прослушивания нескольких очередей нужен **отдельный publisher на каждый профиль** (отдельный side-класс или `NamedRabbitMqIntegrationPublisherSide`). `ProcessorBase` кешируется с учётом profile/side через `GetPublisherCacheKey()`.
+### Параметры consumer (`RabbitMq`)
 
 | Параметр | По умолчанию | Описание |
 |----------|--------------|----------|
-| `HostName` | `localhost` | Хост брокера |
-| `Port` | `5672` | Порт брокера |
-| `UserName` / `Password` | `guest` / `guest` | Учётные данные |
-| `VirtualHost` | `/` | Виртуальный хост |
-| `QueueName` | — | Имя очереди для прослушивания (обязательно) |
-| `PrefetchCount` | `1` | Количество неподтверждённых сообщений |
-| `RequeueOnFailure` | `false` | Повторно ставить сообщение в очередь при ошибке обработки |
-| `MaxRetryCount` | `0` | Лимит попыток (0 = без ограничения); после лимита nack без requeue (DLQ) |
-| `AutomaticRecoveryEnabled` | `true` | Client-level recovery в `ConnectionFactory`; long-running listener также использует reconnect loop каркаса |
-| `SslEnabled` / `SslServerName` | `false` / — | AMQPS (обычно порт `5671`) |
+| `QueueName` | — | Очередь (обязательно; `QueueDeclarePassive`) |
+| `PrefetchCount` | `1` | Неподтверждённые сообщения на consumer |
+| `RequeueOnFailure` | `false` | Requeue при ошибке обработки |
+| `MaxRetryCount` | `0` | Лимит попыток (0 = без лимита); после — nack без requeue → DLQ |
+| `AutomaticRecoveryEnabled` | `true` | Client-level recovery + reconnect loop каркаса |
+| `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
 
-Очередь должна существовать на брокере — слушатель подключается к ней через `QueueDeclarePassive`.
+### Идемпотентность
 
-**Гарантии доставки (consumer):** ack выполняется **после** завершения обработки (в том числе при `Asynchronously=true`). При ошибке — `BasicNack` с настраиваемым `RequeueOnFailure`. Для poison messages настройте DLQ на брокере (`x-dead-letter-exchange` на основной очереди).
+Реализуйте `IMessageDeduplicationStore` (sample: `InMemoryMessageDeduplicationStore`, production: EF store). При повторной доставке того же `MessageId` — пропуск или отложенный requeue.
 
-**Reconnect при разрыве соединения:** `RabbitMqListenerWorker` автоматически переподключается при `ConnectionShutdown` или ошибке сессии (exponential backoff 1–30 с). Завершение приложения — только по `CancellationToken` (`host.StopAsync()`). Флаг `AutomaticRecoveryEnabled` в `ConnectionFactory` дополняет client-level recovery; long-running consumer опирается на reconnect loop каркаса.
+### Legacy launcher (netstandard2.0)
 
-**Graceful shutdown:** при остановке host listener отменяет consumer (`BasicCancel`), ждёт завершения in-flight обработок (до 30 с), затем закрывает channel. Сообщения, полученные во время shutdown, возвращаются в очередь через **nack requeue** (безопасно с dedup). Метрика: `integrationflow.message.shutdown_requeue`.
+`IReceiveAndProcessLauncher` + `BeginReceiving()` сохранён для обратной совместимости, помечен `[Obsolete]` на net8.0.
 
-**Идемпотентность:** реализуйте `IMessageDeduplicationStore` и верните его из `IntegrationProcessorSideBase.GetMessageDeduplicationStore`. Sample: `InMemoryMessageDeduplicationStore`. При сбое обработки lock снимается через `ReleaseProcessingAsync`; параллельная доставка того же `MessageId` получает nack requeue.
+---
 
-## RabbitMQ (SentAndForgot)
+## RabbitMQ: SentAndForgot
 
-Публикация в очередь/exchange с **publisher confirms** (по умолчанию включены), `MessageId` и `IntegrateWithResult()`:
+Публикация в очередь/exchange без ожидания ответа.
 
 ```csharp
 var integration = orgIntegration.CreateSentAndForgotIntegration<SampleRabbitMqSentAndForgotProvider>(
@@ -279,87 +186,124 @@ var integration = orgIntegration.CreateSentAndForgotIntegration<SampleRabbitMqSe
 var result = integration.IntegrateWithResult();
 if (!result.Success)
 {
-    // обработать ошибку publish/reconnect
+    // обработать ошибку publish
 }
 
-// Опционально: Integrate() бросает IntegrationFailedException при ThrowOnFailure = true
+// Production: бросать исключение при ошибке
 SentAndForgotIntegrationOptions.ThrowOnFailure = true;
 integration.Integrate();
 ```
 
-| Параметр (`RabbitMqPublish`) | По умолчанию | Описание |
-|------------------------------|--------------|----------|
-| `PublisherConfirmsEnabled` | `true` | Ждать confirm от брокера после `BasicPublish` |
-| `ConfirmTimeoutSeconds` | `30` | Таймаут ожидания confirm |
+### Параметры publish (`RabbitMqPublish`)
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `PublisherConfirmsEnabled` | `true` | Ждать confirm от брокера |
+| `ConfirmTimeoutSeconds` | `30` | Таймаут confirm |
 | `Persistent` | `true` | `DeliveryMode=2` |
-| `Mandatory` | `false` | При `true` — ошибка, если сообщение не маршрутизируется |
-| `ReuseConnection` | `false` | Переиспользовать TCP для high-frequency direct publish |
-| `SslEnabled` / `SslServerName` | `false` / — | AMQPS (обычно порт `5671`) |
+| `Mandatory` | `false` | Ошибка, если сообщение не маршрутизируется |
+| `ReuseConnection` | `false` | Переиспользование TCP |
+| `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
 
 ### Transactional Outbox
 
-Для атомарности «БД + сообщение» используйте outbox и relay worker. **Enqueue в prod** — через `IOutboxEnqueue` или `DbContext.EnqueueOutboxMessage()` в той же TX, что и бизнес-данные (см. [пример](docs/examples/2026-07-03_1639-ef-outbox-transaction.md)).
+Для атомарности «БД + сообщение» — outbox в той же транзакции, что и бизнес-данные:
 
 ```csharp
 services.AddIntegrationFlow();
-services.AddSingleton<IOutboxStore, InMemoryOutboxStore>(); // relay worker
 services.AddIntegrationFlowOutboxRelay(options =>
 {
     options.BatchSize = 20;
     options.PollingInterval = TimeSpan.FromSeconds(5);
-    options.LockDuration = TimeSpan.FromSeconds(60);
     options.MaxAttempts = 10;
-    options.RetryBackoffBase = TimeSpan.FromSeconds(5);
 });
+
+// EF Core (production):
+services.AddIntegrationFlowEfOutbox<MyDbContext>();
+services.AddIntegrationFlowEfDeduplication<MyDbContext>();
 ```
 
-> **Direct publish после commit БД** — антипаттерн. Для атомарности используйте outbox в той же транзакции, что и бизнес-данные.
+Пример: [`docs/examples/2026-07-03_1639-ef-outbox-transaction.md`](docs/examples/2026-07-03_1639-ef-outbox-transaction.md).
 
-**EF Core store (production):** пакет `IntegrationFlow.EntityFrameworkCore`:
+> Прямая публикация **после** commit БД — антипаттерн. Используйте outbox в той же TX.
+
+---
+
+## RabbitMQ: SentAndWait
+
+Request–response через RabbitMQ.
+
+### Синхронный RPC (клиент)
 
 ```csharp
-services.AddDbContext<MyDbContext>(...);           // scoped — для IOutboxEnqueue
-services.AddDbContextFactory<MyDbContext>(...);    // factory — для relay IOutboxStore
-services.AddIntegrationFlowEfOutbox<MyDbContext>();
-services.AddIntegrationFlowEfDeduplication<MyDbContext>(options =>
-{
-    options.ProcessedRetention = TimeSpan.FromDays(30);
-    options.ProcessingLockDuration = TimeSpan.FromMinutes(15);
-});
+services.AddIntegrationFlow();
+
+var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRabbitMqSentAndWaitProvider>(
+    oppositeSideCode: "OrdersRpc",
+    srcData: new { OrderId = 42 });
+
+var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWaitProvider>("OrdersRpc");
+await integration.IntegrateAsync(handler, cancellationToken);
 ```
 
-В `OnModelCreating`: `modelBuilder.ConfigureIntegrationFlow();`
+### Server-side handler
 
-**Integration tests** (требуют Docker):
+Reply публикуется **до return** из handler:
 
-```bash
-dotnet test --filter "Category=Integration"
+```csharp
+services.AddIntegrationFlow();
+services.AddIntegrationFlowRabbitMqListener("OrdersRpc",
+    SampleRabbitMqSentAndWaitRpcServer.CreateHandler("OrdersRpc"));
 ```
 
-Подробнее: [`docs/plans/2026-07-03_1639-production-readiness.md`](docs/plans/2026-07-03_1639-production-readiness.md).  
-Полный анализ решения и рисков: [`docs/2026-07-04_2234-integrationflow-full-analysis.md`](docs/2026-07-04_2234-integrationflow-full-analysis.md).  
-Отчёт по видам интеграций, сценариям и gap-листу: [`docs/2026-07-04_2338-integration-types-full-report.md`](docs/2026-07-04_2338-integration-types-full-report.md).  
-Полный анализ RabbitMQ (gaps и roadmap): [`docs/2026-07-04_2352-rabbitmq-full-analysis.md`](docs/2026-07-04_2352-rabbitmq-full-analysis.md).  
-План закрытия RabbitMQ transport gaps G1–G5 (P1): [`docs/plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](docs/plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md).  
-Статус реализации G1–G5: [`docs/2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](docs/2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md).  
-Актуальный backlog: [`docs/2026-07-06_1519-remaining-backlog-summary.md`](docs/2026-07-06_1519-remaining-backlog-summary.md).  
-План RabbitMQ P2 (resilience): [`docs/plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](docs/plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md).  
-Статус реализации P2 core: [`docs/2026-07-06_1617-rabbitmq-p2-implementation-status.md`](docs/2026-07-06_1617-rabbitmq-p2-implementation-status.md).  
-План RabbitMQ SentAndWait: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).  
-Roadmap P3: [`docs/plans/2026-07-04_0930-post-analysis-roadmap.md`](docs/plans/2026-07-04_0930-post-analysis-roadmap.md).  
-План закрытия главных рисков (v1.0): [`docs/plans/2026-07-04_2130-remaining-risks-mitigation.md`](docs/plans/2026-07-04_2130-remaining-risks-mitigation.md).  
-План SentAndWait RPC для critical flows (R1/R2): [`docs/plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md`](docs/plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md).  
-План реализации (фазы 0–3, PR-ы): [`docs/plans/2026-07-04_2244-sentandwait-rpc-implementation.md`](docs/plans/2026-07-04_2244-sentandwait-rpc-implementation.md).  
-Статус реализации (фазы 1–2): [`docs/2026-07-04_2301-sentandwait-rpc-implementation-status.md`](docs/2026-07-04_2301-sentandwait-rpc-implementation-status.md).  
-Статус реализации P3 ops: [`docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md).  
-Указатель документации: [`docs/README.md`](docs/README.md).
+### Идемпотентный sync RPC
 
-## Observability
+Задайте `MessageId` через `WithMessageId()`; на server — `IRequestReplyResponseStore` + `RabbitMqRpcServerPipeline`. При timeout: `SentAndWaitIntegrationOptions.RetryOnTimeout = true`.
 
-Полный гайд P3 (health, metrics, logging, tracing, config): [`docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md).  
-Runbook алертов и порогов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
+### AsyncOutbox RPC (критичные запросы)
 
-### Production quick-start (.NET 8+)
+`RequestMode: AsyncOutbox` + `ResponseQueueName` в конфиге:
+
+- Stage: `CreateSentAndWaitAsyncOutboxIntegration` → `CreatePendingRequest()` в TX
+- Relay: `AddIntegrationFlowRpcPendingRelay()`
+- Correlation: `AddIntegrationFlowRabbitMqRpcResponseCorrelation()`
+- EF: `AddIntegrationFlowEfRpcPending<TContext>()`
+
+Runbook: [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md).
+
+### Параметры RPC (`RabbitMqRequestReply`)
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `MaxConcurrentRequests` | `1` | Лимит параллельных запросов (`0` = без лимита) |
+| `ReuseConnection` | `false` | Переиспользование TCP (client) |
+| `ReuseReplyConnection` | `true` | Pool channel для server-side reply |
+| `ResponseTimeoutSeconds` | — | Таймаут ожидания ответа |
+| `PublisherConfirmsEnabled` | `true` | Confirm на publish request |
+| `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
+
+### Production defaults
+
+```csharp
+SentAndWaitIntegrationOptions.ThrowOnFailure = true;
+SentAndForgotIntegrationOptions.ThrowOnFailure = true;
+```
+
+---
+
+## Наблюдаемость
+
+Пакет `IntegrationFlow.Metrics.OpenTelemetry` + встроенные health checks, structured logging и distributed tracing.
+
+| Возможность | Что даёт | Регистрация |
+|-------------|----------|-------------|
+| Метрики | Throughput, latency, outbox backlog, RPC, reconnect | `AddIntegrationFlowOpenTelemetryMetrics()` |
+| Health checks | Readiness listener, outbox relay, RPC correlation | `AddIntegrationFlowRabbitMqHealthChecks()` |
+| Structured logging | `profile`, `message_id`, `correlation_id`, `outcome` в логах | `AddIntegrationFlow()` + host `ILogger` |
+| Distributed tracing | W3C `traceparent` через AMQP headers | `AddSource(IntegrationFlowRabbitMqActivitySource.Name)` |
+| Broker connectivity | Gauge подключения к брокеру по профилю | Автоматически с метриками |
+
+### Production setup (.NET 8+)
 
 ```csharp
 using IntegrationFlow.DependencyInjection;
@@ -382,10 +326,8 @@ builder.Services.AddIntegrationFlowRabbitMqHealthChecks(options =>
 });
 
 builder.Services.AddOpenTelemetry()
-    .WithMetrics(metrics => metrics
-        .AddMeter("IntegrationFlow")
-        .AddPrometheusExporter())
-    .WithTracing(tracing => tracing
+    .WithMetrics(m => m.AddMeter("IntegrationFlow").AddPrometheusExporter())
+    .WithTracing(t => t
         .AddSource(IntegrationFlowRabbitMqActivitySource.Name)
         .AddAspNetCoreInstrumentation()
         .AddOtlpExporter());
@@ -398,69 +340,35 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapPrometheusScrapingEndpoint();
 ```
 
-**appsettings.Production.json** (overlay поверх `rabbitmq.json`):
+### Health checks
 
-```json
-{
-  "RabbitMq": {
-    "Inbox": {
-      "HostName": "rabbit.prod.internal",
-      "PrefetchCount": 10
-    }
-  },
-  "IntegrationFlow": {
-    "HealthChecks": {
-      "MaxReconnectAttemptsBeforeUnhealthy": 5,
-      "OutboxRelayMaxConsecutiveFailures": 5
-    }
-  }
-}
-```
+| Check | Имя | Unhealthy когда |
+|-------|-----|-----------------|
+| Listener | `integrationflow.rabbitmq.listener` | Нет соединения или reconnect ≥ порога |
+| Outbox relay | `integrationflow.rabbitmq.outbox_relay` | Подряд ≥ N неудачных relay batch |
+| RPC correlation | `integrationflow.rabbitmq.rpc_correlation` | Response consumer отключён |
 
-Секреты — через environment variables (`RabbitMq__Inbox__Password`, см. раздел RabbitMQ выше).
+Если компонент не зарегистрирован в DI, check возвращает **Healthy** (no-op).
 
-Метрики (`IntegrationFlow.Metrics.OpenTelemetry` + `System.Diagnostics.Metrics`):
+### Метрики
 
 | Имя | Тип | Описание |
 |-----|-----|----------|
-| `integrationflow.message.processed` | Counter | Обработанные inbox-сообщения (`profile`, `success`) |
-| `integrationflow.message.processing.duration` | Histogram | Длительность обработки (секунды) |
-| `integrationflow.outbox.relay.published` | Counter | Успешный relay outbox |
-| `integrationflow.outbox.relay.failed` | Counter | Ошибки relay |
-| `integrationflow.outbox.relay.abandoned` | Counter | Abandoned после max attempts |
-| `integrationflow.outbox.pending` | Gauge | Текущий backlog pending |
-| `integrationflow.requestreply.completed` | Counter | Завершённые RPC-запросы (`profile`, `success`, `timeout`) |
-| `integrationflow.requestreply.retry_after_timeout` | Counter | Retry RPC после timeout (`profile`) |
-| `integrationflow.requestreply.duration` | Histogram | Длительность RPC round-trip (секунды) |
-| `integrationflow.rpc.pending.relay.published` | Counter | AsyncOutbox: успешно relayed pending requests |
-| `integrationflow.rpc.pending.relay.failed` | Counter | AsyncOutbox: ошибки relay |
-| `integrationflow.rpc.pending.relay.abandoned` | Counter | AsyncOutbox: abandoned после max attempts |
-| `integrationflow.rpc.pending.awaiting` | Gauge | AsyncOutbox: awaiting response |
-| `integrationflow.rpc.pending.completed` | Counter | AsyncOutbox: завершённые pending (`profile`, `success`, `timeout`) |
-| `integrationflow.rpc.pending.duration` | Histogram | AsyncOutbox: round-trip от staging (секунды) |
-| `integrationflow.listener.reconnect` | Counter | Переподключения listener после разрыва (`profile`) |
-| `integrationflow.message.shutdown_requeue` | Counter | Nack requeue при graceful shutdown (`profile`) |
-| `integrationflow.message.consumer.outcome` | Counter | Consumer ack outcomes (`profile`, `reason`) |
-| `integrationflow.connection.pool.size` | Gauge | Размер pool TCP-подключений (`kind=rpc|publish`) |
-| `integrationflow.broker.connected` | Gauge | Подключение к брокеру (`profile`, `kind=listener|outbox_relay|rpc_correlation`; 1=connected, 0=disconnected) |
+| `integrationflow.message.processed` | Counter | Обработанные inbox-сообщения |
+| `integrationflow.message.processing.duration` | Histogram | Длительность обработки |
+| `integrationflow.message.consumer.outcome` | Counter | Исходы ack/nack/requeue/dedup (`reason`) |
+| `integrationflow.outbox.pending` | Gauge | Backlog outbox |
+| `integrationflow.outbox.relay.*` | Counter | Published / failed / abandoned |
+| `integrationflow.requestreply.*` | Counter/Histogram | RPC round-trip |
+| `integrationflow.rpc.pending.*` | Counter/Gauge | AsyncOutbox RPC |
+| `integrationflow.broker.connected` | Gauge | Подключение к брокеру (1/0) |
+| `integrationflow.listener.reconnect` | Counter | Переподключения listener |
 
-### P3 checklist (production observability)
+Полный список и PromQL-алерты: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
 
-| ID | Возможность | Регистрация / действие |
-|----|-------------|------------------------|
-| P3-1 | Health checks | `AddIntegrationFlowRabbitMqHealthChecks()` + `MapHealthChecks("/health/ready")` |
-| P3-2 | Config overlay | `AddIntegrationFlowRabbitMq(IConfiguration)` + env vars `RabbitMq__*` |
-| P3-3 | Broker gauge | `AddIntegrationFlowOpenTelemetryMetrics()` |
-| P3-4 | Distributed tracing | `AddSource(IntegrationFlowRabbitMqActivitySource.Name)` в OTel tracing |
-| P3-5 | Structured logging | `AddIntegrationFlow()` + host `ILogger` (Serilog / OTel logs) |
-| P3-6 | Consumer outcomes | Автоматически с метриками; алерты — в runbook |
-| P3-7 | Документация | Этот раздел + runbook + [`P3 status`](docs/2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
+### Structured logging
 
-Runbook алертов: [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md).
-
-### Structured logging (P3-5)
-
-Transport workers attach structured fields via `ILogger.BeginScope` (совместимо с Serilog, OpenTelemetry log exporter, JSON console):
+Поля в log scope (Serilog, OTel logs, JSON console):
 
 | Поле | Описание |
 |------|----------|
@@ -468,187 +376,54 @@ Transport workers attach structured fields via `ILogger.BeginScope` (совме�
 | `integrationflow.message_id` | AMQP `MessageId` |
 | `integrationflow.correlation_id` | AMQP `CorrelationId` |
 | `integrationflow.delivery_tag` | Delivery tag consumer |
-| `integrationflow.kind` | `listener`, `outbox_relay`, `rpc_correlation`, `publish`, `request_reply` |
-| `integrationflow.outcome` | `consume_started`, `ack`, `nack`, `requeue`, `dedup_skip`, `in_progress_requeue`, `shutdown_requeue`, `published`, `publish_failed`, `abandoned` |
+| `integrationflow.kind` | `listener`, `outbox_relay`, `publish`, `request_reply`, … |
+| `integrationflow.outcome` | `ack`, `nack`, `requeue`, `dedup_skip`, `published`, … |
 
-Пример вывода (Serilog compact JSON):
+### Distributed tracing
 
-```json
-{"@t":"...","@mt":"RabbitMQ listener. Сообщение подтверждено.","integrationflow.profile":"Inbox","integrationflow.message_id":"abc","integrationflow.correlation_id":"xyz","integrationflow.delivery_tag":42,"integrationflow.kind":"listener","integrationflow.outcome":"ack"}
-```
+Spans: `rabbitmq.publish`, `rabbitmq.receive`, `rabbitmq.request`, `rabbitmq.reply`, `rabbitmq.response`.
 
-Поля добавляются автоматически при `AddIntegrationFlow()` + стандартном `ILogger` host. Без `ILoggerFactory` используется `NullIntegrationLogger` (scope no-op).
+Сквозной trace: HTTP → publish → consume (другой сервис) → handler → reply → response.
 
-### Consumer outcome metrics (P3-6)
+> Извлечение parent context (`ActivityContext.TryParse`) — на **net8.0**. На netstandard2.0 inject работает, extract — best-effort.
 
-Counter `integrationflow.message.consumer.outcome` с тегами `profile`, `reason`:
+---
 
-| `reason` | Когда |
-|----------|-------|
-| `nack` | `BasicNack` без requeue (ошибка обработки, `RequeueOnFailure=false` / DLQ) |
-| `requeue` | `BasicNack` с requeue после ошибки обработки |
-| `dedup_skip` | Сообщение уже обработано (`IMessageDeduplicationStore`) |
-| `in_progress_requeue` | Параллельная доставка того же `MessageId` (`MessageProcessingInProgressException`) |
-
-`shutdown_requeue` по-прежнему учитывается отдельным counter `integrationflow.message.shutdown_requeue`.
-
-### Distributed tracing (P3-4)
-
-RabbitMQ transport propagates W3C `traceparent` / `tracestate` через AMQP headers и создаёт `Activity` spans:
-
-| Operation | Span | Kind |
-|-----------|------|------|
-| SentAndForgot / outbox publish | `rabbitmq.publish` | Producer |
-| SentAndWait RPC request | `rabbitmq.request` | Producer |
-| RPC reply (server) | `rabbitmq.reply` | Producer |
-| Inbox consume | `rabbitmq.receive` | Consumer |
-| Sync RPC response (client) | `rabbitmq.response` | Consumer |
-| AsyncOutbox response correlation | `rabbitmq.response` | Consumer |
-
-Регистрация в host app (OpenTelemetry .NET SDK):
-
-```csharp
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
-using OpenTelemetry.Trace;
-
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing
-        .AddSource(IntegrationFlowRabbitMqActivitySource.Name)
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddOtlpExporter());
-```
-
-Пример сквозного trace: HTTP request → `rabbitmq.publish` → `rabbitmq.receive` (другой сервис) → handler → `rabbitmq.reply` → `rabbitmq.response`.
-
-> Parent context extraction (`ActivityContext.TryParse`) доступен на **net8.0**. На netstandard2.0 spans создаются, inject работает при наличии `Activity.Current`, extract parent — best-effort.
-
-## NuGet
+## Сборка и тесты
 
 ```bash
-dotnet pack IntegrationFlow.sln -c Release
+dotnet build IntegrationFlow.sln
+dotnet test IntegrationFlow.sln --filter "Category!=Integration"
+dotnet test IntegrationFlow.sln --filter "Category=Integration"
 ```
 
-Пакеты: `IntegrationFlow.Core`, `IntegrationFlow.EntityFrameworkCore`, `IntegrationFlow.Metrics.OpenTelemetry`.  
-Release process: [`docs/runbooks/2026-07-04_0845-nuget-release.md`](docs/runbooks/2026-07-04_0845-nuget-release.md).
+Integration-тесты требуют Docker (Testcontainers).
 
-## RabbitMQ (SentAndWait)
+## Структура проекта
 
-Синхронный request-reply через RabbitMQ (`ReplyTo` + `CorrelationId`, по умолчанию `DirectReplyTo`):
-
-```csharp
-using IntegrationFlow.DependencyInjection;
-
-services.AddIntegrationFlow();
-
-var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRabbitMqSentAndWaitProvider>(
-    oppositeSideCode: "OrdersRpc",
-    srcData: new { OrderId = 42 });
-
-var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWaitProvider>("OrdersRpc");
-integration.Integrate(handler);
+```
+IntegrationFlow/
+├── src/IntegrationFlow.Core/               # Каркас + RabbitMQ (net8.0, netstandard2.0)
+├── src/IntegrationFlow.EntityFrameworkCore/  # EF stores (net8.0)
+├── src/IntegrationFlow.Metrics.OpenTelemetry/
+└── tests/
 ```
 
-Секция конфигурации в `rabbitmq.json` — `RabbitMqRequestReply`. На стороне сервера используйте `RabbitMqReplyPublisher` для ответа на `RabbitMqReceivedMessage.ReplyTo`.
+## Документация
 
-План реализации: [`docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md`](docs/plans/2026-07-04_0904-rabbitmq-sentandwait.md).
-
-### Async API
-
-```csharp
-var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRabbitMqSentAndWaitProvider>(
-    oppositeSideCode: "OrdersRpc",
-    srcData: new { OrderId = 42 });
-
-var handler = orgIntegration.GetSentAndWaitResultHandler<SampleRabbitMqSentAndWaitProvider>("OrdersRpc");
-
-// Рекомендуется в ASP.NET Core / IHost:
-await integration.IntegrateAsync(handler, cancellationToken);
-
-// Или typed result:
-var result = await integration.IntegrateWithResultAsync(cancellationToken);
-if (!result.Success)
-{
-    if (result.TimedOut) { /* retry с новым CorrelationId */ }
-}
-```
-
-Конфигурация `RabbitMqRequestReply`: `MaxConcurrentRequests` (default `1`, `0` = без лимита), `ReuseConnection` (переиспользование TCP), `ReuseReplyConnection` (default `true` — pool channel на server-side), `ManualReplyAck` (default `false` — при `true` reply ack'ится вручную после корреляции; рекомендуется для unstable process), `PublisherConfirmsEnabled` / `ConfirmTimeoutSeconds` (confirm request publish), `ReplyMandatory` (opt-in mandatory на server-side reply), `SslEnabled` / `SslServerName` (AMQPS).
-
-**Idempotent sync RPC (фаза 1):** задайте `MessageId` через `WithMessageId()` или `TransmitData(data, messageId)`; на server — `IRequestReplyResponseStore` + `RabbitMqRpcServerPipeline`. При timeout включите `SentAndWaitIntegrationOptions.RetryOnTimeout = true` (retry с тем же MessageId).
-
-**Async RPC для critical flows (фаза 2–3):** `RequestMode: AsyncOutbox` + `ResponseQueueName` в конфиге; stage через `CreateSentAndWaitAsyncOutboxIntegration` → `CreatePendingRequest()` в TX; ожидание — `IntegrateWithResultAsync(pendingId)`; relay — `AddIntegrationFlowRpcPendingRelay()`; correlation — `AddIntegrationFlowRabbitMqRpcResponseCorrelation()`; compensation — `AddIntegrationFlowEfOutboxRpcCompensation<T>()` + `AddIntegrationFlowRpcPendingCompensation()`; cleanup — `AddIntegrationFlowMaintenance()`; EF — `AddIntegrationFlowEfRpcPending<TContext>()`.
-
-### Server-side RPC handler
-
-Reply публикуется **до return** из handler (иначе ack без ответа):
-
-```csharp
-using IntegrationFlow.DependencyInjection;
-
-services.AddIntegrationFlow();
-services.AddIntegrationFlowRabbitMqListener("OrdersRpc",
-    IntegrationFlow.Contexts.Integrations._00Samples.SentAndWait
-        .SampleRabbitMqSentAndWaitRpcServer.CreateHandler("OrdersRpc"));
-```
-
-### Production defaults
-
-```csharp
-SentAndWaitIntegrationOptions.ThrowOnFailure = true;
-SentAndForgotIntegrationOptions.ThrowOnFailure = true;
-```
-
-Runbooks: [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md), [`docs/runbooks/2026-07-04_2130-production-adoption.md`](docs/runbooks/2026-07-04_2130-production-adoption.md).
-
-### AMQPS (TLS)
-
-```json
-{
-  "RabbitMq": {
-    "Inbox": {
-      "HostName": "rabbit.example.com",
-      "Port": 5671,
-      "SslEnabled": true,
-      "SslServerName": "rabbit.example.com",
-      "QueueName": "integration.inbox"
-    }
-  },
-  "RabbitMqPublish": {
-    "OrdersOut": {
-      "HostName": "rabbit.example.com",
-      "Port": 5671,
-      "SslEnabled": true,
-      "SslServerName": "rabbit.example.com",
-      "PublishTarget": "Queue",
-      "QueueName": "orders.outbox"
-    }
-  },
-  "RabbitMqRequestReply": {
-    "OrdersRpc": {
-      "HostName": "rabbit.example.com",
-      "Port": 5671,
-      "SslEnabled": true,
-      "SslServerName": "rabbit.example.com",
-      "QueueName": "orders.rpc"
-    }
-  }
-}
-```
-
-### Secrets через environment variables
-
-Не коммитьте prod-пароли в `rabbitmq.json`. В host app переопределяйте через `IConfiguration`:
-
-```bash
-RabbitMq__Inbox__Password=secret
-RabbitMqRequestReply__OrdersRpc__Password=secret
-```
+| Тема | Документ |
+|------|----------|
+| Production adoption | [`docs/runbooks/2026-07-04_2130-production-adoption.md`](docs/runbooks/2026-07-04_2130-production-adoption.md) |
+| RPC adoption | [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md) |
+| Метрики и алерты | [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md) |
+| Outbox в транзакции | [`docs/examples/2026-07-03_1639-ef-outbox-transaction.md`](docs/examples/2026-07-03_1639-ef-outbox-transaction.md) |
+| Abandoned outbox replay | [`docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
+| Полный указатель | [`docs/README.md`](docs/README.md) |
 
 ## Локализация
 
-Пользовательские сообщения выводятся через `SR.T(...)`. По умолчанию используются встроенные resx-ресурсы (`ru`, `en`). Провайдер локализации можно заменить через `LocalizationBootstrap`.
+Сообщения через `SR.T(...)`. Встроенные resx-ресурсы (`ru`, `en`). Замена провайдера: `LocalizationBootstrap`.
 
 ## Лицензия
 
-Проект распространяется под лицензией [MIT](LICENSE).
+[MIT](LICENSE)
