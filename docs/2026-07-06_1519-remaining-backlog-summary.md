@@ -23,7 +23,7 @@
 | P4-4 (hosted listener netstandard2.0) | ✅ | коммит `732a08f` — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
 | P4-5 (AMQP priority / expiration) | ✅ | коммит `4d0d977` — то же |
 | P4-6 (topology helpers / DeclareTopologyOnStartup) | ✅ | `647d810`, `3a2cce7` — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
-| P4-7 (Consumer tag / exclusive) | ✅ | `4bb09c6` — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
+| P4-7 (Consumer tag / exclusive) | ✅ | `3dcb385` — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
 | A-1 … A-4 (adoption runbooks) | ✅ | [`runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) и др. |
 | T-1, T-3 (chaos restart, DLQ E2E) | ✅ | `RabbitMqListenerHostedEndToEndTests`, `RabbitMqDeadLetterEndToEndTests` |
 | v1.0 adoption/docs (runbooks, metrics, pools PF1) | ✅ | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) |

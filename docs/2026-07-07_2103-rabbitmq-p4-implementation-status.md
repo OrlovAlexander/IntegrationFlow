@@ -5,7 +5,7 @@
 **Обновлён:** 2026-07-07 22:01 (UTC+3)  
 **План:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **Предшественник:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) (P3 ✅)  
-**Коммиты:** P4-4 `732a08f`, P4-5 `4d0d977`, P4-6 `647d810`/`3a2cce7`, P4-7 `4bb09c6`
+**Коммиты:** P4-4 `732a08f`, P4-5 `4d0d977`, P4-6 `647d810`/`3a2cce7`, P4-7 `3dcb385`
 
 ---
 
