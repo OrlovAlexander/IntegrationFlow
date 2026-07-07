@@ -28,30 +28,30 @@
 | 2026-07-04 21:02 | 2026-07-04 21:28 | [Полный анализ IntegrationFlow и рисков (v9, superseded)](2026-07-04_2102-integrationflow-full-analysis.md) |
 | 2026-07-04 21:28 | 2026-07-04 22:34 | [Полный анализ IntegrationFlow и рисков (v10, superseded)](2026-07-04_2128-integrationflow-full-analysis.md) |
 | 2026-07-04 22:34 | 2026-07-05 14:55 | [Полный анализ IntegrationFlow и рисков (v11, superseded)](2026-07-04_2234-integrationflow-full-analysis.md) |
-| 2026-07-05 14:55 | 2026-07-07 21:03 | [Полный анализ IntegrationFlow и рисков (v12, актуально)](2026-07-05_1455-integrationflow-full-analysis.md) |
+| 2026-07-05 14:55 | 2026-07-07 21:57 | [Полный анализ IntegrationFlow и рисков (v12, актуально)](2026-07-05_1455-integrationflow-full-analysis.md) |
 | 2026-07-03 22:16 | 2026-07-03 22:16 | [Runbook: replay abandoned outbox](runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | 2026-07-04 08:36 | 2026-07-04 08:36 | [План: P1 metrics + P2 NuGet publish (выполнено)](plans/2026-07-04_0836-p1-p2-metrics-and-nuget.md) |
 | 2026-07-04 08:45 | 2026-07-06 18:16 | [Runbook: metrics and alerting (P3)](runbooks/2026-07-04_0845-metrics-and-alerting.md) |
 | 2026-07-04 08:45 | 2026-07-04 08:45 | [Runbook: NuGet release](runbooks/2026-07-04_0845-nuget-release.md) |
 | 2026-07-04 09:04 | 2026-07-04 09:15 | [План: RabbitMQ SentAndWait (request-reply, выполнено)](plans/2026-07-04_0904-rabbitmq-sentandwait.md) |
-| 2026-07-04 09:30 | 2026-07-04 09:30 | [План: post-analysis roadmap P3 (открыт)](plans/2026-07-04_0930-post-analysis-roadmap.md) |
+| 2026-07-04 09:30 | 2026-07-07 21:57 | [План: post-analysis roadmap P3 (superseded → remaining-risks)](plans/2026-07-04_0930-post-analysis-roadmap.md) |
 | 2026-07-04 21:04 | 2026-07-04 21:28 | [План: SentAndWait async execution (выполнено)](plans/2026-07-04_2104-sentandwait-async-execution.md) |
-| 2026-07-04 21:30 | 2026-07-04 22:23 | [План: закрытие главных оставшихся рисков v1.0 (в работе)](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
-| 2026-07-04 21:30 | 2026-07-04 22:23 | [Runbook: SentAndWait RPC adoption](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md) |
-| 2026-07-04 21:30 | 2026-07-04 22:23 | [Runbook: production adoption checklist](runbooks/2026-07-04_2130-production-adoption.md) |
+| 2026-07-04 21:30 | 2026-07-07 21:57 | [План: закрытие главных оставшихся рисков v1.0 (код/docs ✅; NuGet ops)](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
+| 2026-07-04 21:30 | 2026-07-07 21:57 | [Runbook: SentAndWait RPC adoption](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md) |
+| 2026-07-04 21:30 | 2026-07-07 21:57 | [Runbook: production adoption checklist](runbooks/2026-07-04_2130-production-adoption.md) |
 | 2026-07-04 22:42 | 2026-07-04 22:42 | [План: SentAndWait RPC critical flows (R1/R2)](plans/2026-07-04_2242-sentandwait-rpc-critical-flows.md) |
 | 2026-07-04 22:44 | 2026-07-04 22:55 | [План реализации: SentAndWait RPC (фазы 0–3)](plans/2026-07-04_2244-sentandwait-rpc-implementation.md) |
 | 2026-07-04 23:01 | 2026-07-04 23:45 | [Статус реализации SentAndWait RPC (фазы 1–3)](2026-07-04_2301-sentandwait-rpc-implementation-status.md) |
-| 2026-07-04 23:38 | 2026-07-07 21:03 | [Полный отчёт по видам интеграций, рискам и сценариям (актуально)](2026-07-04_2338-integration-types-full-report.md) |
-| 2026-07-04 23:52 | 2026-07-07 21:03 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
+| 2026-07-04 23:38 | 2026-07-07 21:57 | [Полный отчёт по видам интеграций, рискам и сценариям (актуально)](2026-07-04_2338-integration-types-full-report.md) |
+| 2026-07-04 23:52 | 2026-07-07 21:57 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
 | 2026-07-06 14:45 | 2026-07-06 14:56 | [План: RabbitMQ transport gaps G1–G5 (P1, выполнено)](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
 | 2026-07-06 14:56 | 2026-07-06 14:56 | [Статус реализации G1–G5 (актуально)](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
-| 2026-07-06 15:19 | 2026-07-07 21:37 | [Актуальный backlog после P4-6 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
+| 2026-07-06 15:19 | 2026-07-07 21:57 | [Актуальный backlog после P4-7 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
 | 2026-07-06 15:19 | 2026-07-06 16:17 | [План: RabbitMQ P2 resilience (core выполнено)](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) |
 | 2026-07-06 16:17 | 2026-07-06 16:17 | [Статус реализации P2 core (актуально)](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
-| 2026-07-06 16:45 | 2026-07-07 21:37 | [План: RabbitMQ backlog задач (открыт, актуально)](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
+| 2026-07-06 16:45 | 2026-07-07 21:57 | [План: RabbitMQ backlog задач (P4 закрыт, актуально)](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
 | 2026-07-06 17:53 | 2026-07-06 18:16 | [Статус реализации P3 ops P3-1…P3-7 (актуально)](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
-| 2026-07-07 21:03 | 2026-07-07 21:37 | [Статус реализации P4 P4-4…P4-6 (актуально)](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
+| 2026-07-07 21:03 | 2026-07-07 21:57 | [Статус реализации P4 epic P4-1…P4-7 (актуально)](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ DLQ topology (A-1)](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: ThrowOnFailure adoption (A-3)](runbooks/2026-07-07_2137-throwonfailure-adoption.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ topology adoption (P4-6)](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md) |

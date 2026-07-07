@@ -130,6 +130,10 @@ internal sealed class RabbitMqListenerWorker
                         consumerTag = channel.BasicConsume(
                             queue: configuration.QueueName,
                             autoAck: false,
+                            consumerTag: configuration.ConsumerTag ?? string.Empty,
+                            noLocal: false,
+                            exclusive: configuration.Exclusive,
+                            arguments: null,
                             consumer: consumer);
                     }
 

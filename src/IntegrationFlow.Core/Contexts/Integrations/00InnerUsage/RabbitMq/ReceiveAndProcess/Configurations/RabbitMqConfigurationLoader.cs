@@ -41,6 +41,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             nameof(RabbitMqConfiguration.ClientProvidedName),
             nameof(RabbitMqConfiguration.ValidateTopology),
             nameof(RabbitMqConfiguration.DeclareTopologyOnStartup),
+            nameof(RabbitMqConfiguration.ConsumerTag),
+            nameof(RabbitMqConfiguration.Exclusive),
         };
 
         /// <summary>
@@ -333,6 +335,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             target.SslServerName = source.SslServerName;
             target.ValidateTopology = source.ValidateTopology;
             target.DeclareTopologyOnStartup = source.DeclareTopologyOnStartup;
+            target.ConsumerTag = source.ConsumerTag;
+            target.Exclusive = source.Exclusive;
         }
     }
 }

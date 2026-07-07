@@ -2,10 +2,10 @@
 
 **Статус:** актуально (v12)  
 **Создан:** 2026-07-05 14:55 (UTC+3)  
-**Обновлён:** 2026-07-07 21:03 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md) (superseded, v11), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) (код/docs выполнены; NuGet publish — ops), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) (P1 ✅), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) (P2 core ✅), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) (P4-4/P4-5 ✅), [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md), [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md)
+**Обновлён:** 2026-07-07 21:57 (UTC+3)  
+**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md) (superseded, v11), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) (код/docs выполнены; NuGet publish — ops), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) (P1 ✅), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) (P2 core ✅), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) (P4 ✅), [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md), [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md)
 
-Актуальное состояние после коммита `d4832ca` (фазы 1–3 SentAndWait RPC: idempotent sync, AsyncOutbox, compensation, maintenance). Локально **153 теста** (97 + 14 + 17 + 22 + 3) — все зелёные в Release, CI на GitHub Actions (unit → integration → pack).
+Актуальное состояние после закрытия epic P4 (P4-1…P4-7). **236 тестов** — все зелёные; integration-тесты требуют Docker (Testcontainers).
 
 ---
 
@@ -326,7 +326,7 @@ Runbooks: [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026
 | **P3** | Distributed tracing | **Открыт — optional** |
 | **P1** | RabbitMQ transport gaps (G1–G5) | **Закрыт** — [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
 | **P2** | RabbitMQ resilience (TLS, publish pool, RPC confirms) | **Закрыт (core)** — [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
-| **P4** | DX: shared profiles, headers, listener netstandard2.0, priority/TTL | **P4-1…P4-5 закрыты** — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
+| **P4** | DX: shared profiles, headers, topology, SAC, priority/TTL | **P4-1…P4-7 закрыты** — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
 | **—** | Актуальный backlog | [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md) |
 
 План v1.0 adoption/ops: [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md).  

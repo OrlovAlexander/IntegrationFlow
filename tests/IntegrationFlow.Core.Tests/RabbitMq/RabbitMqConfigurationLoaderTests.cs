@@ -23,7 +23,9 @@ public sealed class RabbitMqConfigurationLoaderTests
                 "AutomaticRecoveryEnabled": false,
                 "ClientProvidedName": "IntegrationFlow.TestListener",
                 "ValidateTopology": false,
-                "DeclareTopologyOnStartup": true
+                "DeclareTopologyOnStartup": true,
+                "ConsumerTag": "orders-inbox-worker-1",
+                "Exclusive": true
               }
             }
             """);
@@ -43,6 +45,8 @@ public sealed class RabbitMqConfigurationLoaderTests
         Assert.Equal("IntegrationFlow.TestListener", configuration.ClientProvidedName);
         Assert.False(configuration.ValidateTopology);
         Assert.True(configuration.DeclareTopologyOnStartup);
+        Assert.Equal("orders-inbox-worker-1", configuration.ConsumerTag);
+        Assert.True(configuration.Exclusive);
     }
 
     [Fact]

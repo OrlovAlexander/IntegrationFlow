@@ -1,11 +1,11 @@
-# Статус реализации RabbitMQ P4 — DX (P4-4 … P4-6)
+# Статус реализации RabbitMQ P4 — DX (epic P4-1 … P4-7)
 
-**Статус:** частично выполнено (P4-4, P4-5, P4-6 ✅; P4-7 — backlog)  
+**Статус:** выполнено (epic P4 ✅)  
 **Создан:** 2026-07-07 21:03 (UTC+3)  
-**Обновлён:** 2026-07-07 21:30 (UTC+3)  
+**Обновлён:** 2026-07-07 22:01 (UTC+3)  
 **План:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **Предшественник:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) (P3 ✅)  
-**Коммиты:** `732a08f` (P4-4), `4d0d977` (P4-5); P4-6 — незакоммичено
+**Коммиты:** P4-4 `732a08f`, P4-5 `4d0d977`, P4-6 `647d810`/`3a2cce7`, P4-7 `4bb09c6`
 
 ---
 
@@ -13,10 +13,13 @@
 
 | ID | Задача | Статус |
 |----|--------|--------|
+| P4-1 | Shared connection profiles | ✅ |
+| P4-2 | Headers API | ✅ |
+| P4-3 | Sample hosted RPC server | ✅ |
 | P4-4 | Hosted listener netstandard2.0 | ✅ |
 | P4-5 | AMQP priority / expiration | ✅ |
 | P4-6 | Topology helpers (dev) | ✅ |
-| P4-7 | Consumer tag / exclusive | backlog |
+| P4-7 | Consumer tag / exclusive | ✅ |
 
 ---
 
@@ -106,11 +109,36 @@ Opt-in active declare для local/dev; по умолчанию — passive decl
 
 ---
 
+## P4-7 — Consumer tag / exclusive
+
+Поля в `RabbitMqConfiguration` для `basic.consume`:
+
+| Поле JSON | Тип | По умолчанию | Поведение |
+|-----------|-----|--------------|-----------|
+| `ConsumerTag` | `string` | `""` | Пусто — брокер генерирует tag; иначе фиксированный tag |
+| `Exclusive` | `bool` | `false` | `true` — exclusive consumer (один consumer на очередь) |
+
+Подключено в `RabbitMqListenerWorker.BasicConsume`. Документация SAC — README (consumer params).
+
+```json
+{
+  "RabbitMq": {
+    "OrdersInbox": {
+      "QueueName": "orders.inbox",
+      "ConsumerTag": "orders-inbox-pod-1",
+      "Exclusive": true
+    }
+  }
+}
+```
+
+---
+
 ## Следующий шаг
 
 | Приоритет | Задача |
 |-----------|--------|
-| **Код** | P4-7 — `ConsumerTag`, `Exclusive` |
 | **Ops** | NuGet publish v1.0.0 / v1.0.1 |
+| **Код (optional)** | T-7 — health check unit tests; v1.1 P2-CB/P2-HA |
 
 Краткий backlog: [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md).

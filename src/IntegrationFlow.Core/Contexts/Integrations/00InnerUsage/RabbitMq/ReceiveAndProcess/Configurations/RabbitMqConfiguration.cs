@@ -90,5 +90,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// Создавать очередь при старте (active declare). Только для dev; в production — passive + IaC.
         /// </summary>
         public bool DeclareTopologyOnStartup { get; set; }
+
+        /// <summary>
+        /// Тег consumer для <c>basic.consume</c>. Пустая строка — сгенерировать на брокере.
+        /// </summary>
+        public string ConsumerTag { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Exclusive consumer: только один consumer на очередь (single-active-consumer на classic queue).
+        /// </summary>
+        public bool Exclusive { get; set; }
     }
 }

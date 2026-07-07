@@ -26,6 +26,7 @@
 | Hosted listener | `AddIntegrationFlowRabbitMqListener` (netstandard2.0, net8.0) |
 | TLS | AMQPS через `SslEnabled` / `SslServerName` |
 | AMQP headers | `RabbitMqReceivedMessage.Headers`, `RabbitMqMessageHeaders.TryGetString` |
+| Consumer tag / exclusive | `ConsumerTag`, `Exclusive` для `basic.consume` (SAC) |
 | Priority / TTL | `Priority`, `ExpirationMilliseconds` в publish/RPC конфиге |
 
 ### SentAndForgot — исходящие сообщения
@@ -214,7 +215,11 @@ await host.RunAsync();
 | `AutomaticRecoveryEnabled` | `true` | Client-level recovery + reconnect loop каркаса |
 | `ValidateTopology` | `true` | Passive declare очереди перед consume |
 | `DeclareTopologyOnStartup` | `false` | Active `QueueDeclare` (только dev; см. ниже) |
+| `ConsumerTag` | `""` | Тег `basic.consume`; пусто — брокер сгенерирует |
+| `Exclusive` | `false` | Exclusive consumer (single-active на classic queue) |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
+
+> **Single-active-consumer:** для classic queue задайте `Exclusive: true` только если нужен один consumer на соединение. Для кластерного failover предпочтительнее [politica SAC](https://www.rabbitmq.com/docs/consumers#single-active-consumer) на брокере; `Exclusive` — простой вариант для dev/одной ноды.
 
 > **Production:** оставляйте `DeclareTopologyOnStartup = false` и создавайте очереди/DLQ через IaC (Terraform, RabbitMQ definitions). Active declare не задаёт DLQ, TTL и bindings. Runbook: [`docs/runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](docs/runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md).
 

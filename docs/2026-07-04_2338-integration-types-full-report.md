@@ -2,10 +2,10 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:38 (UTC+3)  
-**Обновлён:** 2026-07-07 21:03 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
+**Обновлён:** 2026-07-07 21:57 (UTC+3)  
+**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md), [`runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md), [`runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md)
 
-Отчёт актуален на состояние репозитория после реализации фаз 1–3 SentAndWait RPC (AsyncOutbox, compensation, maintenance). **128 unit-тестов** зелёные в Release; integration-тесты требуют Docker (Testcontainers).
+Отчёт актуален после закрытия epic P4. **236 тестов** зелёные; integration-тесты требуют Docker (Testcontainers).
 
 ---
 
@@ -68,7 +68,10 @@ flowchart TB
 | Dedup / идемпотентность | ✅ `IMessageDeduplicationStore` + EF | Атомарность dedup с business TX |
 | Retry / DLQ | ✅ `RequeueOnFailure`, `MaxRetryCount` | Создание DLQ на брокере (ops) |
 | Prefetch / backpressure | ✅ `PrefetchCount` | Автонастройка под handler |
-| Метрики | ✅ `integrationflow.message.*` | Distributed tracing |
+| AMQP headers | ✅ `RabbitMqReceivedMessage.Headers` (P4-2) | — |
+| Consumer tag / exclusive | ✅ `ConsumerTag`, `Exclusive` (P4-7) | Брокерная SAC-политика для кластера |
+| Topology (dev) | ✅ `DeclareTopologyOnStartup` (P4-6) | DLQ/bindings — ops/IaC |
+| Метрики | ✅ `integrationflow.message.*` | Distributed tracing — ✅ P3-4 |
 
 **Гарантия доставки:** at-least-once. Ack выполняется **после** завершения обработки (включая async path).
 
@@ -89,7 +92,7 @@ services.AddIntegrationFlowRabbitMqListener("Inbox", async message =>
 
 | Задача | Где | Почему не в каркасе |
 |--------|-----|---------------------|
-| Создание очереди + DLQ на RabbitMQ | Infra (Terraform/Helm) | Каркас подключается через `QueueDeclarePassive` |
+| Создание очереди + DLQ на RabbitMQ | Infra (Terraform/Helm) | Каркас: passive declare; dev — opt-in `DeclareTopologyOnStartup` |
 | Идемпотентная бизнес-логика handler | App code | Доменная ответственность |
 | EF dedup store | App DI | Нужен ваш `DbContext` |
 | Алерты по метрикам | Prometheus/Grafana | Host app |
@@ -584,7 +587,7 @@ Runbooks:
 
 ## 10. Итоговый вывод
 
-IntegrationFlow — **архитектурно зрелый каркас для RabbitMQ-интеграций** с тремя паттернами. После фаз 1–3 SentAndWait RPC закрыт gap «critical flows без outbox» через **AsyncOutbox**.
+IntegrationFlow — **архитектурно зрелый каркас для RabbitMQ-интеграций** с тремя паттернами. Epic P4 (DX: shared profiles, headers, topology, SAC, priority/TTL) закрыт; AsyncOutbox закрывает gap «critical flows без outbox».
 
 **Главные оставшиеся риски:**
 

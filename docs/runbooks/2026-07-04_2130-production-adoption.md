@@ -1,7 +1,8 @@
 # Runbook: production adoption checklist
 
 **Статус:** актуально  
-**Создан:** 2026-07-04 21:30 (UTC+3)
+**Создан:** 2026-07-04 21:30 (UTC+3)  
+**Обновлён:** 2026-07-07 21:57 (UTC+3)
 
 Чеклист для безопасного внедрения IntegrationFlow в production (ReceiveAndProcess + SentAndForgot).
 
@@ -60,6 +61,8 @@ services.AddIntegrationFlowEfDeduplication<MyDbContext>();
 | `PrefetchCount` | `1` для non-thread-safe handlers |
 | `RequeueOnFailure` | `false` + DLQ на брокере |
 | `MaxRetryCount` | Настроить лимит → DLQ |
+| `DeclareTopologyOnStartup` | `false` в production; topology через IaC |
+| `Exclusive` / `ConsumerTag` | SAC: брокерная политика SAC предпочтительнее; `Exclusive: true` — dev/одна нода |
 
 ---
 
