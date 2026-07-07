@@ -2,8 +2,8 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:38 (UTC+3)  
-**Обновлён:** 2026-07-04 23:38 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
+**Обновлён:** 2026-07-07 21:03 (UTC+3)  
+**Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
 
 Отчёт актуален на состояние репозитория после реализации фаз 1–3 SentAndWait RPC (AsyncOutbox, compensation, maintenance). **128 unit-тестов** зелёные в Release; integration-тесты требуют Docker (Testcontainers).
 
@@ -64,7 +64,7 @@ flowchart TB
 |-----------|----------------------|----------------|
 | Long-poll consumer | ✅ `RabbitMqListenerWorker` | HTTP webhook, file watcher, DB polling |
 | Manual ack после обработки | ✅ | — |
-| Async handler + graceful shutdown | ✅ `ReceiveAndProcessHostedService` (.NET 8+) | Hosted worker на netstandard2.0 |
+| Async handler + graceful shutdown | ✅ `ReceiveAndProcessHostedService` (netstandard2.0, net8.0) | Outbox/RPC hosted workers — net8.0 only |
 | Dedup / идемпотентность | ✅ `IMessageDeduplicationStore` + EF | Атомарность dedup с business TX |
 | Retry / DLQ | ✅ `RequeueOnFailure`, `MaxRetryCount` | Создание DLQ на брокере (ops) |
 | Prefetch / backpressure | ✅ `PrefetchCount` | Автонастройка под handler |
@@ -495,7 +495,7 @@ await rabbit.PublishAsync(event);      // может упасть → потер
 
 ### Platform
 
-- Hosted services только .NET 8+ (netstandard2.0 — manual/legacy paths)
+- Listener hosted service — netstandard2.0 и net8.0; outbox/RPC/health workers — net8.0 only
 - NuGet packages не опубликованы (CI pack готов)
 - `IntegrationScheduler` — dead code
 - REST SentAndWait — без async, retry, typed errors

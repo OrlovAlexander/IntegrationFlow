@@ -2,8 +2,8 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:52 (UTC+3)  
-**Обновлён:** 2026-07-06 16:45 (UTC+3)  
-**Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md), [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md), [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
+**Обновлён:** 2026-07-07 21:03 (UTC+3)  
+**Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md), [`plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md`](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md), [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md), [`2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md), [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md)
 
 Отчёт описывает текущую реализацию RabbitMQ в каркасе IntegrationFlow, сильные стороны, выявленные gaps и приоритизированный roadmap улучшений. Актуален на состояние репозитория после реализации фаз 1–3 SentAndWait RPC.
 
@@ -190,14 +190,14 @@ Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-0
 
 ### 3.5 API и developer experience (P4)
 
-| Gap | Зачем |
-|-----|-------|
-| Headers не exposed в `RabbitMqReceivedMessage` | Custom retry, tracing, tenant routing |
-| Priority / expiration AMQP | SLA, TTL сообщений |
-| Consumer tag / exclusive consumer | Ops, single-active-consumer |
-| Topology helpers | Optional `QueueDeclare` для dev (сейчас только passive) |
-| Hosted listener на netstandard2.0 | Единообразие TFM |
-| Sample hosted RPC server | Adoption — полный end-to-end пример |
+| Gap | Статус | Комментарий |
+|-----|--------|-------------|
+| Headers не exposed в `RabbitMqReceivedMessage` | ✅ P4-2 | `Headers` + `RabbitMqMessageHeaders` |
+| Priority / expiration AMQP | ✅ P4-5 | `Priority`, `ExpirationMilliseconds` в publish/RPC |
+| Hosted listener на netstandard2.0 | ✅ P4-4 | `AddIntegrationFlowRabbitMqListener` на всех TFM |
+| Sample hosted RPC server | ✅ P4-3 | `AddIntegrationFlowRabbitMqRpcServer` |
+| Consumer tag / exclusive consumer | backlog P4-7 | Ops, single-active-consumer |
+| Topology helpers | backlog P4-6 | Opt-in `QueueDeclare` для dev |
 
 ---
 

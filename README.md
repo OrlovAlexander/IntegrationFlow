@@ -23,9 +23,10 @@
 | Graceful shutdown | Ожидание in-flight обработок, nack requeue при остановке |
 | Идемпотентность | `IMessageDeduplicationStore` — пропуск дубликатов по `MessageId` |
 | DLQ | `MaxRetryCount` + `x-dead-letter-exchange` на брокере |
-| Hosted listener | `AddIntegrationFlowRabbitMqListener` (.NET 8+, рекомендуется) |
+| Hosted listener | `AddIntegrationFlowRabbitMqListener` (netstandard2.0, net8.0) |
 | TLS | AMQPS через `SslEnabled` / `SslServerName` |
 | AMQP headers | `RabbitMqReceivedMessage.Headers`, `RabbitMqMessageHeaders.TryGetString` |
+| Priority / TTL | `Priority`, `ExpirationMilliseconds` в publish/RPC конфиге |
 
 ### SentAndForgot — исходящие сообщения
 
@@ -183,7 +184,7 @@ export RabbitMqConnections__Prod__Password=secret
 
 Consumer для входящих сообщений. Работает асинхронно, потокобезопасно, с manual ack.
 
-### Запуск (.NET 8+, рекомендуется)
+### Запуск (netstandard2.0 и .NET 8+)
 
 ```csharp
 using IntegrationFlow.DependencyInjection;
@@ -271,6 +272,8 @@ integration.Integrate();
 | `PublisherConfirmsEnabled` | `true` | Ждать confirm от брокера |
 | `ConfirmTimeoutSeconds` | `30` | Таймаут confirm |
 | `Persistent` | `true` | `DeliveryMode=2` |
+| `Priority` | — | AMQP priority (0–255); не задано — не выставляется |
+| `ExpirationMilliseconds` | — | Per-message TTL (мс); не задано — не выставляется |
 | `Mandatory` | `false` | Ошибка, если сообщение не маршрутизируется |
 | `ReuseConnection` | `false` | Переиспользование TCP |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
@@ -404,6 +407,8 @@ Runbook: [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runb
 | `ReuseReplyConnection` | `true` | Pool channel для server-side reply |
 | `ResponseTimeoutSeconds` | — | Таймаут ожидания ответа |
 | `PublisherConfirmsEnabled` | `true` | Confirm на publish request |
+| `Priority` | — | AMQP priority для request (0–255) |
+| `ExpirationMilliseconds` | — | Per-message TTL request (мс) |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
 
 ### Production defaults
