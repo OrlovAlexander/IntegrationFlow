@@ -219,7 +219,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             var channel = connection.PublishChannel;
             if (configuration.ValidateTopology)
             {
-                ValidateTopologyPassive(channel, configuration);
+                EnsureRequestTopology(channel, configuration);
             }
 
             var messageId = request.Id.ToString("N");
@@ -255,15 +255,31 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             }
         }
 
-        private static void ValidateTopologyPassive(IModel channel, RabbitMqRequestReplyConfiguration configuration)
+        private static void EnsureRequestTopology(IModel channel, RabbitMqRequestReplyConfiguration configuration)
         {
+            var options = new RabbitMqTopologyHelper.TopologyOptions
+            {
+                ValidateTopology = true,
+                DeclareTopologyOnStartup = configuration.DeclareTopologyOnStartup,
+                Durable = configuration.Persistent,
+                ExchangeType = configuration.ExchangeType,
+            };
+
             if (configuration.RequestTarget == RabbitMqRequestReplyTarget.Queue)
             {
-                channel.QueueDeclarePassive(configuration.QueueName);
+                RabbitMqTopologyHelper.EnsureQueue(
+                    channel,
+                    configuration.QueueName,
+                    options,
+                    profileName: configuration.Name);
                 return;
             }
 
-            channel.ExchangeDeclarePassive(configuration.Exchange);
+            RabbitMqTopologyHelper.EnsureExchange(
+                channel,
+                configuration.Exchange,
+                options,
+                profileName: configuration.Name);
         }
     }
 }
