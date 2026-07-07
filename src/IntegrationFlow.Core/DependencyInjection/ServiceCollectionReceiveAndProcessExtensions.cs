@@ -6,7 +6,6 @@ using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace IntegrationFlow.DependencyInjection;
 
@@ -57,7 +56,7 @@ public static partial class ServiceCollectionExtensions
         }
 
 #if NET8_0_OR_GREATER
-        services.Add(ServiceDescriptor.Singleton<IHostedService>(sp =>
+        services.Add(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService>(sp =>
         {
             var logger = sp.GetRequiredService<IIntegrationLogger>();
             var metrics = sp.GetService<IIntegrationFlowMetrics>();
