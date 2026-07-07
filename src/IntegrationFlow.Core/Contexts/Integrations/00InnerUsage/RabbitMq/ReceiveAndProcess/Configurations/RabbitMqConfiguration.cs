@@ -80,5 +80,15 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
         /// Имя сервера для проверки TLS-сертификата (SNI).
         /// </summary>
         public string SslServerName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Проверять существование очереди перед consume (passive declare).
+        /// </summary>
+        public bool ValidateTopology { get; set; } = true;
+
+        /// <summary>
+        /// Создавать очередь при старте (active declare). Только для dev; в production — passive + IaC.
+        /// </summary>
+        public bool DeclareTopologyOnStartup { get; set; }
     }
 }

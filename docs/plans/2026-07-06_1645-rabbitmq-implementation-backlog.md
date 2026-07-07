@@ -2,11 +2,11 @@
 
 **Статус:** открыт  
 **Создан:** 2026-07-06 16:45 (UTC+3)  
-**Обновлён:** 2026-07-07 21:03 (UTC+3)  
+**Обновлён:** 2026-07-07 21:37 (UTC+3)  
 **Основание:** [`../2026-07-04_2352-rabbitmq-full-analysis.md`](../2026-07-04_2352-rabbitmq-full-analysis.md), [`../2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md)  
 **Предшественники:** P1 G1–G5 ✅, P2 core ✅ — [`../2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md`](../2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md), [`../2026-07-06_1617-rabbitmq-p2-implementation-status.md`](../2026-07-06_1617-rabbitmq-p2-implementation-status.md)  
 **P3 status (P3-1…P3-7):** [`../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](../2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
-**P4 status (P4-4, P4-5):** [`../2026-07-07_2103-rabbitmq-p4-implementation-status.md`](../2026-07-07_2103-rabbitmq-p4-implementation-status.md)  
+**P4 status (P4-4 … P4-6):** [`../2026-07-07_2103-rabbitmq-p4-implementation-status.md`](../2026-07-07_2103-rabbitmq-p4-implementation-status.md)  
 **Связанные планы:** [`2026-07-04_0930-post-analysis-roadmap.md`](2026-07-04_0930-post-analysis-roadmap.md), [`2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](2026-07-06_1519-rabbitmq-p2-resilience-hardening.md)
 
 Детализированный перечень задач после закрытия P1 transport gaps и P2 resilience core. Приоритеты: **P3** → **P4** → **v1.1** → **тесты/CI** → **tech debt** → **ops**.
@@ -53,10 +53,10 @@
 | **P4-3** | Sample hosted RPC server | Полный end-to-end: listener + `RabbitMqRpcServerPipeline` + client | Пример в `00Samples`, README walkthrough | 0.5 дн | ✅ |
 | **P4-4** | Hosted listener netstandard2.0 | `AddIntegrationFlowRabbitMqListener` на netstandard2.0 | `IHostedService` на всех TFM; netstandard2.0 unit-тесты | 1 дн | ✅ |
 | **P4-5** | AMQP priority / expiration | Поддержка в publish/RPC конфиге | Поля в JSON + mapping в `BasicProperties` | 0.5 дн | ✅ |
-| **P4-6** | Topology helpers (dev) | Opt-in `QueueDeclare` для dev (сейчас только passive) | Флаг `DeclareTopologyOnStartup`; warning в prod docs | 1 дн | backlog |
+| **P4-6** | Topology helpers (dev) | Opt-in `QueueDeclare` для dev (сейчас только passive) | Флаг `DeclareTopologyOnStartup`; warning в prod docs | 1 дн | ✅ |
 | **P4-7** | Consumer tag / exclusive | Конфиг `ConsumerTag`, `Exclusive` | Документация single-active-consumer | 0.5 дн | backlog |
 
-**Epic P4:** «DX & config ergonomics» — P4-1…P4-5 ✅; P4-6, P4-7 — backlog.
+**Epic P4:** «DX & config ergonomics» — P4-1…P4-6 ✅; P4-7 — backlog.
 
 ---
 
@@ -92,14 +92,14 @@
 
 ## Adoption & документация (не код)
 
-| ID | Задача | Описание | Effort |
-|----|--------|----------|--------|
-| **A-1** | Runbook: DLQ topology | Шаблоны `x-dead-letter-exchange`, binding, monitoring | 0.5 дн |
-| **A-2** | Runbook: RPC semantics | Sync timeout, AsyncOutbox, server ack order | 0.5 дн |
-| **A-3** | Runbook: `ThrowOnFailure` | Когда `true`, когда `IntegrateWithResult()` | 0.25 дн |
-| **A-4** | Checklist production adoption | One-pager перед go-live | 0.25 дн |
+| ID | Задача | Описание | Effort | Статус |
+|----|--------|----------|--------|--------|
+| **A-1** | Runbook: DLQ topology | Шаблоны `x-dead-letter-exchange`, binding, monitoring | 0.5 дн | ✅ [`runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](../runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) |
+| **A-2** | Runbook: RPC semantics | Sync timeout, AsyncOutbox, server ack order | 0.5 дн | ✅ [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](../runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md) |
+| **A-3** | Runbook: `ThrowOnFailure` | Когда `true`, когда `IntegrateWithResult()` | 0.25 дн | ✅ [`runbooks/2026-07-07_2137-throwonfailure-adoption.md`](../runbooks/2026-07-07_2137-throwonfailure-adoption.md) |
+| **A-4** | Checklist production adoption | One-pager перед go-live | 0.25 дн | ✅ [`runbooks/2026-07-04_2130-production-adoption.md`](../runbooks/2026-07-04_2130-production-adoption.md) |
 
-Существующие runbooks: [`../runbooks/2026-07-04_2130-production-adoption.md`](../runbooks/2026-07-04_2130-production-adoption.md), [`../runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](../runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md).
+Существующие runbooks: [`../runbooks/2026-07-04_2130-production-adoption.md`](../runbooks/2026-07-04_2130-production-adoption.md), [`../runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](../runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md), [`../runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](../runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md), [`../runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](../runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md).
 
 ---
 
@@ -158,7 +158,7 @@ flowchart TD
 
 ### Backlog v1.1+
 
-- P4-6, P4-7
+- P4-7
 - P2-CB, P2-HA, P2-PF+, P2-RE
 - T-2, T-4, T-5, T-6
 - TD-1 … TD-4
@@ -208,7 +208,7 @@ Blocks: T-7
 | Приоритет | Следующий шаг |
 |-----------|---------------|
 | **Сейчас** | OPS-1/2 — NuGet publish |
-| **Sprint 3+** | P4-6, P4-7 |
+| **Sprint 3+** | P4-7 |
 | **Backlog v1.1+** | P2-CB, P2-HA, T-2/T-4/T-5 |
 
 Краткий указатель: [`../2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md).

@@ -197,7 +197,7 @@ Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-0
 | Hosted listener на netstandard2.0 | ✅ P4-4 | `AddIntegrationFlowRabbitMqListener` на всех TFM |
 | Sample hosted RPC server | ✅ P4-3 | `AddIntegrationFlowRabbitMqRpcServer` |
 | Consumer tag / exclusive consumer | backlog P4-7 | Ops, single-active-consumer |
-| Topology helpers | backlog P4-6 | Opt-in `QueueDeclare` для dev |
+| Topology helpers | ✅ P4-6 | Opt-in `DeclareTopologyOnStartup` для dev |
 
 ---
 
@@ -308,6 +308,6 @@ RabbitMQ-слой в IntegrationFlow **функционально зрелый**
 4. Метрики pool size — ✅ P2-PF; tracing и health checks — P3
 5. ~~Мелкий баг: `PopulateProfile` теряет retry-настройки~~ — ✅ закрыт (G3)
 
-Adoption-риски (DLQ topology, server ack order, sync RPC semantics) уже описаны в runbooks — правильный подход для framework-библиотеки.
+Adoption-риски (DLQ topology, server ack order, sync RPC semantics) описаны в runbooks — [`runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md).
 
 **Детальный backlog задач:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md).

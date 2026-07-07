@@ -97,7 +97,16 @@ internal sealed class RabbitMqListenerWorker
                     lock (channelSync)
                     {
                         channel!.BasicQos(prefetchSize: 0, prefetchCount: configuration.PrefetchCount, global: false);
-                        channel.QueueDeclarePassive(configuration.QueueName);
+                        RabbitMqTopologyHelper.EnsureQueue(
+                            channel,
+                            configuration.QueueName,
+                            new RabbitMqTopologyHelper.TopologyOptions
+                            {
+                                ValidateTopology = configuration.ValidateTopology,
+                                DeclareTopologyOnStartup = configuration.DeclareTopologyOnStartup,
+                            },
+                            logger,
+                            profileName);
 
                         var consumer = new AsyncEventingBasicConsumer(channel);
                         consumer.Received += async (_, eventArgs) =>

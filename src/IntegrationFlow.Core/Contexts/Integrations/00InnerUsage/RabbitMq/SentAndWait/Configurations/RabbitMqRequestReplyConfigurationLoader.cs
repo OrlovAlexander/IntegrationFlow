@@ -35,6 +35,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             nameof(RabbitMqRequestReplyConfiguration.ExpirationMilliseconds),
             nameof(RabbitMqRequestReplyConfiguration.Mandatory),
             nameof(RabbitMqRequestReplyConfiguration.ValidateTopology),
+            nameof(RabbitMqRequestReplyConfiguration.DeclareTopologyOnStartup),
+            nameof(RabbitMqRequestReplyConfiguration.ExchangeType),
             nameof(RabbitMqRequestReplyConfiguration.AutomaticRecoveryEnabled),
             nameof(RabbitMqRequestReplyConfiguration.ClientProvidedName),
             nameof(RabbitMqRequestReplyConfiguration.MaxConcurrentRequests),
@@ -276,6 +278,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             target.ConfirmTimeoutSeconds = source.ConfirmTimeoutSeconds;
             target.ReplyMandatory = source.ReplyMandatory;
             target.ValidateTopology = source.ValidateTopology;
+            target.DeclareTopologyOnStartup = source.DeclareTopologyOnStartup;
+            target.ExchangeType = source.ExchangeType;
             target.MaxConcurrentRequests = source.MaxConcurrentRequests;
             target.ReuseConnection = source.ReuseConnection;
             target.ReuseReplyConnection = source.ReuseReplyConnection;

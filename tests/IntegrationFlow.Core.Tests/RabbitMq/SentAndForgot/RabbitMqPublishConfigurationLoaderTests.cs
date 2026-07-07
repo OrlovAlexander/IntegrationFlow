@@ -25,6 +25,8 @@ public sealed class RabbitMqPublishConfigurationLoaderTests
                 "ExpirationMilliseconds": 120000,
                 "Mandatory": true,
                 "ValidateTopology": false,
+                "DeclareTopologyOnStartup": true,
+                "ExchangeType": "topic",
                 "AutomaticRecoveryEnabled": false,
                 "ClientProvidedName": "IntegrationFlow.TestPublisher"
               }
@@ -47,6 +49,8 @@ public sealed class RabbitMqPublishConfigurationLoaderTests
         Assert.Equal(120_000, configuration.ExpirationMilliseconds);
         Assert.True(configuration.Mandatory);
         Assert.False(configuration.ValidateTopology);
+        Assert.True(configuration.DeclareTopologyOnStartup);
+        Assert.Equal("topic", configuration.ExchangeType);
         Assert.False(configuration.AutomaticRecoveryEnabled);
         Assert.Equal("IntegrationFlow.TestPublisher", configuration.ClientProvidedName);
     }

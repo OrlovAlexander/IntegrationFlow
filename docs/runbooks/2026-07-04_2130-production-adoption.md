@@ -13,11 +13,12 @@
 - [ ] **EF stores** (`AddIntegrationFlowEfOutbox`, `AddIntegrationFlowEfDeduplication`) — не InMemory из samples
 - [ ] **`MessageId` на всех сообщениях** — иначе dedup не работает (риск #4)
 - [ ] **Идемпотентные handlers** — at-least-once доставка
-- [ ] **DLQ на брокере** для poison messages (`x-dead-letter-exchange`)
+- [ ] **DLQ на брокере** для poison messages (`x-dead-letter-exchange`) — runbook: [`2026-07-07_2137-rabbitmq-dlq-topology.md`](2026-07-07_2137-rabbitmq-dlq-topology.md)
 - [ ] **Явный business handler** — `AddIntegrationFlowRabbitMqListener` или custom processor side
 - [ ] **`AddIntegrationFlowOpenTelemetryMetrics()`** + алерты
 - [ ] **Secrets** — не хранить пароли в plain `rabbitmq.json` (env vars / secrets manager)
-- [ ] **`ThrowOnFailure = true`** в production (SentAndForgot и SentAndWait)
+- [ ] **`ThrowOnFailure = true`** в production (SentAndForgot и SentAndWait) — runbook: [`2026-07-07_2137-throwonfailure-adoption.md`](2026-07-07_2137-throwonfailure-adoption.md)
+- [ ] **`DeclareTopologyOnStartup = false`** в production; topology через IaC — runbook: [`2026-07-07_2137-rabbitmq-topology-adoption.md`](2026-07-07_2137-rabbitmq-topology-adoption.md)
 
 ---
 
@@ -92,4 +93,7 @@ services.AddIntegrationFlowEfDeduplication<MyDbContext>();
 ## Связанные документы
 
 - [`plans/2026-07-03_1639-production-readiness.md`](../plans/2026-07-03_1639-production-readiness.md)
+- [`2026-07-07_2137-rabbitmq-dlq-topology.md`](2026-07-07_2137-rabbitmq-dlq-topology.md)
+- [`2026-07-07_2137-throwonfailure-adoption.md`](2026-07-07_2137-throwonfailure-adoption.md)
+- [`2026-07-07_2137-rabbitmq-topology-adoption.md`](2026-07-07_2137-rabbitmq-topology-adoption.md)
 - [`2026-07-04_2234-integrationflow-full-analysis.md`](../2026-07-04_2234-integrationflow-full-analysis.md)

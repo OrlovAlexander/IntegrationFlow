@@ -44,6 +44,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             nameof(RabbitMqPublishConfiguration.ExpirationMilliseconds),
             nameof(RabbitMqPublishConfiguration.Mandatory),
             nameof(RabbitMqPublishConfiguration.ValidateTopology),
+            nameof(RabbitMqPublishConfiguration.DeclareTopologyOnStartup),
+            nameof(RabbitMqPublishConfiguration.ExchangeType),
             nameof(RabbitMqPublishConfiguration.AutomaticRecoveryEnabled),
             nameof(RabbitMqPublishConfiguration.ClientProvidedName),
         };
@@ -308,6 +310,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             target.ExpirationMilliseconds = source.ExpirationMilliseconds;
             target.Mandatory = source.Mandatory;
             target.ValidateTopology = source.ValidateTopology;
+            target.DeclareTopologyOnStartup = source.DeclareTopologyOnStartup;
+            target.ExchangeType = source.ExchangeType;
             target.PublisherConfirmsEnabled = source.PublisherConfirmsEnabled;
             target.ConfirmTimeoutSeconds = source.ConfirmTimeoutSeconds;
             target.ReuseConnection = source.ReuseConnection;

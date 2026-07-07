@@ -39,6 +39,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             nameof(RabbitMqConfiguration.Asynchronously),
             nameof(RabbitMqConfiguration.AutomaticRecoveryEnabled),
             nameof(RabbitMqConfiguration.ClientProvidedName),
+            nameof(RabbitMqConfiguration.ValidateTopology),
+            nameof(RabbitMqConfiguration.DeclareTopologyOnStartup),
         };
 
         /// <summary>
@@ -329,6 +331,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAn
             target.MaxRetryCount = source.MaxRetryCount;
             target.SslEnabled = source.SslEnabled;
             target.SslServerName = source.SslServerName;
+            target.ValidateTopology = source.ValidateTopology;
+            target.DeclareTopologyOnStartup = source.DeclareTopologyOnStartup;
         }
     }
 }

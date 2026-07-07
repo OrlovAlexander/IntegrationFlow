@@ -88,7 +88,17 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                             () => channel,
                             logger);
 
-                        channel.QueueDeclarePassive(configuration.ResponseQueueName);
+                        RabbitMqTopologyHelper.EnsureQueue(
+                            channel,
+                            configuration.ResponseQueueName,
+                            new RabbitMqTopologyHelper.TopologyOptions
+                            {
+                                ValidateTopology = configuration.ValidateTopology,
+                                DeclareTopologyOnStartup = configuration.DeclareTopologyOnStartup,
+                                Durable = configuration.Persistent,
+                            },
+                            logger,
+                            profileName);
                         var consumer = new AsyncEventingBasicConsumer(channel);
                         consumer.Received += async (_, eventArgs) =>
                         {

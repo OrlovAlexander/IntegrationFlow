@@ -28,6 +28,7 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
                 "ExpirationMilliseconds": 45000,
                 "Mandatory": true,
                 "ValidateTopology": false,
+                "DeclareTopologyOnStartup": true,
                 "AutomaticRecoveryEnabled": false,
                 "ClientProvidedName": "IntegrationFlow.TestRpcClient"
               }
@@ -52,6 +53,7 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
         Assert.Equal(45_000, configuration.ExpirationMilliseconds);
         Assert.True(configuration.Mandatory);
         Assert.False(configuration.ValidateTopology);
+        Assert.True(configuration.DeclareTopologyOnStartup);
         Assert.False(configuration.AutomaticRecoveryEnabled);
         Assert.Equal("IntegrationFlow.TestRpcClient", configuration.ClientProvidedName);
     }

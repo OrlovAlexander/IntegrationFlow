@@ -38,7 +38,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             var channel = connection.Channel;
             if (configuration.ValidateTopology)
             {
-                ValidateTopologyPassive(channel);
+                EnsurePublishTopology(channel);
             }
 
             var messageId = ResolveMessageId(transmitData);
@@ -103,15 +103,31 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 : transmitData.MessageId;
         }
 
-        private void ValidateTopologyPassive(IModel channel)
+        private void EnsurePublishTopology(IModel channel)
         {
+            var options = new RabbitMqTopologyHelper.TopologyOptions
+            {
+                ValidateTopology = true,
+                DeclareTopologyOnStartup = configuration.DeclareTopologyOnStartup,
+                Durable = configuration.Persistent,
+                ExchangeType = configuration.ExchangeType,
+            };
+
             if (configuration.PublishTarget == RabbitMqPublishTarget.Queue)
             {
-                channel.QueueDeclarePassive(configuration.QueueName);
+                RabbitMqTopologyHelper.EnsureQueue(
+                    channel,
+                    configuration.QueueName,
+                    options,
+                    profileName: configuration.Name);
                 return;
             }
 
-            channel.ExchangeDeclarePassive(configuration.Exchange);
+            RabbitMqTopologyHelper.EnsureExchange(
+                channel,
+                configuration.Exchange,
+                options,
+                profileName: configuration.Name);
         }
 
         internal static byte[] SerializeBody(object data)

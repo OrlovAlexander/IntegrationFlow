@@ -1,10 +1,11 @@
-# Статус реализации RabbitMQ P4 — DX (P4-4, P4-5)
+# Статус реализации RabbitMQ P4 — DX (P4-4 … P4-6)
 
-**Статус:** частично выполнено (P4-4, P4-5 ✅; P4-6, P4-7 — backlog)  
+**Статус:** частично выполнено (P4-4, P4-5, P4-6 ✅; P4-7 — backlog)  
 **Создан:** 2026-07-07 21:03 (UTC+3)  
+**Обновлён:** 2026-07-07 21:30 (UTC+3)  
 **План:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **Предшественник:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) (P3 ✅)  
-**Коммиты:** `732a08f` (P4-4), `4d0d977` (P4-5)
+**Коммиты:** `732a08f` (P4-4), `4d0d977` (P4-5); P4-6 — незакоммичено
 
 ---
 
@@ -14,7 +15,7 @@
 |----|--------|--------|
 | P4-4 | Hosted listener netstandard2.0 | ✅ |
 | P4-5 | AMQP priority / expiration | ✅ |
-| P4-6 | Topology helpers (dev) | backlog |
+| P4-6 | Topology helpers (dev) | ✅ |
 | P4-7 | Consumer tag / exclusive | backlog |
 
 ---
@@ -72,11 +73,43 @@ services.AddIntegrationFlowRabbitMqListener("Inbox", message => { /* ... */ });
 
 ---
 
+## P4-6 — Topology helpers (dev)
+
+Opt-in active declare для local/dev; по умолчанию — passive declare (production-safe).
+
+| Поле JSON | Тип | По умолчанию | Поведение |
+|-----------|-----|--------------|-----------|
+| `ValidateTopology` | `bool` | `true` | `false` — пропустить declare |
+| `DeclareTopologyOnStartup` | `bool` | `false` | `true` — active `QueueDeclare` / `ExchangeDeclare` |
+| `ExchangeType` | `string` | `direct` | Тип exchange при active declare (publish/RPC) |
+
+**Компоненты:**
+- `RabbitMqTopologyHelper` — passive/active ensure для queue и exchange; `LogWarn` при первом active declare
+- Подключено в listener, publish, sync RPC, AsyncOutbox relay, RPC correlation hosted service
+- Unit-тесты: `RabbitMqTopologyHelperTests`, loader-тесты для трёх конфигов
+- Runbook: [`runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md)
+
+```json
+{
+  "RabbitMq": {
+    "Inbox": {
+      "HostName": "localhost",
+      "QueueName": "inbox.dev",
+      "ValidateTopology": true,
+      "DeclareTopologyOnStartup": true
+    }
+  }
+}
+```
+
+> **Production:** оставляйте `DeclareTopologyOnStartup = false`; создавайте очереди/DLQ/bindings через IaC. Active declare не задаёт DLQ, TTL и bindings. Runbook: [`runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md).
+
+---
+
 ## Следующий шаг
 
 | Приоритет | Задача |
 |-----------|--------|
-| **Код** | P4-6 — `DeclareTopologyOnStartup` |
 | **Код** | P4-7 — `ConsumerTag`, `Exclusive` |
 | **Ops** | NuGet publish v1.0.0 / v1.0.1 |
 

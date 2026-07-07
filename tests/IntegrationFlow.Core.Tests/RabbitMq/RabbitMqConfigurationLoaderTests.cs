@@ -21,7 +21,9 @@ public sealed class RabbitMqConfigurationLoaderTests
                 "PrefetchCount": 5,
                 "Asynchronously": false,
                 "AutomaticRecoveryEnabled": false,
-                "ClientProvidedName": "IntegrationFlow.TestListener"
+                "ClientProvidedName": "IntegrationFlow.TestListener",
+                "ValidateTopology": false,
+                "DeclareTopologyOnStartup": true
               }
             }
             """);
@@ -39,6 +41,8 @@ public sealed class RabbitMqConfigurationLoaderTests
         Assert.False(configuration.Asynchronously);
         Assert.False(configuration.AutomaticRecoveryEnabled);
         Assert.Equal("IntegrationFlow.TestListener", configuration.ClientProvidedName);
+        Assert.False(configuration.ValidateTopology);
+        Assert.True(configuration.DeclareTopologyOnStartup);
     }
 
     [Fact]

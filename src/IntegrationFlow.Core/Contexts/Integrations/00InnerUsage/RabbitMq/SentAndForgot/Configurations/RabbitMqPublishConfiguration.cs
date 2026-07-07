@@ -112,6 +112,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         public bool ValidateTopology { get; set; } = true;
 
         /// <summary>
+        /// Создавать queue/exchange при старте (active declare). Только для dev; в production — passive + IaC.
+        /// </summary>
+        public bool DeclareTopologyOnStartup { get; set; }
+
+        /// <summary>
+        /// Тип exchange при <see cref="DeclareTopologyOnStartup"/> и <see cref="PublishTarget"/> = Exchange.
+        /// </summary>
+        public string ExchangeType { get; set; } = RabbitMQ.Client.ExchangeType.Direct;
+
+        /// <summary>
         /// Переиспользовать TCP-подключение между вызовами интеграции (direct publish).
         /// </summary>
         public bool ReuseConnection { get; set; }

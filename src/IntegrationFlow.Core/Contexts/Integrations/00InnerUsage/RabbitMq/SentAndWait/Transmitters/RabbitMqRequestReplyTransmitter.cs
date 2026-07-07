@@ -143,7 +143,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var channel = connection.PublishChannel;
             if (configuration.ValidateTopology)
             {
-                ValidateTopologyPassive(channel);
+                EnsureRequestTopology(channel);
             }
 
             var messageId = string.IsNullOrWhiteSpace(transmitData.MessageId)
@@ -206,15 +206,31 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             return new ObtainedData(Encoding.UTF8.GetString(responseBody));
         }
 
-        private void ValidateTopologyPassive(IModel channel)
+        private void EnsureRequestTopology(IModel channel)
         {
+            var options = new RabbitMqTopologyHelper.TopologyOptions
+            {
+                ValidateTopology = true,
+                DeclareTopologyOnStartup = configuration.DeclareTopologyOnStartup,
+                Durable = configuration.Persistent,
+                ExchangeType = configuration.ExchangeType,
+            };
+
             if (configuration.RequestTarget == RabbitMqRequestReplyTarget.Queue)
             {
-                channel.QueueDeclarePassive(configuration.QueueName);
+                RabbitMqTopologyHelper.EnsureQueue(
+                    channel,
+                    configuration.QueueName,
+                    options,
+                    profileName: configuration.Name);
                 return;
             }
 
-            channel.ExchangeDeclarePassive(configuration.Exchange);
+            RabbitMqTopologyHelper.EnsureExchange(
+                channel,
+                configuration.Exchange,
+                options,
+                profileName: configuration.Name);
         }
     }
 }

@@ -212,7 +212,11 @@ await host.RunAsync();
 | `RequeueOnFailure` | `false` | Requeue при ошибке обработки |
 | `MaxRetryCount` | `0` | Лимит попыток (0 = без лимита); после — nack без requeue → DLQ |
 | `AutomaticRecoveryEnabled` | `true` | Client-level recovery + reconnect loop каркаса |
+| `ValidateTopology` | `true` | Passive declare очереди перед consume |
+| `DeclareTopologyOnStartup` | `false` | Active `QueueDeclare` (только dev; см. ниже) |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
+
+> **Production:** оставляйте `DeclareTopologyOnStartup = false` и создавайте очереди/DLQ через IaC (Terraform, RabbitMQ definitions). Active declare не задаёт DLQ, TTL и bindings. Runbook: [`docs/runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](docs/runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md).
 
 ### AMQP headers
 
@@ -276,6 +280,9 @@ integration.Integrate();
 | `ExpirationMilliseconds` | — | Per-message TTL (мс); не задано — не выставляется |
 | `Mandatory` | `false` | Ошибка, если сообщение не маршрутизируется |
 | `ReuseConnection` | `false` | Переиспользование TCP |
+| `ValidateTopology` | `true` | Passive declare перед publish |
+| `DeclareTopologyOnStartup` | `false` | Active declare queue/exchange (только dev) |
+| `ExchangeType` | `direct` | Тип exchange при active declare |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
 
 ### Transactional Outbox
@@ -407,6 +414,9 @@ Runbook: [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runb
 | `ReuseReplyConnection` | `true` | Pool channel для server-side reply |
 | `ResponseTimeoutSeconds` | — | Таймаут ожидания ответа |
 | `PublisherConfirmsEnabled` | `true` | Confirm на publish request |
+| `ValidateTopology` | `true` | Passive declare перед RPC publish |
+| `DeclareTopologyOnStartup` | `false` | Active declare queue/exchange (только dev) |
+| `ExchangeType` | `direct` | Тип exchange при active declare |
 | `Priority` | — | AMQP priority для request (0–255) |
 | `ExpirationMilliseconds` | — | Per-message TTL request (мс) |
 | `SslEnabled` / `SslServerName` | `false` / — | AMQPS |
@@ -543,6 +553,9 @@ IntegrationFlow/
 | Тема | Документ |
 |------|----------|
 | Production adoption | [`docs/runbooks/2026-07-04_2130-production-adoption.md`](docs/runbooks/2026-07-04_2130-production-adoption.md) |
+| DLQ topology | [`docs/runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](docs/runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) |
+| Topology adoption (P4-6) | [`docs/runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](docs/runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md) |
+| ThrowOnFailure | [`docs/runbooks/2026-07-07_2137-throwonfailure-adoption.md`](docs/runbooks/2026-07-07_2137-throwonfailure-adoption.md) |
 | RPC adoption | [`docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](docs/runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md) |
 | Метрики и алерты | [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md) |
 | Outbox в транзакции | [`docs/examples/2026-07-03_1639-ef-outbox-transaction.md`](docs/examples/2026-07-03_1639-ef-outbox-transaction.md) |

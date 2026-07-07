@@ -46,9 +46,12 @@
 | 2026-07-04 23:52 | 2026-07-07 21:03 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
 | 2026-07-06 14:45 | 2026-07-06 14:56 | [План: RabbitMQ transport gaps G1–G5 (P1, выполнено)](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
 | 2026-07-06 14:56 | 2026-07-06 14:56 | [Статус реализации G1–G5 (актуально)](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
-| 2026-07-06 15:19 | 2026-07-07 21:03 | [Актуальный backlog после P4-4/P4-5 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
+| 2026-07-06 15:19 | 2026-07-07 21:37 | [Актуальный backlog после P4-6 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
 | 2026-07-06 15:19 | 2026-07-06 16:17 | [План: RabbitMQ P2 resilience (core выполнено)](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) |
 | 2026-07-06 16:17 | 2026-07-06 16:17 | [Статус реализации P2 core (актуально)](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
-| 2026-07-06 16:45 | 2026-07-07 21:03 | [План: RabbitMQ backlog задач (открыт, актуально)](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
+| 2026-07-06 16:45 | 2026-07-07 21:37 | [План: RabbitMQ backlog задач (открыт, актуально)](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
 | 2026-07-06 17:53 | 2026-07-06 18:16 | [Статус реализации P3 ops P3-1…P3-7 (актуально)](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md) |
-| 2026-07-07 21:03 | 2026-07-07 21:03 | [Статус реализации P4 P4-4/P4-5 (актуально)](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
+| 2026-07-07 21:03 | 2026-07-07 21:37 | [Статус реализации P4 P4-4…P4-6 (актуально)](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
+| 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ DLQ topology (A-1)](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) |
+| 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: ThrowOnFailure adoption (A-3)](runbooks/2026-07-07_2137-throwonfailure-adoption.md) |
+| 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ topology adoption (P4-6)](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md) |
