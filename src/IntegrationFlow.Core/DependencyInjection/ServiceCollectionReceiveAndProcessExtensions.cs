@@ -6,6 +6,7 @@ using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace IntegrationFlow.DependencyInjection;
 
@@ -56,7 +57,7 @@ public static partial class ServiceCollectionExtensions
         }
 
 #if NET8_0_OR_GREATER
-        services.AddHostedService(sp =>
+        services.Add(ServiceDescriptor.Singleton<IHostedService>(sp =>
         {
             var logger = sp.GetRequiredService<IIntegrationLogger>();
             var metrics = sp.GetService<IIntegrationFlowMetrics>();
@@ -71,7 +72,7 @@ public static partial class ServiceCollectionExtensions
                 deduplicationStore,
                 metrics);
             return new ReceiveAndProcessHostedService(options, logger, healthRegistry);
-        });
+        }));
 #endif
 
         return services;

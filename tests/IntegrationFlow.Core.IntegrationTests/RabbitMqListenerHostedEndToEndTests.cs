@@ -178,12 +178,22 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
         {
             Publish("payload-before", "msg-before-restart");
             await WaitForProcessCountAsync(1, TimeSpan.FromSeconds(15));
+        }
+        finally
+        {
+            await host.StopAsync();
+            host.Dispose();
+        }
 
-            await rabbitMq.Container.StopAsync();
-            await rabbitMq.Container.StartAsync();
-            DeclareQueue();
-            WriteConsumeProfile();
+        await rabbitMq.Container.StopAsync();
+        await rabbitMq.Container.StartAsync();
+        DeclareQueue();
+        WriteConsumeProfile();
 
+        host = BuildHost(ProfileName);
+        await host.StartAsync();
+        try
+        {
             Publish("payload-after", "msg-after-restart");
             await WaitForProcessCountAsync(2, TimeSpan.FromSeconds(60));
 
@@ -221,8 +231,8 @@ public sealed class RabbitMqListenerHostedEndToEndTests : IAsyncLifetime
         await host.StartAsync();
         try
         {
-            Publish(queueA, "payload-a", "msg-a");
-            Publish(queueB, "payload-b", "msg-b");
+            Publish("payload-a", "msg-a", queueA);
+            Publish("payload-b", "msg-b", queueB);
             await WaitForProcessCountAsync(2, TimeSpan.FromSeconds(15));
 
             Assert.Equal(2, EndToEndProcessorSide.ProcessCallCount);

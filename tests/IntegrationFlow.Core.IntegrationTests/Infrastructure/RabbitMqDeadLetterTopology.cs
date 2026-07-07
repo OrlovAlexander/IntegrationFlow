@@ -19,13 +19,13 @@ internal sealed class RabbitMqDeadLetterTopology
     {
         using var channel = connection.CreateModel();
 
-        channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: false, autoDelete: true);
+        channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: false, autoDelete: false);
 
         channel.QueueDeclare(
             DeadLetterQueueName,
             durable: false,
             exclusive: false,
-            autoDelete: true,
+            autoDelete: false,
             arguments: null);
         channel.QueueBind(DeadLetterQueueName, ExchangeName, DeadLetterRoutingKey);
 
@@ -34,7 +34,7 @@ internal sealed class RabbitMqDeadLetterTopology
             RetryQueueName,
             durable: false,
             exclusive: false,
-            autoDelete: true,
+            autoDelete: false,
             arguments: new Dictionary<string, object>
             {
                 ["x-dead-letter-exchange"] = ExchangeName,
@@ -47,7 +47,7 @@ internal sealed class RabbitMqDeadLetterTopology
             WorkQueueName,
             durable: false,
             exclusive: false,
-            autoDelete: true,
+            autoDelete: false,
             arguments: new Dictionary<string, object>
             {
                 ["x-dead-letter-exchange"] = ExchangeName,
@@ -58,10 +58,7 @@ internal sealed class RabbitMqDeadLetterTopology
 
     public static void PublishToWorkQueue(IConnection connection, byte[] body, string messageId)
     {
-        using var channel = connection.CreateModel();
-        var properties = channel.CreateBasicProperties();
-        properties.MessageId = messageId;
-        channel.BasicPublish(ExchangeName, WorkRoutingKey, properties, body);
+        PublishToWorkQueue(connection, body, messageId, headers: null);
     }
 
     public static bool TryGetFromQueue(IConnection connection, string queueName, out byte[]? body, out string? messageId)
@@ -85,5 +82,31 @@ internal sealed class RabbitMqDeadLetterTopology
         using var channel = connection.CreateModel();
         var declare = channel.QueueDeclarePassive(queueName);
         return (int)declare.MessageCount;
+    }
+
+    public static void Delete(IConnection connection)
+    {
+        using var channel = connection.CreateModel();
+        channel.QueueDelete(WorkQueueName, ifUnused: false, ifEmpty: false);
+        channel.QueueDelete(RetryQueueName, ifUnused: false, ifEmpty: false);
+        channel.QueueDelete(DeadLetterQueueName, ifUnused: false, ifEmpty: false);
+        channel.ExchangeDelete(ExchangeName, ifUnused: false);
+    }
+
+    public static void PublishToWorkQueue(
+        IConnection connection,
+        byte[] body,
+        string messageId,
+        IDictionary<string, object>? headers = null)
+    {
+        using var channel = connection.CreateModel();
+        var properties = channel.CreateBasicProperties();
+        properties.MessageId = messageId;
+        if (headers is { Count: > 0 })
+        {
+            properties.Headers = new Dictionary<string, object>(headers);
+        }
+
+        channel.BasicPublish(ExchangeName, WorkRoutingKey, properties, body);
     }
 }

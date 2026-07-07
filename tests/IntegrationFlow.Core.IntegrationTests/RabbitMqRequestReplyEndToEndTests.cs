@@ -136,8 +136,11 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
         var results = await Task.WhenAll(tasks);
         await serverTask;
 
-        Assert.All(results, result => Assert.False(result.IsFailed));
-        Assert.Contains(results, result => result.Data?.ToString()?.Contains("orderId") == true);
+        Assert.All(results, result =>
+        {
+            Assert.False(result.IsFailed);
+            Assert.Equal("""{"status":"ok"}""", result.Data);
+        });
     }
 
     [Fact]
@@ -197,10 +200,11 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
             var metrics = new RequestReplyMetricsSpy();
 
             var serverTask = Task.Run(() =>
-                ServeOneCachedRequestAsync(
+                ServeCachedRequestsAsync(
                     responseStore,
                     configuration,
-                    delayBeforeReply: TimeSpan.FromMilliseconds(1800)));
+                    count: 2,
+                    delayBeforeReplyOnFirst: TimeSpan.FromMilliseconds(1800)));
 
             using var connection = new RabbitMqRequestReplyConnection(configuration);
             var transmitter = new RabbitMqRequestReplyTransmitter(configuration, connection)
@@ -222,6 +226,57 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
             SentAndWaitIntegrationOptions.RetryOnTimeout = previousRetry;
             SentAndWaitIntegrationOptions.MaxRetries = previousMaxRetries;
             SentAndWaitIntegrationOptions.RetryDelay = previousDelay;
+        }
+    }
+
+    private async Task ServeCachedRequestsAsync(
+        InMemoryRequestReplyResponseStore responseStore,
+        RabbitMqRequestReplyConfiguration configuration,
+        int count,
+        TimeSpan delayBeforeReplyOnFirst)
+    {
+        using var connection = rabbitMq.CreateConnectionFactory().CreateConnection();
+        using var channel = connection.CreateModel();
+
+        for (var served = 0; served < count; served++)
+        {
+            BasicGetResult? delivery = null;
+            for (var attempt = 0; attempt < 200 && delivery == null; attempt++)
+            {
+                delivery = channel.BasicGet(QueueName, autoAck: false);
+                if (delivery == null)
+                {
+                    await Task.Delay(50);
+                }
+            }
+
+            Assert.NotNull(delivery);
+
+            var request = new RabbitMqReceivedMessage(
+                delivery!.Body.ToArray(),
+                delivery.DeliveryTag,
+                delivery.RoutingKey,
+                delivery.BasicProperties?.MessageId,
+                delivery.BasicProperties?.CorrelationId,
+                delivery.BasicProperties?.ReplyTo);
+
+            var replyPublisher = new RabbitMqReplyPublisher(configuration);
+            var delayBeforeReply = served == 0 ? delayBeforeReplyOnFirst : TimeSpan.Zero;
+            await RabbitMqRpcServerPipeline.HandleAsync(
+                request,
+                replyPublisher,
+                async _ =>
+                {
+                    if (delayBeforeReply > TimeSpan.Zero)
+                    {
+                        await Task.Delay(delayBeforeReply);
+                    }
+
+                    return """{"status":"ok","cached":true}""";
+                },
+                responseStore);
+
+            channel.BasicAck(delivery.DeliveryTag, multiple: false);
         }
     }
 

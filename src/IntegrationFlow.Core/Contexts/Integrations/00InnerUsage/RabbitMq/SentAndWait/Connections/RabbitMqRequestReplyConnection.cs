@@ -157,7 +157,9 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var factory = RabbitMqConnectionFactory.Create(configuration.ToConnectionSettings());
             connection = factory.CreateConnection();
             publishChannel = connection.CreateModel();
-            consumeChannel = connection.CreateModel();
+            consumeChannel = configuration.ReplyMode == RabbitMqReplyMode.DirectReplyTo
+                ? publishChannel
+                : connection.CreateModel();
 
             if (configuration.PublisherConfirmsEnabled)
             {
@@ -272,7 +274,11 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 }
             }
 
-            TryCloseChannel(consumeChannel);
+            if (consumeChannel != null && !ReferenceEquals(consumeChannel, publishChannel))
+            {
+                TryCloseChannel(consumeChannel);
+            }
+
             consumeChannel = null;
 
             if (deleteExclusiveQueue &&

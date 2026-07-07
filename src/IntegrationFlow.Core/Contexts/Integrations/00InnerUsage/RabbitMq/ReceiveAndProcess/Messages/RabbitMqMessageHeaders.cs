@@ -98,12 +98,18 @@ public static class RabbitMqMessageHeaders
             return 0;
         }
 
-        if (deathHeader is IList deathList && deathList.Count > 0 && deathList[0] is IDictionary deathEntry)
+        if (deathHeader is IList deathList)
         {
-            if (deathEntry.Contains("count"))
+            var total = 0;
+            foreach (var entry in deathList)
             {
-                return Convert.ToInt32(Convert.ToInt64(deathEntry["count"]));
+                if (entry is IDictionary deathEntry && deathEntry.Contains("count"))
+                {
+                    total += Convert.ToInt32(Convert.ToInt64(deathEntry["count"]!));
+                }
             }
+
+            return total;
         }
 
         return 0;

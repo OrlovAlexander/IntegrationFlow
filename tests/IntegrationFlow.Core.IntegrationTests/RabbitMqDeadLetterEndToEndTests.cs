@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Text;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using IntegrationFlow.DependencyInjection;
@@ -68,15 +67,50 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
             return;
         }
 
-        ResetProcessorState(shouldThrow: true);
-        DeclareDeadLetterTopology();
-        WriteConsumeProfile(requeueOnFailure: true, maxRetryCount: 2);
+        DeclareRetryTopology(retryRoutesToDeadLetter: false);
+        WriteConsumeProfile(requeueOnFailure: false, maxRetryCount: 999);
+        PublishToWorkQueue("retry-exhausted", "msg-retry-exhausted");
 
         var host = BuildHost();
+        ResetProcessorState(shouldThrow: true);
         await host.StartAsync();
         try
         {
-            PublishToWorkQueueWithDeathCount("retry-exhausted", "msg-retry-exhausted", deathCount: 2);
+            await WaitForProcessCountAsync(2, TimeSpan.FromSeconds(60));
+        }
+        finally
+        {
+            await host.StopAsync();
+            host.Dispose();
+        }
+
+        byte[] body;
+        string messageId;
+        IDictionary<string, object>? headers;
+        using (var connection = rabbitMq.CreateConnectionFactory().CreateConnection())
+        using (var channel = connection.CreateModel())
+        {
+            var delivery = await WaitForBasicGetAsync(channel, RabbitMqDeadLetterTopology.WorkQueueName, TimeSpan.FromSeconds(15));
+            body = delivery.Body.ToArray();
+            messageId = delivery.BasicProperties.MessageId ?? "msg-retry-exhausted";
+            headers = delivery.BasicProperties.Headers;
+            channel.BasicAck(delivery.DeliveryTag, false);
+
+            RabbitMqDeadLetterTopology.Delete(connection);
+        }
+
+        DeclareDeadLetterTopology();
+        WriteConsumeProfile(requeueOnFailure: true, maxRetryCount: 2);
+        using (var connection = rabbitMq.CreateConnectionFactory().CreateConnection())
+        {
+            RabbitMqDeadLetterTopology.PublishToWorkQueue(connection, body, messageId, headers);
+        }
+
+        ResetProcessorState(shouldThrow: true);
+        host = BuildHost();
+        await host.StartAsync();
+        try
+        {
             await WaitForProcessCountAsync(1, TimeSpan.FromSeconds(15));
 
             using var connection = rabbitMq.CreateConnectionFactory().CreateConnection();
@@ -86,8 +120,8 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
                     connection,
                     RabbitMqDeadLetterTopology.DeadLetterQueueName,
                     out _,
-                    out var messageId));
-            Assert.Equal("msg-retry-exhausted", messageId);
+                    out var dlqMessageId));
+            Assert.Equal(messageId, dlqMessageId);
         }
         finally
         {
@@ -105,7 +139,7 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
         }
 
         ResetProcessorState(shouldThrow: true);
-        DeclareRetryTopology();
+        DeclareRetryTopology(retryRoutesToDeadLetter: true);
         WriteConsumeProfile(requeueOnFailure: false);
 
         var host = BuildHost();
@@ -159,13 +193,13 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
         using var connection = rabbitMq.CreateConnectionFactory().CreateConnection();
         using var channel = connection.CreateModel();
 
-        channel.ExchangeDeclare(RabbitMqDeadLetterTopology.ExchangeName, ExchangeType.Direct, durable: false, autoDelete: true);
+        channel.ExchangeDeclare(RabbitMqDeadLetterTopology.ExchangeName, ExchangeType.Direct, durable: false, autoDelete: false);
 
         channel.QueueDeclare(
             RabbitMqDeadLetterTopology.DeadLetterQueueName,
             durable: false,
             exclusive: false,
-            autoDelete: true);
+            autoDelete: false);
         channel.QueueBind(
             RabbitMqDeadLetterTopology.DeadLetterQueueName,
             RabbitMqDeadLetterTopology.ExchangeName,
@@ -175,7 +209,7 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
             RabbitMqDeadLetterTopology.WorkQueueName,
             durable: false,
             exclusive: false,
-            autoDelete: true,
+            autoDelete: false,
             arguments: new Dictionary<string, object>
             {
                 ["x-dead-letter-exchange"] = RabbitMqDeadLetterTopology.ExchangeName,
@@ -187,10 +221,10 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
             RabbitMqDeadLetterTopology.WorkRoutingKey);
     }
 
-    private void DeclareRetryTopology()
+    private void DeclareRetryTopology(bool retryRoutesToDeadLetter = false)
     {
         using var connection = rabbitMq.CreateConnectionFactory().CreateConnection();
-        RabbitMqDeadLetterTopology.Declare(connection, retryTtlMilliseconds: 100, retryRoutesToDeadLetter: true);
+        RabbitMqDeadLetterTopology.Declare(connection, retryTtlMilliseconds: 100, retryRoutesToDeadLetter: retryRoutesToDeadLetter);
     }
 
     private void WriteConsumeProfile(bool requeueOnFailure, int maxRetryCount = 0)
@@ -213,31 +247,21 @@ public sealed class RabbitMqDeadLetterEndToEndTests : IAsyncLifetime
             messageId);
     }
 
-    private void PublishToWorkQueueWithDeathCount(string payload, string messageId, int deathCount)
+    private static async Task<BasicGetResult> WaitForBasicGetAsync(IModel channel, string queueName, TimeSpan timeout)
     {
-        using var connection = rabbitMq.CreateConnectionFactory().CreateConnection();
-        using var channel = connection.CreateModel();
-        var properties = channel.CreateBasicProperties();
-        properties.MessageId = messageId;
-        properties.Headers = new Dictionary<string, object>
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
         {
-            ["x-death"] = new ArrayList
+            var delivery = channel.BasicGet(queueName, autoAck: false);
+            if (delivery != null)
             {
-                new Dictionary<string, object>
-                {
-                    ["count"] = (long)deathCount,
-                    ["reason"] = "rejected",
-                    ["queue"] = RabbitMqDeadLetterTopology.WorkQueueName,
-                    ["exchange"] = RabbitMqDeadLetterTopology.ExchangeName,
-                }
+                return delivery;
             }
-        };
 
-        channel.BasicPublish(
-            RabbitMqDeadLetterTopology.ExchangeName,
-            RabbitMqDeadLetterTopology.WorkRoutingKey,
-            properties,
-            Encoding.UTF8.GetBytes(payload));
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException($"No message in queue '{queueName}' within {timeout}.");
     }
 
     private static async Task WaitForProcessCountAsync(int expected, TimeSpan timeout)

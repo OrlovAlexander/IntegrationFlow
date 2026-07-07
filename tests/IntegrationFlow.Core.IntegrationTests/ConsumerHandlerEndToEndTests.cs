@@ -10,6 +10,7 @@ using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.IntegrationTests.Infrastructure;
+using IntegrationFlow.Testing;
 using RabbitMQ.Client;
 using Xunit;
 
@@ -19,6 +20,7 @@ namespace IntegrationFlow.IntegrationTests;
 [Collection(RabbitMqIntegrationCollection.Name)]
 public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
 {
+    private const string ProfileName = "Inbox";
     private const string QueueName = "integration.consumer.e2e";
 
     private readonly RabbitMqContainerFixture rabbitMq = new();
@@ -36,6 +38,7 @@ public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
         }
 
         ConfigureProcessor(shouldThrow: false);
+        WriteConsumeProfile();
         PublishToQueue("payload-1", "msg-success");
 
         await HandleNextMessageAsync(new RabbitMqConfiguration { RequeueOnFailure = false });
@@ -56,6 +59,7 @@ public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
 
         var dedupStore = new InMemoryMessageDeduplicationStore();
         ConfigureProcessor(dedupStore: dedupStore, shouldThrow: false);
+        WriteConsumeProfile();
 
         PublishToQueue("dup-1", "dup-msg-id");
         PublishToQueue("dup-2", "dup-msg-id");
@@ -76,6 +80,7 @@ public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
         }
 
         ConfigureProcessor(shouldThrow: true);
+        WriteConsumeProfile();
         PublishToQueue("fail-payload", "msg-fail");
 
         await HandleNextMessageAsync(new RabbitMqConfiguration { RequeueOnFailure = true });
@@ -138,6 +143,15 @@ public sealed class ConsumerHandlerEndToEndTests : IAsyncLifetime
             configuration,
             logger,
             Guid.NewGuid().ToString("N"));
+    }
+
+    private void WriteConsumeProfile()
+    {
+        TempRabbitMqConfigWriter.WriteConsumeProfile(
+            ProfileName,
+            QueueName,
+            rabbitMq.Container!.Hostname,
+            rabbitMq.Container.GetMappedPublicPort(5672));
     }
 
     private void PublishToQueue(string body, string messageId)

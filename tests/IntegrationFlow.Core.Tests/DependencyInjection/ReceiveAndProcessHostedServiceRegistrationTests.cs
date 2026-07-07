@@ -10,6 +10,20 @@ namespace IntegrationFlow.Core.Tests.DependencyInjection;
 public sealed class ReceiveAndProcessHostedServiceRegistrationTests
 {
     [Fact]
+    public void AddIntegrationFlowRabbitMqListener_Twice_RegistersTwoHostedServices()
+    {
+        var services = new ServiceCollection();
+        services.AddIntegrationFlow();
+        services.AddIntegrationFlowRabbitMqListener("InboxA", _ => { });
+        services.AddIntegrationFlowRabbitMqListener("InboxB", _ => { });
+
+        var hostedServiceRegistrations = services
+            .Count(descriptor => descriptor.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService));
+
+        Assert.Equal(2, hostedServiceRegistrations);
+    }
+
+    [Fact]
     public void AddIntegrationFlowRabbitMqListener_WithDelegate_RegistersHostedService()
     {
         var services = new ServiceCollection();
