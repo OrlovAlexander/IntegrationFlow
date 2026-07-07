@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Health;
@@ -37,4 +36,3 @@ internal sealed class ReceiveAndProcessHostedService : BackgroundService
             metrics: options.Metrics,
             healthRegistry: healthRegistry);
 }
-#endif

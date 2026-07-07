@@ -6,13 +6,14 @@ using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.Deduplication;
 using IntegrationFlow.Contexts.Integrations._03Domain.ReceiveAndProcess.InboxMessageProcessing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace IntegrationFlow.DependencyInjection;
 
 public static partial class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers a RabbitMQ ReceiveAndProcess listener as a hosted service (.NET 8+).
+    /// Registers a RabbitMQ ReceiveAndProcess listener as a hosted service (netstandard2.0 and .NET 8+).
     /// </summary>
     /// <param name="services">Service collection.</param>
     /// <param name="profileName">RabbitMQ profile name from rabbitmq.json.</param>
@@ -33,7 +34,7 @@ public static partial class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a RabbitMQ ReceiveAndProcess listener as a hosted service (.NET 8+).
+    /// Registers a RabbitMQ ReceiveAndProcess listener as a hosted service (netstandard2.0 and .NET 8+).
     /// </summary>
     /// <param name="services">Service collection.</param>
     /// <param name="profileName">RabbitMQ profile name from rabbitmq.json.</param>
@@ -55,8 +56,7 @@ public static partial class ServiceCollectionExtensions
             throw new ArgumentNullException(nameof(createProcessing));
         }
 
-#if NET8_0_OR_GREATER
-        services.Add(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService>(sp =>
+        services.Add(ServiceDescriptor.Singleton<IHostedService>(sp =>
         {
             var logger = sp.GetRequiredService<IIntegrationLogger>();
             var metrics = sp.GetService<IIntegrationFlowMetrics>();
@@ -72,7 +72,6 @@ public static partial class ServiceCollectionExtensions
                 metrics);
             return new ReceiveAndProcessHostedService(options, logger, healthRegistry);
         }));
-#endif
 
         return services;
     }
