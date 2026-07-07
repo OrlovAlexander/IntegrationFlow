@@ -53,8 +53,12 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                        transmitData.CorrelationId))
             {
                 var properties = channel.CreateBasicProperties();
-                properties.ContentType = configuration.ContentType;
-                properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
+                RabbitMqBasicPropertiesMapper.ApplyDeliveryProperties(
+                    properties,
+                    configuration.ContentType,
+                    configuration.Persistent,
+                    configuration.Priority,
+                    configuration.ExpirationMilliseconds);
                 properties.MessageId = messageId;
 
                 if (!string.IsNullOrWhiteSpace(transmitData.CorrelationId))

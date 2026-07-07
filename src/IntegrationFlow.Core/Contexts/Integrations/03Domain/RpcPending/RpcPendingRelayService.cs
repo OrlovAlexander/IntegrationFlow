@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Logging;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
@@ -233,8 +234,12 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                        messageId))
             {
                 var properties = channel.CreateBasicProperties();
-                properties.ContentType = request.ContentType;
-                properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
+                RabbitMqBasicPropertiesMapper.ApplyDeliveryProperties(
+                    properties,
+                    request.ContentType,
+                    configuration.Persistent,
+                    configuration.Priority,
+                    configuration.ExpirationMilliseconds);
                 properties.CorrelationId = messageId;
                 properties.ReplyTo = configuration.ResponseQueueName;
                 properties.MessageId = messageId;

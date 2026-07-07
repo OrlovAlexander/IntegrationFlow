@@ -82,6 +82,16 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
         public bool Persistent { get; set; } = true;
 
         /// <summary>
+        /// AMQP priority (0–255). Не задано — свойство не выставляется явно.
+        /// </summary>
+        public byte? Priority { get; set; }
+
+        /// <summary>
+        /// TTL сообщения в миллисекундах (basic.properties.expiration). Не задано — свойство не выставляется.
+        /// </summary>
+        public int? ExpirationMilliseconds { get; set; }
+
+        /// <summary>
         /// Флаг mandatory для BasicPublish.
         /// </summary>
         public bool Mandatory { get; set; }
@@ -144,6 +154,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             {
                 throw new InvalidOperationException($"Неизвестный PublishTarget: {PublishTarget}.");
             }
+
+            RabbitMqBasicPropertiesMapper.ValidateMessageDeliveryOptions(ExpirationMilliseconds);
         }
 
         internal string GetPublishExchange()

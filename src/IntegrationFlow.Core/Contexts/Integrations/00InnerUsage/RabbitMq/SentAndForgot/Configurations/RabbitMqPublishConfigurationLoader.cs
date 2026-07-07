@@ -40,6 +40,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             nameof(RabbitMqPublishConfiguration.PublishTarget),
             nameof(RabbitMqPublishConfiguration.ContentType),
             nameof(RabbitMqPublishConfiguration.Persistent),
+            nameof(RabbitMqPublishConfiguration.Priority),
+            nameof(RabbitMqPublishConfiguration.ExpirationMilliseconds),
             nameof(RabbitMqPublishConfiguration.Mandatory),
             nameof(RabbitMqPublishConfiguration.ValidateTopology),
             nameof(RabbitMqPublishConfiguration.AutomaticRecoveryEnabled),
@@ -302,6 +304,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             target.RoutingKey = source.RoutingKey;
             target.ContentType = source.ContentType;
             target.Persistent = source.Persistent;
+            target.Priority = source.Priority;
+            target.ExpirationMilliseconds = source.ExpirationMilliseconds;
             target.Mandatory = source.Mandatory;
             target.ValidateTopology = source.ValidateTopology;
             target.PublisherConfirmsEnabled = source.PublisherConfirmsEnabled;

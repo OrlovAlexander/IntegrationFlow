@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
@@ -159,8 +160,12 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                        correlationId))
             {
                 var properties = channel.CreateBasicProperties();
-                properties.ContentType = configuration.ContentType;
-                properties.DeliveryMode = configuration.Persistent ? (byte)2 : (byte)1;
+                RabbitMqBasicPropertiesMapper.ApplyDeliveryProperties(
+                    properties,
+                    configuration.ContentType,
+                    configuration.Persistent,
+                    configuration.Priority,
+                    configuration.ExpirationMilliseconds);
                 properties.CorrelationId = correlationId;
                 properties.ReplyTo = connection.ReplyAddress;
                 properties.MessageId = messageId;

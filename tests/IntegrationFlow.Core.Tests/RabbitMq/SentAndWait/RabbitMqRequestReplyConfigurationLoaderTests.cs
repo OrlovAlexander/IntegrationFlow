@@ -24,6 +24,8 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
                 "ResponseTimeoutSeconds": 15,
                 "ContentType": "text/plain",
                 "Persistent": false,
+                "Priority": 9,
+                "ExpirationMilliseconds": 45000,
                 "Mandatory": true,
                 "ValidateTopology": false,
                 "AutomaticRecoveryEnabled": false,
@@ -46,6 +48,8 @@ public sealed class RabbitMqRequestReplyConfigurationLoaderTests
         Assert.Equal(15, configuration.ResponseTimeoutSeconds);
         Assert.Equal("text/plain", configuration.ContentType);
         Assert.False(configuration.Persistent);
+        Assert.Equal((byte)9, configuration.Priority);
+        Assert.Equal(45_000, configuration.ExpirationMilliseconds);
         Assert.True(configuration.Mandatory);
         Assert.False(configuration.ValidateTopology);
         Assert.False(configuration.AutomaticRecoveryEnabled);

@@ -31,6 +31,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             nameof(RabbitMqRequestReplyConfiguration.ResponseTimeoutSeconds),
             nameof(RabbitMqRequestReplyConfiguration.ContentType),
             nameof(RabbitMqRequestReplyConfiguration.Persistent),
+            nameof(RabbitMqRequestReplyConfiguration.Priority),
+            nameof(RabbitMqRequestReplyConfiguration.ExpirationMilliseconds),
             nameof(RabbitMqRequestReplyConfiguration.Mandatory),
             nameof(RabbitMqRequestReplyConfiguration.ValidateTopology),
             nameof(RabbitMqRequestReplyConfiguration.AutomaticRecoveryEnabled),
@@ -267,6 +269,8 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             target.ResponseTimeoutSeconds = source.ResponseTimeoutSeconds;
             target.ContentType = source.ContentType;
             target.Persistent = source.Persistent;
+            target.Priority = source.Priority;
+            target.ExpirationMilliseconds = source.ExpirationMilliseconds;
             target.Mandatory = source.Mandatory;
             target.PublisherConfirmsEnabled = source.PublisherConfirmsEnabled;
             target.ConfirmTimeoutSeconds = source.ConfirmTimeoutSeconds;

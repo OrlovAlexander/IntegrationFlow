@@ -21,6 +21,8 @@ public sealed class RabbitMqPublishConfigurationLoaderTests
                 "QueueName": "orders.outbox",
                 "ContentType": "text/plain",
                 "Persistent": false,
+                "Priority": 5,
+                "ExpirationMilliseconds": 120000,
                 "Mandatory": true,
                 "ValidateTopology": false,
                 "AutomaticRecoveryEnabled": false,
@@ -41,6 +43,8 @@ public sealed class RabbitMqPublishConfigurationLoaderTests
         Assert.Equal("orders.outbox", configuration.QueueName);
         Assert.Equal("text/plain", configuration.ContentType);
         Assert.False(configuration.Persistent);
+        Assert.Equal((byte)5, configuration.Priority);
+        Assert.Equal(120_000, configuration.ExpirationMilliseconds);
         Assert.True(configuration.Mandatory);
         Assert.False(configuration.ValidateTopology);
         Assert.False(configuration.AutomaticRecoveryEnabled);
