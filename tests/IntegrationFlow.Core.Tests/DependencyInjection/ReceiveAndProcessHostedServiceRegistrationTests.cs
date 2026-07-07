@@ -14,13 +14,16 @@ public sealed class ReceiveAndProcessHostedServiceRegistrationTests
     {
         var services = new ServiceCollection();
         services.AddIntegrationFlow();
+        var baselineHostedServices = services.Count(
+            descriptor => descriptor.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService));
+
         services.AddIntegrationFlowRabbitMqListener("InboxA", _ => { });
         services.AddIntegrationFlowRabbitMqListener("InboxB", _ => { });
 
-        var hostedServiceRegistrations = services
-            .Count(descriptor => descriptor.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService));
+        var hostedServiceRegistrations = services.Count(
+            descriptor => descriptor.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService));
 
-        Assert.Equal(2, hostedServiceRegistrations);
+        Assert.Equal(2, hostedServiceRegistrations - baselineHostedServices);
     }
 
     [Fact]
