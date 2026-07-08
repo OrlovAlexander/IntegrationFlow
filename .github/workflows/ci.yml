@@ -13,6 +13,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Install Mono (net472 tests)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
       - run: dotnet restore IntegrationFlow.sln
       - run: dotnet build IntegrationFlow.sln --no-restore
       - run: dotnet test IntegrationFlow.sln --no-build --filter "Category!=Integration"
@@ -25,6 +29,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Install Mono (net472 tests)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
       - run: dotnet restore IntegrationFlow.sln
       - run: dotnet build IntegrationFlow.sln --no-restore
       - run: dotnet test IntegrationFlow.sln --no-build --filter "Category=Integration"
