@@ -84,7 +84,7 @@
 | **T-4** | Load test RPC | `MaxConcurrentRequests > 1`, latency under load | Benchmark или integration с N parallel requests | 1 дн |
 | **T-5** | TLS integration test | AMQPS в Testcontainers (optional job) | Отдельный CI job или `[Trait("Category", "Tls")]` | 1–2 дн |
 | **T-6** | Integration gate в release | `Category=Integration` обязателен перед tag | CI workflow / branch protection | 0.5 дн |
-| **T-7** | P3 health check tests | Unit-тесты unhealthy при mock disconnect | Coverage для P3-1 | 0.5 дн |
+| **T-7** | P3 health check tests | Unit-тесты unhealthy при mock disconnect | Coverage для P3-1 | 0.5 дн | ✅ |
 
 **Epic Testing:** ~5–7 дн.
 
@@ -206,7 +206,7 @@ Blocks: T-7
 | Приоритет | Следующий шаг |
 |-----------|---------------|
 | **Сейчас** | OPS-1/2 — NuGet publish |
-| **Optional** | T-7 — health check unit tests |
+| **Optional** | T-2/T-4/T-5 — chaos/load/TLS/CI gate |
 | **Backlog v1.1+** | P2-CB, P2-HA, T-2/T-4/T-5 |
 
 Краткий указатель: [`../2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md).

@@ -7,7 +7,7 @@
 **Детальный backlog:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **P3 status:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
 **P4 status (epic P4-1 … P4-7):** [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md)  
-**Следующий план:** NuGet publish / T-7 — [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)
+**Следующий план:** NuGet publish v1.0.1 — [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)
 
 ---
 
@@ -26,6 +26,7 @@
 | P4-7 (Consumer tag / exclusive) | ✅ | `3dcb385` — [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md) |
 | A-1 … A-4 (adoption runbooks) | ✅ | [`runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) и др. |
 | T-1, T-3 (chaos restart, DLQ E2E) | ✅ | `RabbitMqListenerHostedEndToEndTests`, `RabbitMqDeadLetterEndToEndTests` |
+| T-7 (P3 health check unit tests) | ✅ | `RabbitMqHealthCheckTests`, `RabbitMqTransportHealthRegistryTests` |
 | v1.0 adoption/docs (runbooks, metrics, pools PF1) | ✅ | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
 
 ---
@@ -70,8 +71,7 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 | ID | Задача | План |
 |----|--------|------|
-| T-7 | P3 health check unit tests | [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
-| T-2/T-4/T-5/T-6 | Chaos/load/TLS/CI gate | то же |
+| T-2/T-4/T-5/T-6 | Chaos/load/TLS/CI gate | [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
 
 ---
 
@@ -88,4 +88,4 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 ## Итог
 
-**P1 + P2 core + P3 + P4 (полностью) + T-1/T-3 закрыты.** До публичного release — **NuGet publish**. Epic P4 закрыт. Статус P4: [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md). Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md).
+**P1 + P2 core + P3 + P4 (полностью) + T-1/T-3/T-7 закрыты.** До публичного release — **NuGet publish v1.0.1**. Epic P4 закрыт. Статус P4: [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md). Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md).

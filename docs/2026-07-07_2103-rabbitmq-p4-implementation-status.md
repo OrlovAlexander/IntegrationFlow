@@ -139,6 +139,6 @@ Opt-in active declare для local/dev; по умолчанию — passive decl
 | Приоритет | Задача |
 |-----------|--------|
 | **Ops** | NuGet publish v1.0.0 / v1.0.1 |
-| **Код (optional)** | T-7 — health check unit tests; v1.1 P2-CB/P2-HA |
+| **Код (optional)** | v1.1 P2-CB/P2-HA; T-2/T-4/T-5/T-6 |
 
 Краткий backlog: [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md).
