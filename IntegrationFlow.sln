@@ -64,6 +64,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{D0C5F001-8
 		docs\runbooks\2026-07-04_0845-nuget-release.md = docs\runbooks\2026-07-04_0845-nuget-release.md
 		docs\runbooks\2026-07-04_2130-sentandwait-rpc-adoption.md = docs\runbooks\2026-07-04_2130-sentandwait-rpc-adoption.md
 		docs\runbooks\2026-07-04_2130-production-adoption.md = docs\runbooks\2026-07-04_2130-production-adoption.md
+		docs\runbooks\2026-07-10_1330-rest-sentandwait-adoption.md = docs\runbooks\2026-07-10_1330-rest-sentandwait-adoption.md
+		docs\2026-07-10_1507-rest-implementation-status.md = docs\2026-07-10_1507-rest-implementation-status.md
+		docs\plans\2026-07-10_0853-rest-implementation.md = docs\plans\2026-07-10_0853-rest-implementation.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"

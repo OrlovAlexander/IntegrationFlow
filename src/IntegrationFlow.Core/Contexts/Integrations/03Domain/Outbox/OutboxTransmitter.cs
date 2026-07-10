@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndForgot.Transmitter;
 
@@ -69,7 +69,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.Outbox
         private OutboxMessage BuildOutboxMessage(TransmitData transmitData)
         {
             var id = ResolveMessageGuid(transmitData);
-            var payload = RabbitMqPublishTransmitter.SerializeBody(transmitData.Data);
+            var payload = IntegrationPayloadSerializer.SerializeToBytes(transmitData.Data);
             return new OutboxMessage(
                 id,
                 profileName,

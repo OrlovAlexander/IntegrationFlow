@@ -19,6 +19,7 @@ public static partial class ServiceCollectionExtensions
         configure?.Invoke(options);
 
         services.TryAddSingleton(options);
+        services.TryAddSingleton<IOutboxTransportResolver, OutboxTransportResolver>();
         services.TryAddSingleton<OutboxRelayService>();
 
 #if NET8_0_OR_GREATER

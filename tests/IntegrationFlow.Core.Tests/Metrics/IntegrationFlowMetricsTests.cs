@@ -179,7 +179,7 @@ public sealed class IntegrationFlowMetricsTests
 
         public int RequestReplyRetryCount { get; private set; }
 
-        public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false, string? transport = null)
         {
             RequestReplyCount++;
             LastProfileName = profileName;

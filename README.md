@@ -1,6 +1,6 @@
 # IntegrationFlow
 
-Библиотека для построения интеграций между системами на .NET. Единый каркас для трёх сценариев обмена данными и готовая реализация транспорта **RabbitMQ**.
+Библиотека для построения интеграций между системами на .NET. Единый каркас для трёх сценариев обмена данными и готовая реализация транспортов **RabbitMQ** и **REST** (outbound).
 
 ## Типы интеграций
 
@@ -9,6 +9,8 @@
 | **ReceiveAndProcess** | Обработка входящих сообщений из очереди | Consumer | `RabbitMq` |
 | **SentAndForgot** | Отправка события без ожидания ответа | Producer | `RabbitMqPublish` |
 | **SentAndWait** | Запрос–ответ (RPC) с ожиданием результата | Producer + consumer ответа | `RabbitMqRequestReply` |
+| **SentAndWait (REST)** | HTTP request–response к внешнему API | `ITransmitterAsync` | `RestRequestReply` в `rest.json` |
+| **SentAndForgot (REST)** | HTTP POST webhook / callback (+ outbox) | `ITransmitterWithResult` | `RestPublish` в `rest.json` |
 
 Каждый сценарий расширяется через интерфейсы: конфигурация, подключение, форматирование, валидация, логирование.
 
@@ -435,6 +437,82 @@ SentAndForgotIntegrationOptions.ThrowOnFailure = true;
 
 ---
 
+## REST: SentAndWait (HTTP client)
+
+Синхронный HTTP request–response к внешнему API. Конфигурация в `rest.json` (секция `RestRequestReply`).
+
+```csharp
+using IntegrationFlow.DependencyInjection;
+
+builder.Services.AddIntegrationFlow();
+builder.Services.AddIntegrationFlowRest(builder.Configuration);
+
+SentAndWaitIntegrationOptions.ThrowOnFailure = true;
+
+var integration = orgIntegration.CreateSentAndWaitIntegration<SampleRestSentAndWaitProvider>(
+    oppositeSideCode: "OrdersLookup",
+    srcData: lookupRequest)
+    .WithMessageId($"order-{orderId}");
+
+var result = await integration.IntegrateWithResultAsync(cancellationToken);
+```
+
+Пример `rest.json`:
+
+```json
+{
+  "RestConnections": {
+    "PartnerApi": {
+      "BaseAddress": "https://api.partner.com/",
+      "BearerToken": "from-secrets"
+    }
+  },
+  "RestRequestReply": {
+    "OrdersLookup": {
+      "Connection": "PartnerApi",
+      "RequestPath": "/v1/orders/lookup",
+      "Method": "POST",
+      "ResponseTimeoutSeconds": 15,
+      "IdempotencyHeaderName": "Idempotency-Key"
+    }
+  }
+}
+```
+
+`TransmitData.MessageId` → HTTP header `Idempotency-Key` (имя настраивается). Legacy [`RESTSimpleTransmitter`](src/IntegrationFlow.Core/Contexts/Integrations/00Samples/Transmitters/RESTSimpleTransmitter.cs) помечен `[Obsolete]`.
+
+Production hardening (retry, auth, cache, health, metrics): [`docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md).
+
+### REST: SentAndForgot (HTTP webhook + outbox)
+
+Публикация HTTP webhook через outbox relay. Профиль в секции `RestPublish` файла `rest.json`:
+
+```json
+"RestPublish": {
+  "NotifyWebhook": {
+    "Connection": "PartnerApi",
+    "RequestPath": "/v1/events",
+    "Method": "POST",
+    "ExpectedStatusCodes": [200, 202, 204]
+  }
+}
+```
+
+```csharp
+builder.Services.AddIntegrationFlowRest(builder.Configuration);
+builder.Services.AddIntegrationFlowOutboxRelay();
+
+// В business TX:
+db.EnqueueOutboxMessage("NotifyWebhook", payload);
+await db.SaveChangesAsync(cancellationToken);
+```
+
+`OutboxRelayService` выбирает транспорт по имени профиля: `RestPublish` → HTTP, иначе `RabbitMqPublish`.
+
+План: [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md). Статус: [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md).
+
+---
+
 ## Наблюдаемость
 
 Пакет `IntegrationFlow.Metrics.OpenTelemetry` + встроенные health checks, structured logging и distributed tracing.
@@ -565,7 +643,11 @@ IntegrationFlow/
 | Метрики и алерты | [`docs/runbooks/2026-07-04_0845-metrics-and-alerting.md`](docs/runbooks/2026-07-04_0845-metrics-and-alerting.md) |
 | Outbox в транзакции | [`docs/examples/2026-07-03_1639-ef-outbox-transaction.md`](docs/examples/2026-07-03_1639-ef-outbox-transaction.md) |
 | Abandoned outbox replay | [`docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
+| REST adoption (SentAndWait + outbox) | [`docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) |
+| REST-транспорт (план) | [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md) |
+| REST-транспорт (статус фаз 1–3) | [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md) |
 | Полный указатель | [`docs/README.md`](docs/README.md) |
+| Backlog проекта | [`docs/2026-07-06_1519-remaining-backlog-summary.md`](docs/2026-07-06_1519-remaining-backlog-summary.md) |
 
 ## Локализация
 

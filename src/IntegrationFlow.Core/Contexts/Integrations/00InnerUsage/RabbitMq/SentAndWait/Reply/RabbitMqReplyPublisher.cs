@@ -2,7 +2,7 @@ using System;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.ReceiveAndProcess.Messages;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using RabbitMQ.Client;
@@ -65,7 +65,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
                 throw new ArgumentException("ReplyTo address is required.", nameof(replyTo));
             }
 
-            var body = RabbitMqPublishTransmitter.SerializeBody(responseBody);
+            var body = IntegrationPayloadSerializer.SerializeToBytes(responseBody);
             PublishReply(replyTo, correlationId, body);
         }
 

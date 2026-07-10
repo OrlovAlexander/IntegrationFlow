@@ -350,7 +350,7 @@ public sealed class RabbitMqRequestReplyEndToEndTests : IAsyncLifetime
         {
         }
 
-        public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+        public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false, string? transport = null)
         {
         }
 

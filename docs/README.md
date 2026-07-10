@@ -2,6 +2,15 @@
 
 Хронологический указатель. Имена файлов начинаются с `YYYY-MM-DD_HHmm-` (UTC+3) для сортировки по времени создания.
 
+### REST-транспорт (актуально, 2026-07-10)
+
+| Документ | Назначение |
+|----------|------------|
+| [Статус реализации (фазы 1–3)](2026-07-10_1507-rest-implementation-status.md) | Что сделано, API, тесты, компоненты |
+| [План (фазы 0–5)](plans/2026-07-10_0853-rest-implementation.md) | Roadmap, критерии приёмки, backlog |
+| [Runbook adoption](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production: SentAndWait, outbox webhook, конфиг |
+
+---
 | Создан | Обновлён | Документ |
 |--------|----------|----------|
 | 2026-06-19 22:47 | 2026-06-19 22:47 | [Пример ElmaLocalizationProvider](examples/2026-06-19_2247-ElmaLocalizationProvider.cs.example) |
@@ -55,3 +64,6 @@
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ DLQ topology (A-1)](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: ThrowOnFailure adoption (A-3)](runbooks/2026-07-07_2137-throwonfailure-adoption.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ topology adoption (P4-6)](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md) |
+| 2026-07-10 08:53 | 2026-07-10 15:07 | [План: REST-транспорт (SentAndWait, SentAndForgot, webhooks)](plans/2026-07-10_0853-rest-implementation.md) |
+| 2026-07-10 13:30 | 2026-07-10 15:07 | [Runbook: REST adoption (SentAndWait + outbox)](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) |
+| 2026-07-10 15:07 | 2026-07-10 15:07 | [Статус реализации REST (фазы 1–3, актуально)](2026-07-10_1507-rest-implementation-status.md) |

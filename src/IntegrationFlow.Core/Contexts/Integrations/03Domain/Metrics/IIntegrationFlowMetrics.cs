@@ -42,7 +42,13 @@ public interface IIntegrationFlowMetrics
     /// <param name="duration">Round-trip duration.</param>
     /// <param name="success">True when a valid response was received.</param>
     /// <param name="timedOut">True when the operation ended due to response timeout.</param>
-    void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false);
+    /// <param name="transport">Optional transport tag, e.g. <c>rest</c> or <c>rabbitmq</c>.</param>
+    void RecordRequestReply(
+        string profileName,
+        TimeSpan duration,
+        bool success,
+        bool timedOut = false,
+        string? transport = null);
 
     /// <summary>
     /// Records a request-reply retry after timeout (same MessageId, new CorrelationId).

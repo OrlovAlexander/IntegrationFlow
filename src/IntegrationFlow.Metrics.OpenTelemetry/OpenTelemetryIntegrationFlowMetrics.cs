@@ -84,18 +84,29 @@ public sealed class OpenTelemetryIntegrationFlowMetrics : IIntegrationFlowMetric
     }
 
     /// <inheritdoc />
-    public void RecordRequestReply(string profileName, TimeSpan duration, bool success, bool timedOut = false)
+    public void RecordRequestReply(
+        string profileName,
+        TimeSpan duration,
+        bool success,
+        bool timedOut = false,
+        string? transport = null)
     {
         var profile = SanitizeProfile(profileName);
-        var tags = new[]
+        var tags = new List<KeyValuePair<string, object?>>
         {
-            new KeyValuePair<string, object?>("profile", profile),
-            new KeyValuePair<string, object?>("success", success ? "true" : "false"),
-            new KeyValuePair<string, object?>("timeout", timedOut ? "true" : "false"),
+            new("profile", profile),
+            new("success", success ? "true" : "false"),
+            new("timeout", timedOut ? "true" : "false"),
         };
 
-        meter.RequestReplyCompleted.Add(1, tags);
-        meter.RequestReplyDuration.Record(duration.TotalSeconds, tags);
+        if (!string.IsNullOrWhiteSpace(transport))
+        {
+            tags.Add(new KeyValuePair<string, object?>("transport", transport.ToLowerInvariant()));
+        }
+
+        var tagArray = tags.ToArray();
+        meter.RequestReplyCompleted.Add(1, tagArray);
+        meter.RequestReplyDuration.Record(duration.TotalSeconds, tagArray);
     }
 
     /// <inheritdoc />

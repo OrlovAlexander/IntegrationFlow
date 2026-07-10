@@ -1,0 +1,46 @@
+{
+  "RestConnections": {
+    "PartnerApi": {
+      "BaseAddress": "https://api.partner.example/",
+      "TimeoutSeconds": 30,
+      "Accept": "application/json",
+      "BearerToken": "",
+      "BasicAuthUser": "",
+      "BasicAuthPassword": "",
+      "ApiKeyHeaderName": "X-Api-Key",
+      "ApiKeyHeaderValue": "",
+      "ClientCertificatePath": "",
+      "ClientCertificatePassword": "",
+      "TlsServerName": "",
+      "HealthCheckPath": "/health"
+    }
+  },
+  "RestRequestReply": {
+    "OrdersLookup": {
+      "Connection": "PartnerApi",
+      "RequestPath": "/v1/orders/lookup",
+      "Method": "POST",
+      "ContentType": "application/json",
+      "ResponseTimeoutSeconds": 15,
+      "MaxConcurrentRequests": 4,
+      "IdempotencyHeaderName": "Idempotency-Key",
+      "RetryOnTransientErrors": true,
+      "MaxTransientRetries": 1,
+      "HealthCheckPath": "/health",
+      "HealthCheckTimeoutSeconds": 5
+    }
+  },
+  "RestPublish": {
+    "NotifyWebhook": {
+      "Connection": "PartnerApi",
+      "RequestPath": "/v1/events",
+      "Method": "POST",
+      "ContentType": "application/json",
+      "PublishTimeoutSeconds": 30,
+      "IdempotencyHeaderName": "Idempotency-Key",
+      "ExpectedStatusCodes": [200, 202, 204],
+      "RetryOnTransientErrors": true,
+      "MaxTransientRetries": 1
+    }
+  }
+}

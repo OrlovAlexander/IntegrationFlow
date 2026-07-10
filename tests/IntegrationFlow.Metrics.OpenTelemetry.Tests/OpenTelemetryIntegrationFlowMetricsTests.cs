@@ -67,6 +67,20 @@ public sealed class OpenTelemetryIntegrationFlowMetricsTests
     }
 
     [Fact]
+    public void RecordRequestReply_RecordsTransportTag()
+    {
+        using var collector = new MetricCollector("IntegrationFlow");
+        using var metrics = new OpenTelemetryIntegrationFlowMetrics();
+
+        metrics.RecordRequestReply("OrdersLookup", TimeSpan.FromMilliseconds(120), success: true, transport: "rest");
+        collector.Collect();
+
+        Assert.Contains(
+            collector.GetCounterTags("integrationflow.requestreply.completed"),
+            tags => tags.TryGetValue("transport", out var transport) && transport?.ToString() == "rest");
+    }
+
+    [Fact]
     public void RecordRequestReply_IncrementsCounterAndHistogram()
     {
         using var collector = new MetricCollector("IntegrationFlow");

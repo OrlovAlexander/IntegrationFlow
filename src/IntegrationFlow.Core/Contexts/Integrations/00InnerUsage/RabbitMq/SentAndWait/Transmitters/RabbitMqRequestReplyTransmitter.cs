@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Exceptions;
@@ -149,7 +149,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWa
             var messageId = string.IsNullOrWhiteSpace(transmitData.MessageId)
                 ? Guid.NewGuid().ToString("N")
                 : transmitData.MessageId;
-            var body = RabbitMqPublishTransmitter.SerializeBody(transmitData.Data);
+            var body = IntegrationPayloadSerializer.SerializeToBytes(transmitData.Data);
             var destination = configuration.GetRequestRoutingKey();
 
             using (RabbitMqDistributedTracing.StartProducerActivity(

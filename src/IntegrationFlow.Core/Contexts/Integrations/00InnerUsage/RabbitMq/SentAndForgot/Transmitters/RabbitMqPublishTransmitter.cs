@@ -1,7 +1,5 @@
 using System;
-using System.Text;
-using System.Text.Json;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
+using IntegrationFlow.Contexts.Integrations._01Infrastructure;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Configurations;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Connections;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Exceptions;
@@ -42,7 +40,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
             }
 
             var messageId = ResolveMessageId(transmitData);
-            var body = SerializeBody(transmitData.Data);
+            var body = IntegrationPayloadSerializer.SerializeToBytes(transmitData.Data);
             var destination = configuration.GetPublishRoutingKey();
 
             using (RabbitMqDistributedTracing.StartProducerActivity(
@@ -128,19 +126,6 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndFo
                 configuration.Exchange,
                 options,
                 profileName: configuration.Name);
-        }
-
-        internal static byte[] SerializeBody(object data)
-        {
-            return data switch
-            {
-                null => Array.Empty<byte>(),
-                byte[] bytes => bytes,
-                ReadOnlyMemory<byte> memory => memory.ToArray(),
-                Memory<byte> memory => memory.ToArray(),
-                string text => Encoding.UTF8.GetBytes(text),
-                _ => Encoding.UTF8.GetBytes(JsonSerializer.Serialize(data))
-            };
         }
     }
 }

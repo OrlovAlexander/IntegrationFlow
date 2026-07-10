@@ -14,6 +14,7 @@ namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.Transmitters
     /// <summary>
     /// Способ обращения к противоположной стороне интеграции
     /// </summary>
+    [Obsolete("Use RestHttpTransmitter via RestSentAndWaitIntegrationOppositeSideBase. See docs/plans/2026-07-10_0853-rest-implementation.md.")]
 	public class RESTSimpleTransmitter : ITransmitter
     {
         private IIntegrationLogger Logger { get; set; }

@@ -3,7 +3,7 @@
 **Создан:** 2026-06-20 21:50 (UTC+3)  
 **Обновлён:** 2026-07-03 13:21 (UTC+3)
 
-Каркас **не привязан к конкретному брокеру** — он задаёт паттерны интеграции, а транспорт подключается через реализации. Сейчас готов **RabbitMQ** для сценариев **ReceiveAndProcess** (consumer) и **SentAndForgot** (publisher); для **SentAndWait** уже есть REST-транспорт, но не брокер.
+Каркас **не привязан к конкретному брокеру** — он задаёт паттерны интеграции, а транспорт подключается через реализации. Сейчас готов **RabbitMQ** для сценариев **ReceiveAndProcess** (consumer) и **SentAndForgot** (publisher); **REST** — production outbound (SentAndWait, outbox webhook). Статус: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md).
 
 ## Как устроен каркас
 
