@@ -1,6 +1,6 @@
 # IntegrationFlow
 
-Библиотека для построения интеграций между системами на .NET. Единый каркас для трёх сценариев обмена данными и готовая реализация транспортов **RabbitMQ** и **REST** (outbound).
+Библиотека для построения интеграций между системами на .NET. Единый каркас для трёх сценариев обмена данными и готовая реализация транспортов **RabbitMQ** и **REST** (outbound + inbound webhooks).
 
 ## Типы интеграций
 
@@ -11,6 +11,7 @@
 | **SentAndWait** | Запрос–ответ (RPC) с ожиданием результата | Producer + consumer ответа | `RabbitMqRequestReply` |
 | **SentAndWait (REST)** | HTTP request–response к внешнему API | `ITransmitterAsync` | `RestRequestReply` в `rest.json` |
 | **SentAndForgot (REST)** | HTTP POST webhook / callback (+ outbox) | `ITransmitterWithResult` | `RestPublish` в `rest.json` |
+| **ReceiveAndProcess (REST)** | Inbound webhook от партнёра (push HTTP) | ASP.NET endpoint | `RestWebhooks` в `rest.json` |
 
 Каждый сценарий расширяется через интерфейсы: конфигурация, подключение, форматирование, валидация, логирование.
 
@@ -509,6 +510,35 @@ await db.SaveChangesAsync(cancellationToken);
 
 `OutboxRelayService` выбирает транспорт по имени профиля: `RestPublish` → HTTP, иначе `RabbitMqPublish`.
 
+### REST: ReceiveAndProcess (inbound webhooks, net8.0)
+
+Приём push-webhook от партнёра через ASP.NET endpoint (не `ListenerBase`). Профиль в секции `RestWebhooks`:
+
+```json
+"RestWebhooks": {
+  "OrdersInbox": {
+    "Path": "/integrations/webhooks/orders",
+    "MessageIdHeaderName": "X-Webhook-Id",
+    "MaxBodyBytes": 1048576
+  }
+}
+```
+
+```csharp
+builder.Services.AddIntegrationFlowRest(builder.Configuration);
+builder.Services.AddSingleton<IMessageDeduplicationStore, InMemoryMessageDeduplicationStore>();
+
+app.MapIntegrationFlowWebhook(
+    "OrdersInbox",
+    "/integrations/webhooks/orders",
+    async (RestWebhookReceivedMessage message, CancellationToken cancellationToken) =>
+    {
+        // Business handler
+    });
+```
+
+Семантика: **200 после успеха** (аналог ack); **500/503** → partner retry; dedup по `X-Webhook-Id`. Runbook: [`docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md`](docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md).
+
 План: [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md). Статус: [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md).
 
 ---
@@ -644,8 +674,9 @@ IntegrationFlow/
 | Outbox в транзакции | [`docs/examples/2026-07-03_1639-ef-outbox-transaction.md`](docs/examples/2026-07-03_1639-ef-outbox-transaction.md) |
 | Abandoned outbox replay | [`docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | REST adoption (SentAndWait + outbox) | [`docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) |
+| REST inbound webhooks | [`docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md`](docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md) |
 | REST-транспорт (план) | [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md) |
-| REST-транспорт (статус фаз 1–3) | [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md) |
+| REST-транспорт (статус фаз 1–4) | [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md) |
 | Полный указатель | [`docs/README.md`](docs/README.md) |
 | Backlog проекта | [`docs/2026-07-06_1519-remaining-backlog-summary.md`](docs/2026-07-06_1519-remaining-backlog-summary.md) |
 

@@ -42,5 +42,15 @@
       "RetryOnTransientErrors": true,
       "MaxTransientRetries": 1
     }
+  },
+  "RestWebhooks": {
+    "OrdersInbox": {
+      "Path": "/integrations/webhooks/orders",
+      "MessageIdHeaderName": "X-Webhook-Id",
+      "CorrelationIdHeaderName": "X-Correlation-Id",
+      "MaxBodyBytes": 1048576,
+      "AllowedMethods": ["POST"],
+      "RequireMessageId": false
+    }
   }
 }

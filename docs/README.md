@@ -6,9 +6,10 @@
 
 | Документ | Назначение |
 |----------|------------|
-| [Статус реализации (фазы 1–3)](2026-07-10_1507-rest-implementation-status.md) | Что сделано, API, тесты, компоненты |
+| [Статус реализации (фазы 1–4)](2026-07-10_1507-rest-implementation-status.md) | Что сделано, API, тесты, компоненты |
 | [План (фазы 0–5)](plans/2026-07-10_0853-rest-implementation.md) | Roadmap, критерии приёмки, backlog |
-| [Runbook adoption](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production: SentAndWait, outbox webhook, конфиг |
+| [Runbook adoption (outbound)](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production: SentAndWait, outbox webhook, конфиг |
+| [Runbook adoption (inbound)](runbooks/2026-07-10_1800-rest-webhook-adoption.md) | Production: inbound webhooks, dedup, auth hook |
 
 ---
 | Создан | Обновлён | Документ |
@@ -66,4 +67,5 @@
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ topology adoption (P4-6)](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md) |
 | 2026-07-10 08:53 | 2026-07-10 15:07 | [План: REST-транспорт (SentAndWait, SentAndForgot, webhooks)](plans/2026-07-10_0853-rest-implementation.md) |
 | 2026-07-10 13:30 | 2026-07-10 15:07 | [Runbook: REST adoption (SentAndWait + outbox)](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) |
-| 2026-07-10 15:07 | 2026-07-10 15:07 | [Статус реализации REST (фазы 1–3, актуально)](2026-07-10_1507-rest-implementation-status.md) |
+| 2026-07-10 18:00 | 2026-07-10 18:00 | [Runbook: REST inbound webhooks](runbooks/2026-07-10_1800-rest-webhook-adoption.md) |
+| 2026-07-10 15:07 | 2026-07-10 18:00 | [Статус реализации REST (фазы 1–4, актуально)](2026-07-10_1507-rest-implementation-status.md) |

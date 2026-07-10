@@ -11,6 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.13" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -26,6 +28,10 @@
   <ItemGroup>
     <None Include="..\..\src\IntegrationFlow.Core\Contexts\Integrations\00Samples\ReceiveAndProcess\rabbitmq.json">
       <Link>rabbitmq.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\src\IntegrationFlow.Core\Contexts\Integrations\00Samples\Rest\rest.json">
+      <Link>rest.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -73,8 +73,7 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 | ID | Задача | План |
 |----|--------|------|
-| **REST фаза 4** | Inbound webhooks (`MapIntegrationFlowWebhook`) | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) |
-| **REST фаза 5** | AsyncOutbox HTTP (optional) | тот же план |
+| **REST фаза 5** | AsyncOutbox HTTP (critical TX, optional) | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) |
 | T-2/T-5/T-6 | Chaos/TLS/CI gate (optional) | [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
 
 ---

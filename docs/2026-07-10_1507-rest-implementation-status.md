@@ -1,24 +1,25 @@
-# Статус реализации REST-транспорта (фазы 1–3)
+# Статус реализации REST-транспорта (фазы 1–4)
 
 **Статус:** актуально  
 **Создан:** 2026-07-10 15:07 (UTC+3)  
-**Обновлён:** 2026-07-10 15:07 (UTC+3)  
+**Обновлён:** 2026-07-10 18:00 (UTC+3)  
 **План:** [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md)  
-**Runbook:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
+**Runbook outbound:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
+**Runbook inbound:** [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](runbooks/2026-07-10_1800-rest-webhook-adoption.md)  
 **Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md), [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md)
 
 ---
 
 ## Итог
 
-REST outbound **production-ready** для:
+REST outbound **production-ready**; inbound webhooks **реализованы** (фаза 4):
 
 | Паттерн | Статус | Транспорт |
 |---------|--------|-----------|
 | **SentAndWait** (sync HTTP request–response) | ✅ фазы 1–2 | `RestHttpTransmitter` |
 | **SentAndForgot** (HTTP webhook) | ✅ фаза 3 | `RestPublishTransmitter` |
 | **SentAndForgot + outbox** | ✅ фаза 3 | `OutboxRelayService` + `IOutboxTransportResolver` |
-| **ReceiveAndProcess webhooks** (inbound) | ⏸ фаза 4 | — |
+| **ReceiveAndProcess webhooks** (inbound) | ✅ фаза 4 | `MapIntegrationFlowWebhook` |
 | **AsyncOutbox HTTP** (critical TX + HTTP) | ⏸ фаза 5 | — |
 
 Legacy [`RESTSimpleTransmitter`](../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/Transmitters/RESTSimpleTransmitter.cs) помечен `[Obsolete]`.
@@ -66,6 +67,21 @@ Legacy [`RESTSimpleTransmitter`](../src/IntegrationFlow.Core/Contexts/Integratio
 | 3.7 | Sample | `SampleRestSentAndForgotProvider`, профиль `NotifyWebhook` |
 
 **Выбор транспорта relay:** профиль в `RestPublish` → HTTP; иначе `RabbitMqPublish`. `OutboxId` → header `Idempotency-Key`.
+
+### Фаза 4 — Inbound webhooks ✅
+
+| # | Компонент | Путь |
+|---|-----------|------|
+| 4.1 | Message model | `Rest/ReceiveAndProcess/Messages/RestWebhookReceivedMessage.cs` |
+| 4.2 | Config + loader | `RestWebhookConfiguration`, `RestWebhookConfigurationLoader` (`RestWebhooks`) |
+| 4.3 | Processor | `RestWebhookMessageProcessor` (dedup, metrics, tracing) |
+| 4.4 | ASP.NET endpoint | `MapIntegrationFlowWebhook` (net8.0) |
+| 4.5 | Auth hook | `IRestWebhookAuthenticator` (HMAC — app-level) |
+| 4.6 | Tracing | `IntegrationFlowRestActivitySource`, W3C `traceparent` extract |
+| 4.7 | Sample | `SampleRestWebhookApplication`, профиль `OrdersInbox` |
+| 4.8 | Tests | 22 unit (loader, processor, endpoint) |
+
+**Семантика:** at-least-once; 200 после успеха; 500/503 → partner retry; dedup по `X-Webhook-Id`.
 
 ---
 
@@ -204,7 +220,7 @@ Outbox/
 | H5 | Secrets в `rest.json` | Средний | Env overlay — runbook |
 | H4 | 4xx retry loop | Закрыт | Publish 4xx → abandoned; SentAndWait 4xx → Failed без retry |
 | — | OAuth2 refresh | Open | Фаза 2+ / app-level |
-| — | Inbound webhook security | Open | Фаза 4 + HMAC hook |
+| — | Inbound webhook security | Частично | `IRestWebhookAuthenticator` hook; HMAC — app-level |
 
 Полный список: [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) §6.
 
@@ -214,8 +230,7 @@ Outbox/
 
 | Фаза | Scope | Effort | План |
 |------|-------|--------|------|
-| **4** | Inbound webhooks (`MapIntegrationFlowWebhook`) | 3–5 дн | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) § фаза 4 |
-| **5** | AsyncOutbox HTTP (critical TX) | 5–7 дн | тот же план § фаза 5 |
+| **5** | AsyncOutbox HTTP (critical TX) | 5–7 дн | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) § фаза 5 |
 | v1.1 | OAuth2 token refresh, Polly policies | optional | out of scope v1 |
 
 ---
@@ -226,6 +241,7 @@ Outbox/
 |----------|------------|
 | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) | Полный план фаз 0–5 |
 | [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production adoption (SentAndWait + outbox) |
+| [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](runbooks/2026-07-10_1800-rest-webhook-adoption.md) | Inbound webhooks (ReceiveAndProcess) |
 | [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md) | Общий backlog проекта |
 | [`README.md`](../README.md) | Quick start REST в корне репозитория |
 
@@ -235,6 +251,7 @@ Outbox/
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-07-10 18:00 | Фаза 4 ✅: inbound webhooks, runbook |
 | 2026-07-10 15:07 | Создан документ; зафиксированы фазы 1–3 ✅ |
 | 2026-07-10 13:30 | Фаза 2: runbook, hardening |
 | 2026-07-10 09:00 | Фаза 1: SentAndWait MVP |

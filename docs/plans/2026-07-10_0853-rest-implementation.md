@@ -20,7 +20,7 @@ Legacy sample (до фазы 1):
 
 **Текущее состояние (фазы 1–3 ✅):** production REST outbound — SentAndWait, SentAndForgot, transport-agnostic outbox relay. Детали: [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md).
 
-RabbitMQ покрывает все три паттерна с production-hardening. REST inbound (webhooks) — **фаза 4** (backlog).
+RabbitMQ покрывает все три паттерна с production-hardening. REST inbound (webhooks) — **фаза 4** ✅.
 
 ---
 
@@ -32,7 +32,7 @@ REST в каркасе — **не брокер**, а синхронный/пол
 |-----------|---------|----------|--------|
 | **P0** | **SentAndWait** | HTTP request → response (внешний API) | ✅ фазы 1–2 |
 | **P1** | **SentAndForgot** | HTTP POST webhook / callback + outbox | ✅ фаза 3 |
-| **P2** | **ReceiveAndProcess** | Inbound webhooks (push) | ⏸ фаза 4 |
+| **P2** | **ReceiveAndProcess** | Inbound webhooks (push) | ✅ фаза 4 |
 | P3 | AsyncOutbox HTTP | Critical TX + HTTP call | ⏸ фаза 5 |
 
 **Out of scope v1:**
@@ -256,16 +256,30 @@ services.AddIntegrationFlowRest(configuration);
 
 ---
 
-### Фаза 4 — ReceiveAndProcess Webhooks (3–5 дн) — **P2, optional**
+### Фаза 4 — ReceiveAndProcess Webhooks (3–5 дн) — **P2** ✅
 
 HTTP inbound **не подходит** под `ListenerBase` (long-poll loop). Модель — **push через ASP.NET endpoint**.
 
 ```
 Rest/ReceiveAndProcess/
-  RestWebhookReceivedMessage.cs
-  RestWebhookEndpointExtensions.cs
-  RestWebhookMessageHandler.cs
+  Messages/RestWebhookReceivedMessage.cs
+  RestWebhookMessageProcessor.cs
+  RestWebhookProcessResult.cs
+  Auth/IRestWebhookAuthenticator.cs
+DependencyInjection/RestWebhookEndpointExtensions.cs  # MapIntegrationFlowWebhook
+Configurations/RestWebhookConfiguration*.cs
 ```
+
+| # | Задача | Статус |
+|---|--------|--------|
+| 4.1 | `RestWebhookReceivedMessage` + `IIntegrationMessageMetadata` | ✅ |
+| 4.2 | `RestWebhooks` config + loader | ✅ |
+| 4.3 | `RestWebhookMessageProcessor` (dedup, metrics) | ✅ |
+| 4.4 | `MapIntegrationFlowWebhook` + HTTP status mapping | ✅ |
+| 4.5 | `IRestWebhookAuthenticator` hook (HMAC — app) | ✅ |
+| 4.6 | Tracing `IntegrationFlowRestActivitySource` | ✅ |
+| 4.7 | Sample + 22 unit tests | ✅ |
+| 4.8 | Runbook | [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](../runbooks/2026-07-10_1800-rest-webhook-adoption.md) |
 
 ```csharp
 app.MapIntegrationFlowWebhook("Inbox", "/integrations/webhooks/orders", async (RestWebhookReceivedMessage msg, ct) =>
@@ -423,6 +437,6 @@ tests/IntegrationFlow.Core.IntegrationTests/
 
 ## 12. Итог
 
-REST outbound **реализован** (фазы 1–3): SentAndWait с hardening, SentAndForgot publish, transport-agnostic outbox relay. Следующий шаг — **фаза 4** (inbound webhooks) или **фаза 5** (AsyncOutbox HTTP) по business need.
+REST **реализован** (фазы 1–4): SentAndWait, SentAndForgot/outbox, inbound webhooks. Следующий шаг — **фаза 5** (AsyncOutbox HTTP) по business need.
 
 Актуальный статус, тесты, API: [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md).
