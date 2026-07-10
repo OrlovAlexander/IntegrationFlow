@@ -18,6 +18,7 @@ public static partial class ServiceCollectionExtensions
         configure?.Invoke(options);
 
         services.TryAddSingleton(options);
+        services.TryAddSingleton<IRpcPendingTransportResolver, RpcPendingTransportResolver>();
         services.TryAddSingleton<RpcPendingRelayService>();
 
 #if NET8_0_OR_GREATER

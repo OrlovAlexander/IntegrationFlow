@@ -2,7 +2,7 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-10 15:07 (UTC+3)  
-**Обновлён:** 2026-07-10 18:00 (UTC+3)  
+**Обновлён:** 2026-07-10 21:52 (UTC+3)  
 **План:** [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md)  
 **Runbook outbound:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
 **Runbook inbound:** [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](runbooks/2026-07-10_1800-rest-webhook-adoption.md)  
@@ -12,7 +12,7 @@
 
 ## Итог
 
-REST outbound **production-ready**; inbound webhooks **реализованы** (фаза 4):
+REST outbound **production-ready**; inbound webhooks **реализованы** (фаза 4); AsyncOutbox HTTP **реализован** (фаза 5):
 
 | Паттерн | Статус | Транспорт |
 |---------|--------|-----------|
@@ -20,7 +20,7 @@ REST outbound **production-ready**; inbound webhooks **реализованы** 
 | **SentAndForgot** (HTTP webhook) | ✅ фаза 3 | `RestPublishTransmitter` |
 | **SentAndForgot + outbox** | ✅ фаза 3 | `OutboxRelayService` + `IOutboxTransportResolver` |
 | **ReceiveAndProcess webhooks** (inbound) | ✅ фаза 4 | `MapIntegrationFlowWebhook` |
-| **AsyncOutbox HTTP** (critical TX + HTTP) | ⏸ фаза 5 | — |
+| **AsyncOutbox HTTP** (critical TX + HTTP) | ✅ фаза 5 | `RestRpcPendingPublisher` + callback webhook |
 
 Legacy [`RESTSimpleTransmitter`](../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/Transmitters/RESTSimpleTransmitter.cs) помечен `[Obsolete]`.
 
@@ -82,6 +82,22 @@ Legacy [`RESTSimpleTransmitter`](../src/IntegrationFlow.Core/Contexts/Integratio
 | 4.8 | Tests | 22 unit (loader, processor, endpoint) |
 
 **Семантика:** at-least-once; 200 после успеха; 500/503 → partner retry; dedup по `X-Webhook-Id`.
+
+### Фаза 5 — AsyncOutbox HTTP ✅
+
+| # | Компонент | Путь |
+|---|-----------|------|
+| 5.1 | Request mode | `RestRequestReplyRequestMode.AsyncOutbox` |
+| 5.2 | Config | `ResponseWebhookProfileName`, `ResponseCallbackBaseUrl`, `PendingTimeoutSeconds` |
+| 5.3 | Transport resolver | `IRpcPendingTransportResolver`, `RpcPendingTransportResolver` |
+| 5.4 | Relay refactor | `RpcPendingRelayService` — REST или RabbitMQ |
+| 5.5 | REST publisher | `Rest/SentAndWait/RpcPending/RestRpcPendingPublisher.cs` |
+| 5.6 | Response correlation | `RestRpcResponseCorrelationProcessor` |
+| 5.7 | ASP.NET endpoint | `MapIntegrationFlowRpcResponseWebhook` |
+| 5.8 | Sample | `PaymentAuth` + `PaymentRpcResponses` в `rest.json` |
+| 5.9 | Tests | unit + WireMock E2E |
+
+**Семантика:** business TX + HTTP request атомарны; partner callback → `CompleteAsync`; reuse `EnqueueRpcRequest` + `SentAndWaitAsyncOutboxIntegration`.
 
 ---
 
@@ -230,8 +246,7 @@ Outbox/
 
 | Фаза | Scope | Effort | План |
 |------|-------|--------|------|
-| **5** | AsyncOutbox HTTP (critical TX) | 5–7 дн | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) § фаза 5 |
-| v1.1 | OAuth2 token refresh, Polly policies | optional | out of scope v1 |
+| v1.1 | OAuth2 token refresh, Polly policies, polling response | optional | out of scope v1 |
 
 ---
 
@@ -251,6 +266,7 @@ Outbox/
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-07-10 21:52 | Фаза 5 ✅: AsyncOutbox HTTP, callback webhook |
 | 2026-07-10 18:00 | Фаза 4 ✅: inbound webhooks, runbook |
 | 2026-07-10 15:07 | Создан документ; зафиксированы фазы 1–3 ✅ |
 | 2026-07-10 13:30 | Фаза 2: runbook, hardening |

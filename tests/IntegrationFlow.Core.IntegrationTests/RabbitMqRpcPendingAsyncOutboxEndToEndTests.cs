@@ -53,7 +53,7 @@ public sealed class RabbitMqRpcPendingAsyncOutboxEndToEndTests : IAsyncLifetime
             store,
             NullIntegrationLogger.Instance,
             new RpcPendingRelayOptions(),
-            _ => configuration);
+            transportResolver: new FixedRabbitMqRpcPendingTransportResolver(configuration));
         await relay.RelayBatchAsync(batchSize: 10);
 
         var completed = await store.WaitForCompletionAsync(pendingId, TimeSpan.FromSeconds(15));
@@ -150,5 +150,18 @@ public sealed class RabbitMqRpcPendingAsyncOutboxEndToEndTests : IAsyncLifetime
 
         store.CompleteAsync(pendingId, delivery.Body.ToArray()).GetAwaiter().GetResult();
         channel.BasicAck(delivery.DeliveryTag, multiple: false);
+    }
+
+    private sealed class FixedRabbitMqRpcPendingTransportResolver : IRpcPendingTransportResolver
+    {
+        private readonly RabbitMqRequestReplyConfiguration configuration;
+
+        public FixedRabbitMqRpcPendingTransportResolver(RabbitMqRequestReplyConfiguration configuration)
+        {
+            this.configuration = configuration;
+        }
+
+        public IRpcPendingPublisher CreatePublisher(string profileName)
+            => new RabbitMqRpcPendingPublisher(configuration);
     }
 }

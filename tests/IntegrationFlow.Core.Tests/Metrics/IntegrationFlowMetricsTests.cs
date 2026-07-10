@@ -72,7 +72,6 @@ public sealed class IntegrationFlowMetricsTests
             store,
             NullIntegrationLogger.Instance,
             new RpcPendingRelayOptions(),
-            configurationLoader: null,
             metrics);
 
         await service.RelayBatchAsync();

@@ -29,6 +29,13 @@ public static class RestRequestReplyConfigurationLoader
         nameof(RestRequestReplyConfiguration.BearerToken),
         nameof(RestRequestReplyConfiguration.RetryOnTransientErrors),
         nameof(RestRequestReplyConfiguration.MaxTransientRetries),
+        nameof(RestRequestReplyConfiguration.RequestMode),
+        nameof(RestRequestReplyConfiguration.ResponseWebhookProfileName),
+        nameof(RestRequestReplyConfiguration.ResponseCallbackBaseUrl),
+        nameof(RestRequestReplyConfiguration.CallbackUrlHeaderName),
+        nameof(RestRequestReplyConfiguration.CorrelationIdHeaderName),
+        nameof(RestRequestReplyConfiguration.AcceptedStatusCodes),
+        nameof(RestRequestReplyConfiguration.PendingTimeoutSeconds),
     };
 
     public static RestRequestReplyConfiguration Load()
@@ -82,6 +89,83 @@ public static class RestRequestReplyConfigurationLoader
         }
 
         return profile;
+    }
+
+    public static bool TryLoadProfile(string profileName, out RestRequestReplyConfiguration configuration)
+    {
+        configuration = null!;
+        try
+        {
+            configuration = LoadProfile(profileName);
+            return true;
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    public static bool TryLoadProfile(
+        string profileName,
+        IConfiguration hostConfiguration,
+        out RestRequestReplyConfiguration configuration)
+    {
+        configuration = null!;
+        try
+        {
+            var fileConfiguration = BuildConfiguration(ResolveConfigFilePath());
+            var profile = ResolveProfiles(fileConfiguration)
+                .FirstOrDefault(item => string.Equals(item.Name, profileName, StringComparison.OrdinalIgnoreCase));
+            if (profile == null)
+            {
+                return false;
+            }
+
+            configuration = profile;
+            return true;
+        }
+        catch (FileNotFoundException)
+        {
+            return TryLoadProfileFromConfiguration(profileName, hostConfiguration, out configuration);
+        }
+        catch (InvalidOperationException)
+        {
+            return TryLoadProfileFromConfiguration(profileName, hostConfiguration, out configuration);
+        }
+    }
+
+    private static bool TryLoadProfileFromConfiguration(
+        string profileName,
+        IConfiguration configuration,
+        out RestRequestReplyConfiguration requestReplyConfiguration)
+    {
+        requestReplyConfiguration = null!;
+        if (configuration == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var profiles = ResolveProfiles(configuration);
+            var profile = profiles.FirstOrDefault(item =>
+                string.Equals(item.Name, profileName, StringComparison.OrdinalIgnoreCase));
+            if (profile == null)
+            {
+                return false;
+            }
+
+            requestReplyConfiguration = profile;
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     public static IReadOnlyList<RestRequestReplyConfiguration> LoadAll()

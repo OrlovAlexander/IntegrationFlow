@@ -3,20 +3,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Logging;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndForgot.Transmitters;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Configurations;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.SentAndWait.Connections;
-using IntegrationFlow.Contexts.Integrations._00InnerUsage.RabbitMq.Tracing;
 using IntegrationFlow.Contexts.Integrations._01Infrastructure;
-using IntegrationFlow.Contexts.Integrations._01Infrastructure.Localization;
+using IntegrationFlow.Contexts.Integrations._03Domain;
 using IntegrationFlow.Contexts.Integrations._03Domain.Metrics;
-using RabbitMQ.Client;
 
 namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
 {
     /// <summary>
-    /// Relay pending async RPC requests to RabbitMQ request queue.
+    /// Relay pending async RPC requests to RabbitMQ or REST transport.
     /// </summary>
     public sealed class RpcPendingRelayService
     {
@@ -24,21 +18,21 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
         private readonly IIntegrationLogger logger;
         private readonly RpcPendingRelayOptions options;
         private readonly IIntegrationFlowMetrics? metrics;
-        private readonly Func<string, RabbitMqRequestReplyConfiguration> configurationLoader;
+        private readonly IRpcPendingTransportResolver transportResolver;
         private readonly string workerId = Guid.NewGuid().ToString("N");
 
         public RpcPendingRelayService(
             IRpcPendingStore pendingStore,
             IIntegrationLogger logger,
             RpcPendingRelayOptions options,
-            Func<string, RabbitMqRequestReplyConfiguration>? configurationLoader = null,
-            IIntegrationFlowMetrics? metrics = null)
+            IIntegrationFlowMetrics? metrics = null,
+            IRpcPendingTransportResolver? transportResolver = null)
         {
             this.pendingStore = pendingStore ?? throw new ArgumentNullException(nameof(pendingStore));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.options = options ?? throw new ArgumentNullException(nameof(options));
-            this.configurationLoader = configurationLoader ?? RabbitMqRequestReplyConfigurationLoader.LoadProfile;
             this.metrics = metrics;
+            this.transportResolver = transportResolver ?? new RpcPendingTransportResolver();
         }
 
         public async Task RelayBatchAsync(int batchSize = 20, CancellationToken cancellationToken = default)
@@ -87,8 +81,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             System.Collections.Generic.IEnumerable<RpcPendingRequest> requests,
             CancellationToken cancellationToken)
         {
-            RabbitMqRequestReplyConfiguration? configuration = null;
-            RabbitMqRequestReplyConnection? connection = null;
+            IRpcPendingPublisher? publisher = null;
             var published = 0;
             var failed = 0;
             var abandoned = 0;
@@ -104,12 +97,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                         await pendingStore
                             .MarkAbandonedAsync(request.Id, workerId, "Max attempts exceeded.", cancellationToken)
                             .ConfigureAwait(false);
-                        using (RabbitMqStructuredLogging.BeginPublishScope(
-                                   logger,
-                                   profileName,
-                                   request.Id.ToString("N"),
-                                   request.Id.ToString("N"),
-                                   RabbitMqTransportLogKind.RequestReply))
+                        using (BeginPublishScope(profileName, request.Id))
                         using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "abandoned"))
                         {
                             logger.LogWarn(
@@ -122,23 +110,11 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
 
                     try
                     {
-                        if (connection == null || connection.NeedReconnect())
-                        {
-                            connection?.Dispose();
-                            configuration = configurationLoader(profileName);
-                            EnsureAsyncOutboxConfiguration(configuration);
-                            connection = new RabbitMqRequestReplyConnection(configuration);
-                        }
-
+                        publisher ??= transportResolver.CreatePublisher(profileName);
                         var messageId = request.Id.ToString("N");
-                        using (RabbitMqStructuredLogging.BeginPublishScope(
-                                   logger,
-                                   profileName,
-                                   messageId,
-                                   messageId,
-                                   RabbitMqTransportLogKind.RequestReply))
+                        using (BeginPublishScope(profileName, request.Id))
                         {
-                            PublishPendingRequest(configuration!, connection!, request);
+                            publisher.PublishPendingRequest(request);
                             await pendingStore
                                 .MarkAwaitingResponseAsync(request.Id, workerId, cancellationToken)
                                 .ConfigureAwait(false);
@@ -156,12 +132,7 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
                         await pendingStore
                             .MarkFailedAsync(request.Id, workerId, ex.Message, retryAfter, cancellationToken)
                             .ConfigureAwait(false);
-                        using (RabbitMqStructuredLogging.BeginPublishScope(
-                                   logger,
-                                   profileName,
-                                   request.Id.ToString("N"),
-                                   request.Id.ToString("N"),
-                                   RabbitMqTransportLogKind.RequestReply))
+                        using (BeginPublishScope(profileName, request.Id))
                         using (IntegrationStructuredLogging.BeginOutcomeScope(logger, "publish_failed"))
                         {
                             logger.LogException("Rpc pending relay. Failed to publish request.", ex);
@@ -173,10 +144,21 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             }
             finally
             {
-                connection?.Dispose();
+                publisher?.Dispose();
             }
 
             return new RelayProfileGroupResult(published, failed, abandoned);
+        }
+
+        private IDisposable BeginPublishScope(string profileName, Guid requestId)
+        {
+            var messageId = requestId.ToString("N");
+            return RabbitMqStructuredLogging.BeginPublishScope(
+                logger,
+                profileName,
+                messageId,
+                messageId,
+                RabbitMqTransportLogKind.RequestReply);
         }
 
         private readonly struct RelayProfileGroupResult
@@ -193,93 +175,6 @@ namespace IntegrationFlow.Contexts.Integrations._03Domain.RpcPending
             public int Failed { get; }
 
             public int Abandoned { get; }
-        }
-
-        private static void EnsureAsyncOutboxConfiguration(RabbitMqRequestReplyConfiguration configuration)
-        {
-            configuration.Validate();
-            if (configuration.RequestMode != RabbitMqRequestReplyRequestMode.AsyncOutbox)
-            {
-                throw new InvalidOperationException(
-                    $"Profile '{configuration.Name}' must use RequestMode=AsyncOutbox for rpc pending relay.");
-            }
-
-            if (string.IsNullOrWhiteSpace(configuration.ResponseQueueName))
-            {
-                throw new InvalidOperationException(
-                    $"Profile '{configuration.Name}' requires ResponseQueueName for AsyncOutbox mode.");
-            }
-        }
-
-        private static void PublishPendingRequest(
-            RabbitMqRequestReplyConfiguration configuration,
-            RabbitMqRequestReplyConnection connection,
-            RpcPendingRequest request)
-        {
-            var channel = connection.PublishChannel;
-            if (configuration.ValidateTopology)
-            {
-                EnsureRequestTopology(channel, configuration);
-            }
-
-            var messageId = request.Id.ToString("N");
-            var body = request.RequestPayload;
-            var destination = configuration.GetRequestRoutingKey();
-
-            using (RabbitMqDistributedTracing.StartProducerActivity(
-                       "request",
-                       configuration.Name,
-                       destination,
-                       messageId,
-                       messageId))
-            {
-                var properties = channel.CreateBasicProperties();
-                RabbitMqBasicPropertiesMapper.ApplyDeliveryProperties(
-                    properties,
-                    request.ContentType,
-                    configuration.Persistent,
-                    configuration.Priority,
-                    configuration.ExpirationMilliseconds);
-                properties.CorrelationId = messageId;
-                properties.ReplyTo = configuration.ResponseQueueName;
-                properties.MessageId = messageId;
-
-                RabbitMqTracePropagation.Inject(properties);
-
-                channel.BasicPublish(
-                    exchange: configuration.GetRequestExchange(),
-                    routingKey: configuration.GetRequestRoutingKey(),
-                    mandatory: configuration.Mandatory,
-                    basicProperties: properties,
-                    body: body);
-            }
-        }
-
-        private static void EnsureRequestTopology(IModel channel, RabbitMqRequestReplyConfiguration configuration)
-        {
-            var options = new RabbitMqTopologyHelper.TopologyOptions
-            {
-                ValidateTopology = true,
-                DeclareTopologyOnStartup = configuration.DeclareTopologyOnStartup,
-                Durable = configuration.Persistent,
-                ExchangeType = configuration.ExchangeType,
-            };
-
-            if (configuration.RequestTarget == RabbitMqRequestReplyTarget.Queue)
-            {
-                RabbitMqTopologyHelper.EnsureQueue(
-                    channel,
-                    configuration.QueueName,
-                    options,
-                    profileName: configuration.Name);
-                return;
-            }
-
-            RabbitMqTopologyHelper.EnsureExchange(
-                channel,
-                configuration.Exchange,
-                options,
-                profileName: configuration.Name);
         }
     }
 }

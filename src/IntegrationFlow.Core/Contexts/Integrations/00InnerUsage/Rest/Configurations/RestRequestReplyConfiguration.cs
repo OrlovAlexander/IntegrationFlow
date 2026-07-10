@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using IntegrationFlow.Contexts.Integrations._03Domain.SentAndWait.Cfg;
 
 namespace IntegrationFlow.Contexts.Integrations._00InnerUsage.Rest.Configurations;
@@ -82,6 +83,43 @@ public sealed class RestRequestReplyConfiguration : IConfiguration, IRestConnect
     public int HealthCheckTimeoutSeconds { get; set; } = 5;
 
     /// <summary>
+    /// Request-reply mode: sync HTTP or async outbox with callback webhook.
+    /// </summary>
+    public RestRequestReplyRequestMode RequestMode { get; set; } = RestRequestReplyRequestMode.Sync;
+
+    /// <summary>
+    /// REST webhook profile name for async RPC responses (<see cref="RestWebhookConfiguration"/>).
+    /// Required when <see cref="RequestMode"/> is AsyncOutbox.
+    /// </summary>
+    public string ResponseWebhookProfileName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Public base URL of this application used to build callback URL for partner systems.
+    /// Required when <see cref="RequestMode"/> is AsyncOutbox.
+    /// </summary>
+    public string ResponseCallbackBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Header name for callback URL sent to partner on async outbox relay.
+    /// </summary>
+    public string CallbackUrlHeaderName { get; set; } = "X-Callback-Url";
+
+    /// <summary>
+    /// Header name for correlation id (pending request id) sent on async outbox relay.
+    /// </summary>
+    public string CorrelationIdHeaderName { get; set; } = "X-Correlation-Id";
+
+    /// <summary>
+    /// HTTP status codes treated as request accepted for async processing during relay.
+    /// </summary>
+    public int[] AcceptedStatusCodes { get; set; } = { 200, 202, 204 };
+
+    /// <summary>
+    /// SLA for awaiting async response before timeout.
+    /// </summary>
+    public int PendingTimeoutSeconds { get; set; } = 300;
+
+    /// <summary>
     /// Retry HTTP 5xx, 429 and connection errors.
     /// </summary>
     public bool RetryOnTransientErrors { get; set; } = true;
@@ -119,6 +157,63 @@ public sealed class RestRequestReplyConfiguration : IConfiguration, IRestConnect
         if (MaxTransientRetries < 0)
         {
             throw new InvalidOperationException("MaxTransientRetries must be greater than or equal to 0.");
+        }
+
+        if (RequestMode == RestRequestReplyRequestMode.AsyncOutbox)
+        {
+            if (string.IsNullOrWhiteSpace(ResponseWebhookProfileName))
+            {
+                throw new InvalidOperationException(
+                    "ResponseWebhookProfileName is required for RequestMode=AsyncOutbox.");
+            }
+
+            if (string.IsNullOrWhiteSpace(ResponseCallbackBaseUrl))
+            {
+                throw new InvalidOperationException(
+                    "ResponseCallbackBaseUrl is required for RequestMode=AsyncOutbox.");
+            }
+
+            if (PendingTimeoutSeconds <= 0)
+            {
+                throw new InvalidOperationException("PendingTimeoutSeconds must be greater than 0.");
+            }
+
+            if (AcceptedStatusCodes == null || AcceptedStatusCodes.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "AcceptedStatusCodes must contain at least one status code for AsyncOutbox mode.");
+            }
+        }
+    }
+
+    internal bool IsAcceptedStatusCode(int statusCode)
+        => AcceptedStatusCodes != null &&
+           AcceptedStatusCodes.Any(code => code == statusCode);
+
+    internal string BuildCallbackUrl(RestWebhookConfiguration webhookConfiguration)
+    {
+        if (webhookConfiguration == null)
+        {
+            throw new ArgumentNullException(nameof(webhookConfiguration));
+        }
+
+        var baseUrl = ResponseCallbackBaseUrl.TrimEnd('/');
+        return baseUrl + webhookConfiguration.Path;
+    }
+
+    internal TimeSpan GetPendingTimeout()
+        => TimeSpan.FromSeconds(PendingTimeoutSeconds);
+
+    /// <summary>
+    /// Validates AsyncOutbox-specific settings.
+    /// </summary>
+    public void ValidateAsyncOutbox()
+    {
+        Validate();
+        if (RequestMode != RestRequestReplyRequestMode.AsyncOutbox)
+        {
+            throw new InvalidOperationException(
+                $"Profile '{Name}' must use RequestMode=AsyncOutbox for rpc pending relay.");
         }
     }
 

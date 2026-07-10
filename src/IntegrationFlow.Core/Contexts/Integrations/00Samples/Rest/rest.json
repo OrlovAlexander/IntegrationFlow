@@ -28,6 +28,20 @@
       "MaxTransientRetries": 1,
       "HealthCheckPath": "/health",
       "HealthCheckTimeoutSeconds": 5
+    },
+    "PaymentAuth": {
+      "Connection": "PartnerApi",
+      "RequestPath": "/v1/payments/authorize",
+      "Method": "POST",
+      "ContentType": "application/json",
+      "RequestMode": "AsyncOutbox",
+      "ResponseWebhookProfileName": "PaymentRpcResponses",
+      "ResponseCallbackBaseUrl": "https://app.example.com",
+      "CallbackUrlHeaderName": "X-Callback-Url",
+      "CorrelationIdHeaderName": "X-Correlation-Id",
+      "AcceptedStatusCodes": [200, 202, 204],
+      "PendingTimeoutSeconds": 300,
+      "ResponseTimeoutSeconds": 15
     }
   },
   "RestPublish": {
@@ -47,6 +61,13 @@
     "OrdersInbox": {
       "Path": "/integrations/webhooks/orders",
       "MessageIdHeaderName": "X-Webhook-Id",
+      "CorrelationIdHeaderName": "X-Correlation-Id",
+      "MaxBodyBytes": 1048576,
+      "AllowedMethods": ["POST"],
+      "RequireMessageId": false
+    },
+    "PaymentRpcResponses": {
+      "Path": "/integrations/rpc-responses/payments",
       "CorrelationIdHeaderName": "X-Correlation-Id",
       "MaxBodyBytes": 1048576,
       "AllowedMethods": ["POST"],

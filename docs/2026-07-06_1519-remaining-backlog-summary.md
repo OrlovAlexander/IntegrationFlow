@@ -29,7 +29,7 @@
 | T-7 (P3 health check unit tests) | ✅ | `RabbitMqHealthCheckTests`, `RabbitMqTransportHealthRegistryTests` |
 | T-4 (RPC load test, MaxConcurrentRequests &gt; 1) | ✅ | `RabbitMqRequestReplyLoadTests` |
 | v1.0 adoption/docs (runbooks, metrics, pools PF1) | ✅ | [`plans/2026-07-04_2130-remaining-risks-mitigation.md`](plans/2026-07-04_2130-remaining-risks-mitigation.md) |
-| **REST фазы 1–3** (SentAndWait, hardening, outbox HTTP) | ✅ | [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md) |
+| **REST фазы 1–5** (SentAndWait, hardening, outbox HTTP, webhooks, AsyncOutbox) | ✅ | [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md) |
 
 ---
 
@@ -73,7 +73,6 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 | ID | Задача | План |
 |----|--------|------|
-| **REST фаза 5** | AsyncOutbox HTTP (critical TX, optional) | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) |
 | T-2/T-5/T-6 | Chaos/TLS/CI gate (optional) | [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
 
 ---
@@ -91,4 +90,4 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 ## Итог
 
-**P1 + P2 core + P3 + P4 (полностью) + T-1/T-3/T-4/T-7 + REST фазы 1–3 закрыты.** До публичного release — **NuGet publish v1.0.1**. Epic P4 закрыт. REST outbound: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md). Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md).
+**P1 + P2 core + P3 + P4 (полностью) + T-1/T-3/T-4/T-7 + REST фазы 1–5 закрыты.** До публичного release — **NuGet publish v1.0.1**. Epic P4 закрыт. REST outbound: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md). Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md).

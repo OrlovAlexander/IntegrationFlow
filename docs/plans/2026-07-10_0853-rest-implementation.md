@@ -1,8 +1,8 @@
 # План: REST-транспорт для IntegrationFlow
 
-**Статус:** фазы 1–3 выполнены; фазы 4–5 — backlog  
+**Статус:** фазы 1–5 выполнены  
 **Создан:** 2026-07-10 08:53 (UTC+3)  
-**Обновлён:** 2026-07-10 15:07 (UTC+3)  
+**Обновлён:** 2026-07-10 21:52 (UTC+3)  
 **Статус реализации:** [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md)  
 **Runbook:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](../runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
 **Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](../2026-07-04_2338-integration-types-full-report.md), [`2026-07-05_1455-integrationflow-full-analysis.md`](../2026-07-05_1455-integrationflow-full-analysis.md), [`2026-06-20_2150-brokers-for-integration-framework.md`](../2026-06-20_2150-brokers-for-integration-framework.md), [`plans/2026-06-21_0952-rabbitmq-sentandforgot.md`](2026-06-21_0952-rabbitmq-sentandforgot.md), [`plans/2026-07-04_0904-rabbitmq-sentandwait.md`](2026-07-04_0904-rabbitmq-sentandwait.md), [`2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md)
@@ -301,17 +301,62 @@ app.MapIntegrationFlowWebhook("Inbox", "/integrations/webhooks/orders", async (R
 
 ---
 
-### Фаза 5 — AsyncOutbox HTTP (optional, v1.1)
+### Фаза 5 — AsyncOutbox HTTP ✅
 
-Reuse паттерна `RpcPendingRelayService`:
+Reuse паттерна RabbitMQ `RpcPendingRelayService` + callback webhook для critical TX + external HTTP.
 
-| Компонент | Аналог RabbitMQ |
-|-----------|-----------------|
-| `EnqueueHttpRequest` в TX | `EnqueueRpcRequest` |
-| `HttpPendingRelayService` | `RpcPendingRelayService` |
-| Polling/callback response | Webhook callback URL или polling endpoint |
+| # | Компонент | Путь / аналог |
+|---|-----------|---------------|
+| 5.1 | `RestRequestReplyRequestMode.AsyncOutbox` | `RabbitMqRequestReplyRequestMode.AsyncOutbox` |
+| 5.2 | Config: `ResponseWebhookProfileName`, `ResponseCallbackBaseUrl` | `ResponseQueueName` |
+| 5.3 | `IRpcPendingTransportResolver` + refactor `RpcPendingRelayService` | transport-agnostic relay |
+| 5.4 | `RestRpcPendingPublisher` | `RabbitMqRpcPendingPublisher` |
+| 5.5 | `RestRpcResponseCorrelationProcessor` | `RabbitMqRpcResponseCorrelationHostedService` |
+| 5.6 | `MapIntegrationFlowRpcResponseWebhook` | ASP.NET callback endpoint |
+| 5.7 | Sample + E2E WireMock + unit tests | |
 
-Effort: 5–7 дн. Только при реальном use case «payment TX + external HTTP command».
+**Семантика:** business TX + HTTP request атомарны; partner POST callback → `CompleteAsync`; timeout → `TimedOut`.
+
+**Пример конфига:**
+
+```json
+{
+  "RestRequestReply": {
+    "PaymentAuth": {
+      "RequestMode": "AsyncOutbox",
+      "Connection": "PartnerApi",
+      "RequestPath": "/v1/payments/authorize",
+      "ResponseWebhookProfileName": "PaymentRpcResponses",
+      "ResponseCallbackBaseUrl": "https://app.example.com",
+      "PendingTimeoutSeconds": 300
+    }
+  },
+  "RestWebhooks": {
+    "PaymentRpcResponses": {
+      "Path": "/integrations/rpc-responses/payments"
+    }
+  }
+}
+```
+
+**Пример application TX:**
+
+```csharp
+var pending = db.EnqueueRpcRequest("PaymentAuth", payload);
+await db.SaveChangesAsync(ct);
+
+app.MapIntegrationFlowRpcResponseWebhook("PaymentAuth");
+
+var result = await orgIntegration
+    .CreateSentAndWaitAsyncOutboxIntegration<PaymentAuthProvider>(payload)
+    .IntegrateWithResultAsync(pending.Id, cancellationToken: ct);
+```
+
+**Ограничения v1:**
+
+- Callback URL передаётся header `X-Callback-Url` — partner должен поддерживать async HTTP + callback
+- Idempotency на стороне partner по `Idempotency-Key` (= pending id)
+- Polling response endpoint — out of scope (только callback webhook)
 
 ---
 
