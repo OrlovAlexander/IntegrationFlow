@@ -16,6 +16,7 @@ Inbound webhooks от партнёров (push HTTP POST), когда **нет**
 | Партнёр шлёт POST на ваш URL | `MapIntegrationFlowWebhook` |
 | Идемпотентность при retry партнёра | `IMessageDeduplicationStore` + header `X-Webhook-Id` |
 | Outbound уведомление партнёру | `RestPublishTransmitter` (фаза 3) |
+| Critical TX + HTTP к партнёру | [`REST AsyncOutbox runbook`](2026-07-10_2130-rest-asyncoutbox-adoption.md) |
 
 ---
 

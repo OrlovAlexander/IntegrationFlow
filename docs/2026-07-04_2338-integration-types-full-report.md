@@ -2,10 +2,10 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-04 23:38 (UTC+3)  
-**Обновлён:** 2026-07-10 15:07 (UTC+3)  
+**Обновлён:** 2026-07-10 22:10 (UTC+3)  
 **Связанные документы:** [`2026-07-04_2234-integrationflow-full-analysis.md`](2026-07-04_2234-integrationflow-full-analysis.md), [`2026-07-04_2301-sentandwait-rpc-implementation-status.md`](2026-07-04_2301-sentandwait-rpc-implementation-status.md), [`2026-07-04_2352-rabbitmq-full-analysis.md`](2026-07-04_2352-rabbitmq-full-analysis.md), [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md), [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md), [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md), [`runbooks/2026-07-04_2130-production-adoption.md`](runbooks/2026-07-04_2130-production-adoption.md), [`runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md`](runbooks/2026-07-04_2130-sentandwait-rpc-adoption.md), [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md), [`runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md`](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md), [`runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md`](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md)
 
-Отчёт актуален после REST фаз 1–3 и epic P4. **203+ unit-тестов** зелёные; integration-тесты требуют Docker (Testcontainers).
+Отчёт актуален после REST фаз 1–5 и epic P4. **~240 unit-тестов** зелёные; integration-тесты требуют Docker (Testcontainers).
 
 ---
 
@@ -246,19 +246,21 @@ services.AddIntegrationFlowMaintenance(o =>
 
 ---
 
-### 2.4 REST (SentAndWait + SentAndForgot)
+### 2.4 REST (SentAndWait + SentAndForgot + webhooks + AsyncOutbox)
 
-**Статус: production outbound ✅** (фазы 1–3). Актуально: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md).
+**Статус: production ✅** (фазы 1–5). Актуально: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md).
 
 | Паттерн | Компонент | Статус |
 |---------|-----------|--------|
-| SentAndWait | `RestHttpTransmitter` | ✅ retry, auth, cache, health, metrics |
-| SentAndForgot | `RestPublishTransmitter` | ✅ webhook POST |
+| SentAndWait (sync) | `RestHttpTransmitter` | ✅ retry, auth, cache, health, metrics |
+| SentAndForgot | `RestPublishTransmitter` | ✅ webhook POST + outbox |
 | Outbox relay | `OutboxTransportResolver` | ✅ REST + RabbitMQ |
+| Inbound webhooks | `MapIntegrationFlowWebhook` | ✅ dedup, metrics, tracing |
+| AsyncOutbox HTTP | `RestRpcPendingPublisher` + callback | ✅ critical TX + partner API |
 
 Legacy [`RESTSimpleTransmitter`](../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/Transmitters/RESTSimpleTransmitter.cs) — **`[Obsolete]`**.
 
-**Не в каркасе (backlog):** inbound webhooks (фаза 4), OAuth2 refresh, AsyncOutbox HTTP (фаза 5). Runbook: [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md).
+**v1.1 backlog:** OAuth2 refresh, Polly policies, polling response (альтернатива callback). Runbooks: [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md), [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](runbooks/2026-07-10_1800-rest-webhook-adoption.md), [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md).
 
 ---
 
@@ -451,14 +453,16 @@ await rabbit.PublishAsync(event);      // может упасть → потер
 
 ### Сценарий 5: REST-интеграция с внешним API
 
-| В каркасе ✅ | Backlog |
-|-------------|---------|
-| `RestHttpTransmitter` (SentAndWait) | OAuth2 token refresh |
-| `RestPublishTransmitter` + outbox relay | Inbound webhooks (фаза 4) |
-| Auth (Bearer/Basic/ApiKey), mTLS, retry, cache | Polly circuit breaker (optional) |
-| `rest.json` + env overlay | AsyncOutbox HTTP (фаза 5) |
+| В каркасе ✅ | Backlog (v1.1) |
+|-------------|----------------|
+| `RestHttpTransmitter` (sync SentAndWait) | OAuth2 token refresh |
+| `RestPublishTransmitter` + outbox relay | Polly circuit breaker (optional) |
+| `MapIntegrationFlowWebhook` (inbound) | HMAC verification (app-level) |
+| `RestRpcPendingPublisher` + AsyncOutbox callback | Polling response (альтернатива callback) |
+| Auth (Bearer/Basic/ApiKey), mTLS, retry, cache | — |
+| `rest.json` + env overlay | — |
 
-**Документы:** [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md), [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md).
+**Документы:** [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md), runbooks: [`1330-rest-sentandwait`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md), [`1800-rest-webhook`](runbooks/2026-07-10_1800-rest-webhook-adoption.md), [`2130-rest-asyncoutbox`](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md).
 
 ---
 
@@ -480,7 +484,6 @@ await rabbit.PublishAsync(event);      // может упасть → потер
 ### Транспорты и протоколы
 
 - Kafka, Azure Service Bus, SQS, NATS, Redis Streams, IBM MQ
-- HTTP inbound (webhooks как ReceiveAndProcess) — **фаза 4 REST backlog**
 - File/SFTP polling
 - Database polling / CDC
 - gRPC, SOAP
@@ -520,10 +523,10 @@ await rabbit.PublishAsync(event);      // может упасть → потер
 | SentAndForgot | **Production-ready** | Outbox + EF + confirms |
 | SentAndWait sync | **Условно** | Query/read-only; не critical TX |
 | SentAndWait AsyncOutbox | **Production-ready** | Critical flows с compensation |
-| REST outbound | **Production-ready** | SentAndWait + outbox webhook; inbound — фаза 4 |
+| REST (all patterns) | **Production-ready** | Sync, outbox webhook, inbound, AsyncOutbox HTTP |
 | Другие брокеры | **0%** | Только документированный паттерн расширения |
-| Observability | **9/10** | Metrics; tracing — backlog |
-| Тесты | **8/10** | 128 unit + E2E с Docker |
+| Observability | **9/10** | Metrics + REST tracing |
+| Тесты | **8/10** | ~240 unit + E2E с Docker |
 | Документация | **8/10** | README, runbooks, plans |
 
 ---
@@ -595,8 +598,8 @@ IntegrationFlow — **архитектурно зрелый каркас для 
 |-----------|------|----------|
 | Adoption | Default `ThrowOnFailure=false`, copy-paste InMemory stores | Высокий |
 | Inherent | At-least-once → нужны идемпотентные handlers | Высокий (by design) |
-| Sync RPC | Timeout = unknown state без AsyncOutbox/cache | Высокий для critical |
-| Coverage | RabbitMQ + REST outbound | REST inbound — фаза 4 |
+| Sync REST / RPC | Timeout = unknown state без AsyncOutbox/cache | Высокий для critical — use AsyncOutbox |
+| Coverage | RabbitMQ + REST (все паттерны) | v1.1: OAuth2, polling response |
 | Ops | NuGet не опубликован, DLQ — ручная настройка | Средний |
 
 **Blockers для v1.0 на уровне кода сняты.** Единственный ops-blocker — публикация на NuGet (`git tag v1.0.0` + `NUGET_API_KEY`).

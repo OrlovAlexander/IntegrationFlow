@@ -12,6 +12,7 @@
 | **SentAndWait (REST)** | HTTP request–response к внешнему API | `ITransmitterAsync` | `RestRequestReply` в `rest.json` |
 | **SentAndForgot (REST)** | HTTP POST webhook / callback (+ outbox) | `ITransmitterWithResult` | `RestPublish` в `rest.json` |
 | **ReceiveAndProcess (REST)** | Inbound webhook от партнёра (push HTTP) | ASP.NET endpoint | `RestWebhooks` в `rest.json` |
+| **SentAndWait AsyncOutbox (REST)** | Critical TX + HTTP к партнёру + callback | RpcPending + webhook | `RestRequestReply` (`RequestMode: AsyncOutbox`) |
 
 Каждый сценарий расширяется через интерфейсы: конфигурация, подключение, форматирование, валидация, логирование.
 
@@ -539,7 +540,45 @@ app.MapIntegrationFlowWebhook(
 
 Семантика: **200 после успеха** (аналог ack); **500/503** → partner retry; dedup по `X-Webhook-Id`. Runbook: [`docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md`](docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md).
 
-План: [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md). Статус: [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md).
+### REST: AsyncOutbox HTTP (critical TX, net8.0)
+
+Для сценариев «commit БД + HTTP-запрос к партнёру» атомарно. Partner принимает async (202) и POST callback.
+
+```json
+"RestRequestReply": {
+  "PaymentAuth": {
+    "Connection": "PartnerApi",
+    "RequestPath": "/v1/payments/authorize",
+    "RequestMode": "AsyncOutbox",
+    "ResponseWebhookProfileName": "PaymentRpcResponses",
+    "ResponseCallbackBaseUrl": "https://app.example.com",
+    "PendingTimeoutSeconds": 300
+  }
+},
+"RestWebhooks": {
+  "PaymentRpcResponses": {
+    "Path": "/integrations/rpc-responses/payments"
+  }
+}
+```
+
+```csharp
+builder.Services.AddIntegrationFlowEfRpcPending<MyDbContext>();
+builder.Services.AddIntegrationFlowRpcPendingRelay();
+
+app.MapIntegrationFlowRpcResponseWebhook("PaymentAuth");
+
+var pending = db.EnqueueRpcRequest("PaymentAuth", payload);
+await db.SaveChangesAsync(cancellationToken);
+
+var result = await orgIntegration
+    .CreateSentAndWaitAsyncOutboxIntegration<PaymentAuthProvider>(payload)
+    .IntegrateWithResultAsync(pending.Id, cancellationToken);
+```
+
+Runbook: [`docs/runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](docs/runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md).
+
+План и статус REST: [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md), [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md).
 
 ---
 
@@ -675,8 +714,9 @@ IntegrationFlow/
 | Abandoned outbox replay | [`docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md`](docs/runbooks/2026-07-03_2216-abandoned-outbox-replay.md) |
 | REST adoption (SentAndWait + outbox) | [`docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](docs/runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) |
 | REST inbound webhooks | [`docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md`](docs/runbooks/2026-07-10_1800-rest-webhook-adoption.md) |
+| REST AsyncOutbox HTTP | [`docs/runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](docs/runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) |
 | REST-транспорт (план) | [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md) |
-| REST-транспорт (статус фаз 1–4) | [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md) |
+| REST-транспорт (статус фаз 1–5) | [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md) |
 | Полный указатель | [`docs/README.md`](docs/README.md) |
 | Backlog проекта | [`docs/2026-07-06_1519-remaining-backlog-summary.md`](docs/2026-07-06_1519-remaining-backlog-summary.md) |
 

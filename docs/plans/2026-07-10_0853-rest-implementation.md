@@ -2,9 +2,11 @@
 
 **Статус:** фазы 1–5 выполнены  
 **Создан:** 2026-07-10 08:53 (UTC+3)  
-**Обновлён:** 2026-07-10 21:52 (UTC+3)  
+**Обновлён:** 2026-07-10 22:10 (UTC+3)  
 **Статус реализации:** [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md)  
-**Runbook:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](../runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
+**Runbook outbound:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](../runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
+**Runbook inbound:** [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](../runbooks/2026-07-10_1800-rest-webhook-adoption.md)  
+**Runbook AsyncOutbox:** [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](../runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md)  
 **Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](../2026-07-04_2338-integration-types-full-report.md), [`2026-07-05_1455-integrationflow-full-analysis.md`](../2026-07-05_1455-integrationflow-full-analysis.md), [`2026-06-20_2150-brokers-for-integration-framework.md`](../2026-06-20_2150-brokers-for-integration-framework.md), [`plans/2026-06-21_0952-rabbitmq-sentandforgot.md`](2026-06-21_0952-rabbitmq-sentandforgot.md), [`plans/2026-07-04_0904-rabbitmq-sentandwait.md`](2026-07-04_0904-rabbitmq-sentandwait.md), [`2026-07-06_1519-remaining-backlog-summary.md`](../2026-07-06_1519-remaining-backlog-summary.md)
 
 **Цель:** реализовать production-ready REST-транспорт для паттернов SentAndWait, SentAndForgot и (опционально) ReceiveAndProcess webhooks; заменить legacy [`RESTSimpleTransmitter`](../../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/Transmitters/RESTSimpleTransmitter.cs).
@@ -18,9 +20,9 @@ Legacy sample (до фазы 1):
 - [`RESTSimpleTransmitter`](../../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/Transmitters/RESTSimpleTransmitter.cs) — `HttpWebRequest`, sync-only → **`[Obsolete]`**
 - [`RESTSimpleConfiguration`](../../src/IntegrationFlow.Core/Contexts/Integrations/00Samples/TransmitterConfigurations/RESTSimpleConfiguration.cs) — без loader/env overlay
 
-**Текущее состояние (фазы 1–3 ✅):** production REST outbound — SentAndWait, SentAndForgot, transport-agnostic outbox relay. Детали: [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md).
+**Текущее состояние (фазы 1–5 ✅):** production REST — SentAndWait, SentAndForgot/outbox, inbound webhooks, AsyncOutbox HTTP. Детали: [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md).
 
-RabbitMQ покрывает все три паттерна с production-hardening. REST inbound (webhooks) — **фаза 4** ✅.
+RabbitMQ покрывает все три патternа с production-hardening. REST inbound и AsyncOutbox — **реализованы** (фазы 4–5).
 
 ---
 
@@ -33,7 +35,7 @@ REST в каркасе — **не брокер**, а синхронный/пол
 | **P0** | **SentAndWait** | HTTP request → response (внешний API) | ✅ фазы 1–2 |
 | **P1** | **SentAndForgot** | HTTP POST webhook / callback + outbox | ✅ фаза 3 |
 | **P2** | **ReceiveAndProcess** | Inbound webhooks (push) | ✅ фаза 4 |
-| P3 | AsyncOutbox HTTP | Critical TX + HTTP call | ⏸ фаза 5 |
+| P3 | AsyncOutbox HTTP | Critical TX + HTTP call | ✅ фаза 5 |
 
 **Out of scope v1:**
 
@@ -362,16 +364,16 @@ var result = await orgIntegration
 
 ## 5. Интеграция с существующими возможностями
 
-| Возможность каркаса | REST SentAndWait | REST SentAndForgot | Webhooks |
-|---------------------|------------------|--------------------|---------|
-| `IntegrateAsync()` | ✅ фаза 1 | N/A | ✅ фаза 4 |
-| `ThrowOnFailure` | ✅ | ✅ | ✅ |
-| `WithMessageId()` + retry | ✅ фаза 2 | ✅ (outbox id) | ✅ dedup |
-| OpenTelemetry metrics | ✅ фаза 2 | ✅ фаза 3 | ✅ фаза 4 |
-| Distributed tracing | ✅ фаза 1 | ✅ фаза 3 | ✅ фаза 4 |
-| Transactional outbox | N/A | ✅ фаза 3 | N/A |
-| EF stores | N/A | outbox/dedup reuse | dedup reuse |
-| Health checks | ✅ фаза 2 | relay health reuse | endpoint health |
+| Возможность каркаса | REST SentAndWait | REST SentAndForgot | Webhooks | REST AsyncOutbox |
+|---------------------|------------------|--------------------|---------|------------------|
+| `IntegrateAsync()` | ✅ фаза 1 | N/A | ✅ фаза 4 | ✅ фаза 5 (wait) |
+| `ThrowOnFailure` | ✅ | ✅ | ✅ | ✅ |
+| `WithMessageId()` + retry | ✅ фаза 2 | ✅ (outbox id) | ✅ dedup | ✅ (pending id) |
+| OpenTelemetry metrics | ✅ фаза 2 | ✅ фаза 3 | ✅ фаза 4 | ✅ reuse `rpc.pending.*` |
+| Distributed tracing | ✅ фаза 1 | ✅ фаза 3 | ✅ фаза 4 | ✅ фаза 5 |
+| Transactional outbox | N/A | ✅ фаза 3 | N/A | ✅ reuse RpcPending EF |
+| EF stores | N/A | outbox/dedup reuse | dedup reuse | `EfRpcPendingStore` |
+| Health checks | ✅ фаза 2 | relay health reuse | endpoint health | relay health reuse |
 
 ---
 
@@ -379,7 +381,7 @@ var result = await orgIntegration
 
 | # | Риск | Severity | Mitigation |
 |---|------|----------|------------|
-| H1 | HTTP timeout = unknown state (как R1 sync RPC) | Высокий | `Idempotency-Key` + partner API idempotency; не для critical без AsyncOutbox |
+| H1 | HTTP timeout = unknown state (как R1 sync RPC) | Высокий | `Idempotency-Key` + partner API idempotency; critical → **REST AsyncOutbox** (фаза 5) |
 | H2 | Outbox relay hardcoded RabbitMQ | Блокер P1 | Фаза 3 — `IOutboxTransportResolver` |
 | H3 | `HttpClient` DNS/socket exhaustion | Средний | `IHttpClientFactory`, named clients, `MaxConcurrentRequests` |
 | H4 | 4xx retry loop | Средний | Retry только transient (5xx, timeout, 429 с Retry-After) |
@@ -403,7 +405,8 @@ var result = await orgIntegration
 
 **MVP (P0):** фазы 0 + 1 ≈ **4–5 дней**  
 **Production REST outbound:** фазы 0–3 ≈ **9–12 дней**  
-**Полный REST (inbound + outbound):** + фаза 4 ≈ **12–17 дней**
+**Полный REST (inbound + outbound):** фазы 0–4 ≈ **12–17 дней**  
+**REST AsyncOutbox (critical TX):** + фаза 5 ≈ **17–24 дней** (выполнено)
 
 ---
 
@@ -426,19 +429,30 @@ var result = await orgIntegration
 - [x] Outbox relay transport-agnostic
 - [x] E2E outbox → HTTP webhook (WireMock)
 
-### Webhooks (optional v1.1)
+### Webhooks (фаза 4) ✅
 
-- [ ] `MapIntegrationFlowWebhook` + dedup
-- [ ] 200 после обработки
+- [x] `MapIntegrationFlowWebhook` + dedup
+- [x] 200 после обработки
+
+### AsyncOutbox HTTP (фаза 5) ✅
+
+- [x] `RestRequestReplyRequestMode.AsyncOutbox`
+- [x] `IRpcPendingTransportResolver` + REST publisher
+- [x] `MapIntegrationFlowRpcResponseWebhook`
+- [x] WireMock E2E + unit tests
+- [x] Runbook adoption
 
 ---
 
-## 9. Рекомендуемый порядок старта
+## 9. Рекомендуемый порядок старта (historical)
 
-1. **Фаза 1** — максимальная ценность, минимальный scope, замена legacy sample
-2. **Фаза 3** — если нужен «БД + HTTP callback»
-3. **Фаза 2** — параллельно с 3 или сразу после 1
-4. **Фаза 4** — только при явном требовании inbound webhooks
+1. **Фаза 1** — SentAndWait MVP
+2. **Фаза 3** — «БД + HTTP callback» (outbox)
+3. **Фаза 2** — hardening
+4. **Фаза 4** — inbound webhooks
+5. **Фаза 5** — critical TX + AsyncOutbox HTTP
+
+**Следующий шаг проекта:** NuGet publish v1.0.1 (ops). Кодовый backlog v1.1 — OAuth2, polling response, Polly.
 
 ---
 
@@ -476,12 +490,18 @@ tests/IntegrationFlow.Core.Tests/Rest/
 tests/IntegrationFlow.Core.IntegrationTests/
     RestHttpEndToEndTests.cs
     RestOutboxRelayEndToEndTests.cs
+    RestRpcPendingEndToEndTests.cs
+tests/IntegrationFlow.Core.Tests/RpcPending/
+    RpcPendingTransportResolverTests.cs
+tests/IntegrationFlow.Core.Tests/Rest/
+    RestRpcResponseCorrelationProcessorTests.cs
 ```
 
 ---
 
 ## 12. Итог
 
-REST **реализован** (фазы 1–4): SentAndWait, SentAndForgot/outbox, inbound webhooks. Следующий шаг — **фаза 5** (AsyncOutbox HTTP) по business need.
+REST **реализован полностью** (фазы 1–5): SentAndWait, SentAndForgot/outbox, inbound webhooks, AsyncOutbox HTTP для critical TX.
 
-Актуальный статус, тесты, API: [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md).
+Актуальный статус, тесты, API: [`2026-07-10_1507-rest-implementation-status.md`](../2026-07-10_1507-rest-implementation-status.md).  
+Runbook AsyncOutbox: [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](../runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md).

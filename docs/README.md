@@ -6,10 +6,11 @@
 
 | Документ | Назначение |
 |----------|------------|
-| [Статус реализации (фазы 1–4)](2026-07-10_1507-rest-implementation-status.md) | Что сделано, API, тесты, компоненты |
-| [План (фазы 0–5)](plans/2026-07-10_0853-rest-implementation.md) | Roadmap, критерии приёмки, backlog |
-| [Runbook adoption (outbound)](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production: SentAndWait, outbox webhook, конфиг |
+| [Статус реализации (фазы 1–5)](2026-07-10_1507-rest-implementation-status.md) | Что сделано, API, тесты, компоненты |
+| [План (фазы 0–5, выполнен)](plans/2026-07-10_0853-rest-implementation.md) | Roadmap, критерии приёмки, v1.1 backlog |
+| [Runbook adoption (outbound)](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production: sync SentAndWait, outbox webhook |
 | [Runbook adoption (inbound)](runbooks/2026-07-10_1800-rest-webhook-adoption.md) | Production: inbound webhooks, dedup, auth hook |
+| [Runbook adoption (AsyncOutbox)](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) | Production: critical TX + HTTP callback |
 
 ---
 | Создан | Обновлён | Документ |
@@ -56,7 +57,7 @@
 | 2026-07-04 23:52 | 2026-07-07 21:57 | [Полный анализ RabbitMQ: gaps и roadmap (актуально)](2026-07-04_2352-rabbitmq-full-analysis.md) |
 | 2026-07-06 14:45 | 2026-07-06 14:56 | [План: RabbitMQ transport gaps G1–G5 (P1, выполнено)](plans/2026-07-06_1445-rabbitmq-g1-g5-mitigation.md) |
 | 2026-07-06 14:56 | 2026-07-06 14:56 | [Статус реализации G1–G5 (актуально)](2026-07-06_1456-rabbitmq-g1-g5-implementation-status.md) |
-| 2026-07-06 15:19 | 2026-07-07 21:57 | [Актуальный backlog после P4-7 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
+| 2026-07-06 15:19 | 2026-07-10 22:10 | [Актуальный backlog после P4-7 (актуально)](2026-07-06_1519-remaining-backlog-summary.md) |
 | 2026-07-06 15:19 | 2026-07-06 16:17 | [План: RabbitMQ P2 resilience (core выполнено)](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) |
 | 2026-07-06 16:17 | 2026-07-06 16:17 | [Статус реализации P2 core (актуально)](2026-07-06_1617-rabbitmq-p2-implementation-status.md) |
 | 2026-07-06 16:45 | 2026-07-07 21:57 | [План: RabbitMQ backlog задач (P4 закрыт, актуально)](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md) |
@@ -65,7 +66,8 @@
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ DLQ topology (A-1)](runbooks/2026-07-07_2137-rabbitmq-dlq-topology.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: ThrowOnFailure adoption (A-3)](runbooks/2026-07-07_2137-throwonfailure-adoption.md) |
 | 2026-07-07 21:37 | 2026-07-07 21:37 | [Runbook: RabbitMQ topology adoption (P4-6)](runbooks/2026-07-07_2137-rabbitmq-topology-adoption.md) |
-| 2026-07-10 08:53 | 2026-07-10 15:07 | [План: REST-транспорт (SentAndWait, SentAndForgot, webhooks)](plans/2026-07-10_0853-rest-implementation.md) |
+| 2026-07-10 08:53 | 2026-07-10 22:10 | [План: REST-транспорт (фазы 0–5, выполнен)](plans/2026-07-10_0853-rest-implementation.md) |
 | 2026-07-10 13:30 | 2026-07-10 15:07 | [Runbook: REST adoption (SentAndWait + outbox)](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) |
 | 2026-07-10 18:00 | 2026-07-10 18:00 | [Runbook: REST inbound webhooks](runbooks/2026-07-10_1800-rest-webhook-adoption.md) |
-| 2026-07-10 15:07 | 2026-07-10 18:00 | [Статус реализации REST (фазы 1–4, актуально)](2026-07-10_1507-rest-implementation-status.md) |
+| 2026-07-10 21:30 | 2026-07-10 22:10 | [Runbook: REST AsyncOutbox HTTP (critical TX)](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) |
+| 2026-07-10 15:07 | 2026-07-10 22:10 | [Статус реализации REST (фазы 1–5, актуально)](2026-07-10_1507-rest-implementation-status.md) |

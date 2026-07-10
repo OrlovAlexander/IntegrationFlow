@@ -1,11 +1,12 @@
-# Статус реализации REST-транспорта (фазы 1–4)
+# Статус реализации REST-транспорта (фазы 1–5)
 
 **Статус:** актуально  
 **Создан:** 2026-07-10 15:07 (UTC+3)  
-**Обновлён:** 2026-07-10 21:52 (UTC+3)  
+**Обновлён:** 2026-07-10 22:10 (UTC+3)  
 **План:** [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md)  
 **Runbook outbound:** [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md)  
 **Runbook inbound:** [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](runbooks/2026-07-10_1800-rest-webhook-adoption.md)  
+**Runbook AsyncOutbox:** [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md)  
 **Связанные документы:** [`2026-07-04_2338-integration-types-full-report.md`](2026-07-04_2338-integration-types-full-report.md), [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md), [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md)
 
 ---
@@ -182,6 +183,24 @@ orgIntegration
     .Integrate();
 ```
 
+### AsyncOutbox HTTP — critical TX + partner API
+
+```csharp
+builder.Services.AddIntegrationFlowEfRpcPending<MyDbContext>();
+builder.Services.AddIntegrationFlowRpcPendingRelay();
+
+app.MapIntegrationFlowRpcResponseWebhook("PaymentAuth");
+
+var pending = db.EnqueueRpcRequest("PaymentAuth", payload);
+await db.SaveChangesAsync(cancellationToken);
+
+var result = await orgIntegration
+    .CreateSentAndWaitAsyncOutboxIntegration<PaymentAuthProvider>(payload)
+    .IntegrateWithResultAsync(pending.Id, cancellationToken);
+```
+
+Runbook: [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md).
+
 ---
 
 ## Тесты (2026-07-10)
@@ -192,10 +211,12 @@ orgIntegration
 | SentAndWait unit | `RestHttpTransmitterTests.cs`, `RestHttpTransmitterPhase2Tests.cs` | 15 |
 | Publish unit | `RestPublishTransmitterTests.cs` | 4 |
 | Outbox | `OutboxTransportResolverTests.cs`, `OutboxRelayServiceRestTests.cs` | 5 |
+| Webhooks | `RestWebhook*Tests.cs` | 22 |
+| AsyncOutbox | `RestRpcResponseCorrelationProcessorTests.cs`, `RpcPendingTransportResolverTests.cs` | 7 |
 | OpenTelemetry | `RecordRequestReply_RecordsTransportTag` | 1 |
-| Integration WireMock | `RestHttpEndToEndTests.cs`, `RestOutboxRelayEndToEndTests.cs` | 6 |
+| Integration WireMock | `RestHttpEndToEndTests.cs`, `RestOutboxRelayEndToEndTests.cs`, `RestRpcPendingEndToEndTests.cs` | 7 |
 
-**Итого REST:** ~36 тестов. Полный suite: **203 unit** + integration (см. CI).
+**Итого REST:** ~66 тестов (unit + integration). Полный suite: **~240 unit** + integration (см. CI).
 
 ```bash
 dotnet test IntegrationFlow.sln --filter "FullyQualifiedName~Rest"
@@ -208,18 +229,24 @@ dotnet test IntegrationFlow.sln --filter "Category!=Integration"
 
 ```
 Rest/
-├── Configurations/     # RequestReply, Publish, Connection profiles, loaders
+├── Configurations/     # RequestReply, Publish, Webhooks, Connection profiles
 ├── Connections/        # HttpClient provider, handler factory, connections
 ├── Auth/               # Bearer, Basic, ApiKey
-├── SentAndWait/        # RestHttpTransmitter, opposite side base
+├── SentAndWait/        # RestHttpTransmitter, RpcPending/RestRpcPendingPublisher
 ├── SentAndForgot/      # RestPublishTransmitter, opposite side base
+├── ReceiveAndProcess/  # RestWebhookMessageProcessor, RestRpcResponseCorrelationProcessor
 ├── SentAndWait/Cache/  # IRestClientResponseCache (фаза 2)
 ├── Health/             # RestHealthCheck (net8.0)
-├── Tracing/            # traceparent inject
+├── Tracing/            # traceparent inject/extract
 └── Exceptions/         # RestHttpException, RestHttpClientErrorException
 
+RpcPending/
+├── RpcPendingRelayService.cs       # transport-agnostic relay (REST + RabbitMQ)
+├── RpcPendingTransportResolver.cs
+├── IRpcPendingTransportResolver.cs
+
 Outbox/
-├── OutboxRelayService.cs       # transport-agnostic relay
+├── OutboxRelayService.cs       # transport-agnostic outbox relay
 ├── OutboxTransportResolver.cs  # RestPublish → REST, else RabbitMqPublish
 
 01Infrastructure/
@@ -232,7 +259,7 @@ Outbox/
 
 | ID | Риск | Severity | Mitigation |
 |----|------|----------|------------|
-| H1 | HTTP timeout = unknown state (SentAndWait) | Высокий | `Idempotency-Key` + partner idempotency; critical → outbox |
+| H1 | HTTP timeout = unknown state (sync SentAndWait) | Высокий | `Idempotency-Key` + partner idempotency; critical → **REST AsyncOutbox** (фаза 5) |
 | H5 | Secrets в `rest.json` | Средний | Env overlay — runbook |
 | H4 | 4xx retry loop | Закрыт | Publish 4xx → abandoned; SentAndWait 4xx → Failed без retry |
 | — | OAuth2 refresh | Open | Фаза 2+ / app-level |
@@ -257,6 +284,7 @@ Outbox/
 | [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md) | Полный план фаз 0–5 |
 | [`runbooks/2026-07-10_1330-rest-sentandwait-adoption.md`](runbooks/2026-07-10_1330-rest-sentandwait-adoption.md) | Production adoption (SentAndWait + outbox) |
 | [`runbooks/2026-07-10_1800-rest-webhook-adoption.md`](runbooks/2026-07-10_1800-rest-webhook-adoption.md) | Inbound webhooks (ReceiveAndProcess) |
+| [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) | AsyncOutbox HTTP (critical TX) |
 | [`2026-07-06_1519-remaining-backlog-summary.md`](2026-07-06_1519-remaining-backlog-summary.md) | Общий backlog проекта |
 | [`README.md`](../README.md) | Quick start REST в корне репозитория |
 
@@ -266,6 +294,7 @@ Outbox/
 
 | Дата | Изменение |
 |------|-----------|
+| 2026-07-10 22:10 | Документация: runbook AsyncOutbox, тесты, архитектура |
 | 2026-07-10 21:52 | Фаза 5 ✅: AsyncOutbox HTTP, callback webhook |
 | 2026-07-10 18:00 | Фаза 4 ✅: inbound webhooks, runbook |
 | 2026-07-10 15:07 | Создан документ; зафиксированы фазы 1–3 ✅ |

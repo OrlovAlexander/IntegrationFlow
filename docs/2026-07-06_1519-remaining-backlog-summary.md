@@ -2,7 +2,7 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-06 15:19 (UTC+3)  
-**Обновлён:** 2026-07-10 15:07 (UTC+3)  
+**Обновлён:** 2026-07-10 22:10 (UTC+3)  
 **Основание:** [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md), [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md), [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md)  
 **Детальный backlog:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **P3 status:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
@@ -90,4 +90,4 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 ## Итог
 
-**P1 + P2 core + P3 + P4 (полностью) + T-1/T-3/T-4/T-7 + REST фазы 1–5 закрыты.** До публичного release — **NuGet publish v1.0.1**. Epic P4 закрыт. REST outbound: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md). Runbook: [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md).
+**P1 + P2 core + P3 + P4 (полностью) + T-1/T-3/T-4/T-7 + REST фазы 1–5 закрыты.** До публичного release — **NuGet publish v1.0.1**. Epic P4 и REST plan закрыты. Runbooks: [`runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md), [`runbooks/2026-07-04_0845-metrics-and-alerting.md`](runbooks/2026-07-04_0845-metrics-and-alerting.md).

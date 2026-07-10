@@ -222,14 +222,15 @@ REST reuse метрик `integrationflow.requestreply.*` с tag `transport=rest`
 - [ ] `WithMessageId()` для retry-safe вызовов
 - [ ] `AddIntegrationFlowRestHealthChecks()` + readiness probe
 - [ ] Dashboard/alerts на `transport=rest` metrics
-- [ ] Critical flows **не** на sync REST — outbox или RabbitMQ
+- [ ] Critical flows **не** на sync REST — [`REST AsyncOutbox`](2026-07-10_2130-rest-asyncoutbox-adoption.md) или RabbitMQ AsyncOutbox
 
 ---
 
 ## Связанные документы
 
 - [REST implementation plan](../plans/2026-07-10_0853-rest-implementation.md)
-- [REST implementation status (фазы 1–3)](../2026-07-10_1507-rest-implementation-status.md)
+- [REST implementation status (фазы 1–5)](../2026-07-10_1507-rest-implementation-status.md)
+- [REST AsyncOutbox adoption](2026-07-10_2130-rest-asyncoutbox-adoption.md)
 - [SentAndWait RPC adoption (RabbitMQ)](2026-07-04_2130-sentandwait-rpc-adoption.md)
 - [Production adoption checklist](2026-07-04_2130-production-adoption.md)
 - [Abandoned outbox replay](2026-07-03_2216-abandoned-outbox-replay.md)
