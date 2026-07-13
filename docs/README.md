@@ -12,6 +12,12 @@
 | [Runbook adoption (inbound)](runbooks/2026-07-10_1800-rest-webhook-adoption.md) | Production: inbound webhooks, dedup, auth hook |
 | [Runbook adoption (AsyncOutbox)](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) | Production: critical TX + HTTP callback |
 
+### Redis (варианты интеграций, 2026-07-13)
+
+| Документ | Назначение |
+|----------|------------|
+| [Варианты интеграций с Redis](2026-07-13_2128-redis-integration-options.md) | Паттерны × Redis Streams/Pub/Sub/Lists, store, риски, roadmap |
+
 ---
 | Создан | Обновлён | Документ |
 |--------|----------|----------|
@@ -71,3 +77,4 @@
 | 2026-07-10 18:00 | 2026-07-10 18:00 | [Runbook: REST inbound webhooks](runbooks/2026-07-10_1800-rest-webhook-adoption.md) |
 | 2026-07-10 21:30 | 2026-07-10 22:10 | [Runbook: REST AsyncOutbox HTTP (critical TX)](runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) |
 | 2026-07-10 15:07 | 2026-07-10 22:10 | [Статус реализации REST (фазы 1–5, актуально)](2026-07-10_1507-rest-implementation-status.md) |
+| 2026-07-13 21:28 | 2026-07-13 21:28 | [Варианты интеграций с Redis (актуально)](2026-07-13_2128-redis-integration-options.md) |

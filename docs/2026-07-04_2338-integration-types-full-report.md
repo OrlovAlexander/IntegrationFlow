@@ -483,7 +483,7 @@ await rabbit.PublishAsync(event);      // может упасть → потер
 
 ### Транспорты и протоколы
 
-- Kafka, Azure Service Bus, SQS, NATS, Redis Streams, IBM MQ
+- Kafka, Azure Service Bus, SQS, NATS, Redis Streams, IBM MQ — Redis: [`2026-07-13_2128-redis-integration-options.md`](2026-07-13_2128-redis-integration-options.md)
 - File/SFTP polling
 - Database polling / CDC
 - gRPC, SOAP

@@ -1,9 +1,9 @@
 # Брокеры для каркаса IntegrationFlow
 
 **Создан:** 2026-06-20 21:50 (UTC+3)  
-**Обновлён:** 2026-07-03 13:21 (UTC+3)
+**Обновлён:** 2026-07-13 21:28 (UTC+3)
 
-Каркас **не привязан к конкретному брокеру** — он задаёт паттерны интеграции, а транспорт подключается через реализации. Сейчас готов **RabbitMQ** для сценариев **ReceiveAndProcess** (consumer) и **SentAndForgot** (publisher); **REST** — production outbound (SentAndWait, outbox webhook). Статус: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md).
+Каркас **не привязан к конкретному брокеру** — он задаёт паттерны интеграции, а транспорт подключается через реализации. Сейчас готов **RabbitMQ** для сценариев **ReceiveAndProcess** (consumer) и **SentAndForgot** (publisher); **REST** — production outbound (SentAndWait, outbox webhook). Статус: [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md). **Redis** — не реализован; варианты паттернов: [`2026-07-13_2128-redis-integration-options.md`](2026-07-13_2128-redis-integration-options.md).
 
 ## Как устроен каркас
 
@@ -29,7 +29,7 @@
 | **RabbitMQ** | Уже реализован; классическая модель queue + consumer + ack | AMQP, очереди, routing |
 | **Azure Service Bus** (Queue/Subscription) | Peek-lock → обработка → Complete/Abandon | Хорош для .NET/Azure, есть sessions, dead-letter |
 | **Amazon SQS** | Long polling, visibility timeout ≈ ack | Простой managed-сервис, at-least-once |
-| **Redis Streams** | Consumer groups + `XACK` | Лёгкий, если Redis уже в инфраструктуре |
+| **Redis Streams** | Consumer groups + `XACK` | Лёгкий, если Redis уже в инфраструктуре | Детали: [`2026-07-13_2128-redis-integration-options.md`](2026-07-13_2128-redis-integration-options.md) |
 | **NATS JetStream** | Durable consumer + explicit ack | Простой протокол, хорош для микросервисов |
 | **Apache ActiveMQ Artemis** | JMS/AMQP-очереди | Enterprise, on-prem |
 | **IBM MQ** | Классика для корпоративных интеграций | Дороже и сложнее в эксплуатации |
@@ -112,7 +112,7 @@
 1. **Azure Service Bus** — если стек Microsoft
 2. **Kafka** — если нужен event streaming
 3. **SQS** — если AWS
-4. **Redis Streams / NATS** — если нужна лёгкость
+4. **Redis Streams / NATS** — если нужна лёгкость ([Redis — варианты](2026-07-13_2128-redis-integration-options.md))
 5. **IBM MQ / Artemis** — если enterprise/on-prem
 
 REST уже покрывает синхронные интеграции; брокеры лучше использовать для **асинхронного ReceiveAndProcess** и **fire-and-forget / async request-reply**.

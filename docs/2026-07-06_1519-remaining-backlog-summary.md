@@ -2,8 +2,8 @@
 
 **Статус:** актуально  
 **Создан:** 2026-07-06 15:19 (UTC+3)  
-**Обновлён:** 2026-07-10 22:10 (UTC+3)  
-**Основание:** [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md), [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md), [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md)  
+**Обновлён:** 2026-07-13 21:28 (UTC+3)  
+**Основание:** [`2026-07-05_1455-integrationflow-full-analysis.md`](2026-07-05_1455-integrationflow-full-analysis.md), [`2026-07-06_1617-rabbitmq-p2-implementation-status.md`](2026-07-06_1617-rabbitmq-p2-implementation-status.md), [`plans/2026-07-10_0853-rest-implementation.md`](plans/2026-07-10_0853-rest-implementation.md), [`2026-07-10_1507-rest-implementation-status.md`](2026-07-10_1507-rest-implementation-status.md), [`2026-07-13_2128-redis-integration-options.md`](2026-07-13_2128-redis-integration-options.md)  
 **Детальный backlog:** [`plans/2026-07-06_1645-rabbitmq-implementation-backlog.md`](plans/2026-07-06_1645-rabbitmq-implementation-backlog.md)  
 **P3 status:** [`2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md`](2026-07-06_1753-rabbitmq-p3-ops-implementation-status.md)  
 **P4 status (epic P4-1 … P4-7):** [`2026-07-07_2103-rabbitmq-p4-implementation-status.md`](2026-07-07_2103-rabbitmq-p4-implementation-status.md)  
@@ -81,6 +81,9 @@ Runbook: [`runbooks/2026-07-04_0845-nuget-release.md`](runbooks/2026-07-04_0845-
 
 | ID | Задача | План |
 |----|--------|------|
+| **Redis-P0** | Redis Streams ReceiveAndProcess (listener + XACK) | [`2026-07-13_2128-redis-integration-options.md`](2026-07-13_2128-redis-integration-options.md) |
+| **Redis-P1** | SentAndForgot XADD + outbox relay resolver | то же |
+| **Redis-P2** | Redis dedup/cache store (StackExchange.Redis) | то же |
 | P2-CB | Circuit breaker publish/consume | [`plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md`](plans/2026-07-06_1519-rabbitmq-p2-resilience-hardening.md) волна 4 |
 | P2-HA | Cluster endpoints | то же |
 | P2-PF+ | Pool idle eviction / max lifetime | v1.1 |

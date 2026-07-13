@@ -717,6 +717,7 @@ IntegrationFlow/
 | REST AsyncOutbox HTTP | [`docs/runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md`](docs/runbooks/2026-07-10_2130-rest-asyncoutbox-adoption.md) |
 | REST-транспорт (план) | [`docs/plans/2026-07-10_0853-rest-implementation.md`](docs/plans/2026-07-10_0853-rest-implementation.md) |
 | REST-транспорт (статус фаз 1–5) | [`docs/2026-07-10_1507-rest-implementation-status.md`](docs/2026-07-10_1507-rest-implementation-status.md) |
+| Redis (варианты интеграций) | [`docs/2026-07-13_2128-redis-integration-options.md`](docs/2026-07-13_2128-redis-integration-options.md) |
 | Полный указатель | [`docs/README.md`](docs/README.md) |
 | Backlog проекта | [`docs/2026-07-06_1519-remaining-backlog-summary.md`](docs/2026-07-06_1519-remaining-backlog-summary.md) |
 
