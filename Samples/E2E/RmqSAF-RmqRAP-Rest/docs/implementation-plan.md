@@ -1,6 +1,6 @@
 # План реализации E2E-решения `RmqSAF-RmqRAP-Rest`
 
-**Статус:** черновик  
+**Статус:** реализован (E2E + Docker Compose)  
 **Создан:** 2026-07-14 (UTC+3)  
 **Обновлён:** 2026-07-14 (UTC+3)  
 **Расположение solution:** `Samples/E2E/RmqSAF-RmqRAP-Rest/`
@@ -66,7 +66,7 @@ var rabbitMq = builder.AddRabbitMQ("rabbitmq")
     .WithManagementPlugin();
 
 var storage = builder.AddProject<Projects.Storage_Api>("storage")
-    .WithHttpHealthCheck("/health/ready");
+    .WithHttpHealthCheck("/health");
 
 var bridge = builder.AddProject<Projects.Bridge_Worker>("bridge")
     .WithReference(rabbitMq)
@@ -99,6 +99,22 @@ Aspire 9+ из коробки даёт OpenTelemetry → **Seq** (логи) + **
 | **OpenTelemetry Collector** | Единая точка экспорта |
 
 Graylog — допустим, если нужен именно он (GELF exporter из OTEL), но для sample рекомендую OTEL-стек.
+
+### 3.1. Docker Compose (альтернатива AppHost)
+
+Для запуска без Aspire в репозитории есть `docker-compose.yml`, общий `Dockerfile` и `.dockerignore` в корне solution.
+
+| Файл | Назначение |
+|------|------------|
+| `docker-compose.yml` | Сервисы `rabbitmq`, `storage`, `bridge`, `sender` |
+| `Dockerfile` | Multi-stage build (`PROJECT_PATH`, `ENTRY_ASSEMBLY`) |
+| `.dockerignore` | Исключение `bin/`, `obj/`, `artifacts/` из контекста |
+
+Порты наружу: Sender `8080`, RabbitMQ `5673` / `15673`. Storage и bridge — только внутри сети Compose.
+
+Healthcheck: `bridge` и `sender` — `GET /alive` (liveness); `storage` — `GET /health`. Readiness checks IntegrationFlow на `/health` могут выполняться дольше и не используются как Docker liveness probe.
+
+Проверка E2E в Compose — см. [§12.3](#123-docker-compose).
 
 ---
 
@@ -283,8 +299,8 @@ IntegrationFlow на этом hop автоматически:
 | `POST /api/payloads` | POST | Принять payload, сохранить в памяти |
 | `GET /api/payloads` | GET | Список сохранённых (для проверки E2E) |
 | `GET /api/payloads/{id}` | GET | Один payload по id |
-| `GET /health/live` | GET | Liveness |
-| `GET /health/ready` | GET | Readiness |
+| `GET /alive` | GET | Liveness (`self` check, ServiceDefaults) |
+| `GET /health` | GET | Все health checks |
 
 ### 6.2. In-memory store
 
@@ -365,7 +381,9 @@ GET /api/payloads/{id}          // по messageId
 | REST upstream (Storage) | Bridge | `ready` |
 | Memory store | Storage | `ready` |
 
-Aspire Dashboard показывает health каждого ресурса. Для внешнего мониторинга — endpoint `/health/ready` + Prometheus exporter (опционально).
+Aspire Dashboard показывает health каждого ресурса. Для внешнего мониторинга — endpoint `/health` (все checks) или `/alive` (только liveness).
+
+В **Docker Compose** healthcheck контейнеров `bridge` и `sender` настроен на `/alive`, чтобы не блокировать старт на integration readiness checks.
 
 ### 7.2. Метрики IntegrationFlow
 
@@ -392,7 +410,7 @@ services.AddIntegrationFlowOpenTelemetryMetrics();
 
 | Сигнал | Порог | Действие |
 |--------|-------|----------|
-| `health/ready` != 200 | > 30s | Alert в Grafana |
+| `/health` != 200 (readiness) | > 30s | Alert в Grafana |
 | Consumer failures | > 5/min | Log + metric spike |
 | REST forward 5xx | > 3 подряд | Bridge nack → requeue |
 
@@ -595,7 +613,8 @@ Queue: integration.e2e.inbox
 | **5a** | **Traceability:** correlation propagation + ActivitySource + Storage span | 0.5 дн | Сквозной trace и поиск по correlationId (§8) |
 | **6** | Health checks + Aspire references | 0.5 дн | Heartbeat во всех сервисах |
 | **7** | E2E smoke test + traceability checks T-1…T-6 | 0.5 дн | Полный сценарий UI → memory → trace |
-| **8** | README + topology diagram | 0.25 дн | Документация sample |
+| **8** | README + topology diagram | 0.25 дн | Документация sample ✅ |
+| **9** | Docker Compose (без Aspire) | 0.5 дн | `docker compose up --build` — полный E2E ✅ |
 
 **Итого:** ~5.5 рабочих дней.
 
@@ -619,6 +638,14 @@ Queue: integration.e2e.inbox
 9. Seq / Aspire Logs → фильтр `integrationflow.correlation_id` → события Sender, Bridge, Storage
 10. Aspire Dashboard → Traces → найти trace по `correlationId` или `messageId` → 4+ spans без разрыва
 11. (Опционально) Grafana Tempo: `{ span.integrationflow.profile != "" }` — spans IntegrationFlow видны
+
+### 12.3. Docker Compose
+
+1. `docker compose up --build` в каталоге sample
+2. `docker compose ps` → `rabbitmq`, `storage`, `bridge`, `sender` в статусе **healthy**
+3. `POST http://localhost:8080/api/messages` — ответ `accepted` с `correlationId`
+4. `docker exec … rabbitmqctl list_queues` → `integration.e2e.inbox`: `0` messages, `1` consumer
+5. `GET /api/payloads?correlationId={id}` в storage (через `docker exec` или port-forward) — payload в списке
 
 ---
 

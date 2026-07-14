@@ -6,6 +6,8 @@ using IntegrationFlow.Metrics.OpenTelemetry.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<HostOptions>(options => options.ServicesStartConcurrently = true);
+
 RabbitMqAspireConfiguration.ApplyRabbitMqConnectionString(
     builder.Configuration,
     ("RabbitMq", "E2EInbox"));

@@ -57,21 +57,11 @@ public static partial class ServiceCollectionExtensions
         }
 
         services.Add(ServiceDescriptor.Singleton<IHostedService>(sp =>
-        {
-            var logger = sp.GetRequiredService<IIntegrationLogger>();
-            var metrics = sp.GetService<IIntegrationFlowMetrics>();
-            var healthRegistry = sp.GetService<RabbitMqTransportHealthRegistry>();
-            healthRegistry?.Register(RabbitMqTransportKind.Listener, profileName);
-            var processing = createProcessing(sp);
-            var deduplicationStore = createDeduplicationStore?.Invoke(sp);
-            var options = ReceiveAndProcessHostedServiceOptions.CreateForProfile(
+            new ReceiveAndProcessListenerHostedService(
+                sp.GetRequiredService<IServiceScopeFactory>(),
                 profileName,
-                logger,
-                processing,
-                deduplicationStore,
-                metrics);
-            return new ReceiveAndProcessHostedService(options, logger, healthRegistry);
-        }));
+                createProcessing,
+                createDeduplicationStore)));
 
         return services;
     }

@@ -100,6 +100,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RmqSAF-RmqRAP-Rest", "RmqSA
 	ProjectSection(SolutionItems) = preProject
 		Samples\E2E\RmqSAF-RmqRAP-Rest\README.md = Samples\E2E\RmqSAF-RmqRAP-Rest\README.md
 		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.sln = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.sln
+		Samples\E2E\RmqSAF-RmqRAP-Rest\docker-compose.yml = Samples\E2E\RmqSAF-RmqRAP-Rest\docker-compose.yml
+		Samples\E2E\RmqSAF-RmqRAP-Rest\Dockerfile = Samples\E2E\RmqSAF-RmqRAP-Rest\Dockerfile
 		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md
 	EndProjectSection
 EndProject

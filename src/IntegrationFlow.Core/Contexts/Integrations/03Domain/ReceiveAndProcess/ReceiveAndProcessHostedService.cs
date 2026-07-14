@@ -27,12 +27,25 @@ internal sealed class ReceiveAndProcessHostedService : BackgroundService
         this.healthRegistry = healthRegistry;
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        => worker.RunAsync(
+    public override Task StartAsync(CancellationToken cancellationToken)
+    {
+        _ = Task.Factory.StartNew(
+            () => ExecuteAsync(cancellationToken),
+            cancellationToken,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default).Unwrap();
+        return Task.CompletedTask;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await Task.Yield();
+        await worker.RunAsync(
             options.Configuration,
             options.ProcessMessageAsync,
             logger,
             stoppingToken,
             metrics: options.Metrics,
             healthRegistry: healthRegistry);
+    }
 }

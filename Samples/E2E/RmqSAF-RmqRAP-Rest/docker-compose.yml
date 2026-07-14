@@ -1,0 +1,93 @@
+name: rmq-saf-rap-rest-e2e
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: e2e
+      RABBITMQ_DEFAULT_PASS: e2e
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  storage:
+    build:
+      context: ../../..
+      dockerfile: Samples/E2E/RmqSAF-RmqRAP-Rest/Dockerfile
+      args:
+        PROJECT_PATH: Samples/E2E/RmqSAF-RmqRAP-Rest/Storage.Api/Storage.Api.csproj
+        ENTRY_ASSEMBLY: Storage.Api.dll
+    hostname: storage
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  bridge:
+    build:
+      context: ../../..
+      dockerfile: Samples/E2E/RmqSAF-RmqRAP-Rest/Dockerfile
+      args:
+        PROJECT_PATH: Samples/E2E/RmqSAF-RmqRAP-Rest/Bridge.Worker/Bridge.Worker.csproj
+        ENTRY_ASSEMBLY: Bridge.Worker.dll
+    hostname: bridge
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__rabbitmq: amqp://e2e:e2e@rabbitmq:5672
+      RabbitMq__E2EInbox__HostName: rabbitmq
+      RabbitMq__E2EInbox__Port: 5672
+      RabbitMq__E2EInbox__UserName: e2e
+      RabbitMq__E2EInbox__Password: e2e
+      RestConnections__StorageApi__BaseAddress: http://storage:8080
+      Logging__LogLevel__IntegrationFlow: Information
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  sender:
+    build:
+      context: ../../..
+      dockerfile: Samples/E2E/RmqSAF-RmqRAP-Rest/Dockerfile
+      args:
+        PROJECT_PATH: Samples/E2E/RmqSAF-RmqRAP-Rest/Sender.Api/Sender.Api.csproj
+        ENTRY_ASSEMBLY: Sender.Api.dll
+    hostname: sender
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__rabbitmq: amqp://e2e:e2e@rabbitmq:5672
+      RabbitMqPublish__E2EOut__HostName: rabbitmq
+      RabbitMqPublish__E2EOut__Port: 5672
+      RabbitMqPublish__E2EOut__UserName: e2e
+      RabbitMqPublish__E2EOut__Password: e2e
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      bridge:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s

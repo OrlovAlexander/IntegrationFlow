@@ -11,6 +11,7 @@
       "ContentType": "application/json",
       "Persistent": true,
       "ValidateTopology": true,
+      "DeclareTopologyOnStartup": true,
       "ClientProvidedName": "E2E.Sender.Publisher"
     }
   }

@@ -1,0 +1,13 @@
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/artifacts
+**/*.user
+**/*.suo
+**/TestResults
+**/.idea
+**/node_modules
+**/*.md
+!Samples/E2E/RmqSAF-RmqRAP-Rest/README.md

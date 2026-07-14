@@ -63,6 +63,8 @@ internal sealed class RabbitMqListenerWorker
 
         try
         {
+            await Task.Yield();
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 IConnection? connection = null;

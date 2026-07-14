@@ -36,12 +36,7 @@ public static partial class ServiceCollectionExtensions
                 loggerFactory.CreateLogger("IntegrationFlow"));
         });
         services.TryAddSingleton<IIntegrationFlowMetrics, NullIntegrationFlowMetrics>();
-        services.TryAddSingleton(sp =>
-        {
-            var registry = new RabbitMqTransportHealthRegistry();
-            registry.SetMetrics(sp.GetService<IIntegrationFlowMetrics>());
-            return registry;
-        });
+        services.TryAddSingleton(sp => new RabbitMqTransportHealthRegistry());
 
 #if NET8_0_OR_GREATER
         services.AddHostedService<RabbitMqConnectionPoolsShutdownHostedService>();

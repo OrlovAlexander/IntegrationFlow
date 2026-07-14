@@ -34,25 +34,26 @@ public static partial class ServiceCollectionExtensions
         }
 
         services.AddHostedService(sp =>
-        {
-            var logger = sp.GetRequiredService<IIntegrationLogger>();
-            var metrics = sp.GetService<IIntegrationFlowMetrics>();
-            var healthRegistry = sp.GetService<RabbitMqTransportHealthRegistry>();
-            healthRegistry?.Register(RabbitMqTransportKind.Listener, requestReplyProfileName);
+            ReceiveAndProcessListenerHostedService.ForRequestReply(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                scopedProvider =>
+                {
+                    var logger = scopedProvider.GetRequiredService<IIntegrationLogger>();
+                    var metrics = scopedProvider.GetService<IIntegrationFlowMetrics>();
+                    var healthRegistry = scopedProvider.GetService<RabbitMqTransportHealthRegistry>();
+                    healthRegistry?.Register(RabbitMqTransportKind.Listener, requestReplyProfileName);
 
-            var processing = new RabbitMqRpcServerInboxMessageProcessing(
-                requestReplyProfileName,
-                buildResponseAsync,
-                createResponseStore?.Invoke(sp));
+                    var processing = new RabbitMqRpcServerInboxMessageProcessing(
+                        requestReplyProfileName,
+                        buildResponseAsync,
+                        createResponseStore?.Invoke(scopedProvider));
 
-            var options = ReceiveAndProcessHostedServiceOptions.CreateForRequestReplyProfile(
-                requestReplyProfileName,
-                logger,
-                processing,
-                metrics);
-
-            return new ReceiveAndProcessHostedService(options, logger, healthRegistry);
-        });
+                    return ReceiveAndProcessHostedServiceOptions.CreateForRequestReplyProfile(
+                        requestReplyProfileName,
+                        logger,
+                        processing,
+                        metrics);
+                }));
 
         return services;
     }
