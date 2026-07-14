@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RmqSAF-RmqRAP-Rest.ServiceDefaults\RmqSAF-RmqRAP-Rest.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\RmqSAF-RmqRAP-Rest.Contracts\RmqSAF-RmqRAP-Rest.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\src\IntegrationFlow.Core\IntegrationFlow.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\src\IntegrationFlow.Metrics.OpenTelemetry\IntegrationFlow.Metrics.OpenTelemetry.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="rabbitmq.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="rest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

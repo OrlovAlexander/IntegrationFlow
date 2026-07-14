@@ -1,0 +1,17 @@
+{
+  "RabbitMq": {
+    "E2EInbox": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "QueueName": "integration.e2e.inbox",
+      "PrefetchCount": 1,
+      "Asynchronously": true,
+      "AutomaticRecoveryEnabled": true,
+      "DeclareTopologyOnStartup": true,
+      "ClientProvidedName": "E2E.Bridge.Listener"
+    }
+  }
+}

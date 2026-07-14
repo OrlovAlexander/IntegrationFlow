@@ -20,6 +20,8 @@
     <InternalsVisibleTo Include="IntegrationFlow.Core.Tests" />
     <InternalsVisibleTo Include="IntegrationFlow.Core.IntegrationTests" />
     <InternalsVisibleTo Include="IntegrationFlow.Metrics.OpenTelemetry" />
+    <InternalsVisibleTo Include="Sender.Api" />
+    <InternalsVisibleTo Include="Bridge.Worker" />
   </ItemGroup>
 
   <ItemGroup>

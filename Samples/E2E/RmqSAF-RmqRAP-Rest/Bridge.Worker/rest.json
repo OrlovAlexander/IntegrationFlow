@@ -1,0 +1,22 @@
+{
+  "RestConnections": {
+    "StorageApi": {
+      "BaseAddress": "http://storage",
+      "TimeoutSeconds": 30,
+      "Accept": "application/json"
+    }
+  },
+  "RestPublish": {
+    "StorageIngest": {
+      "Connection": "StorageApi",
+      "RequestPath": "/api/payloads",
+      "Method": "POST",
+      "ContentType": "application/json",
+      "PublishTimeoutSeconds": 30,
+      "IdempotencyHeaderName": "Idempotency-Key",
+      "ExpectedStatusCodes": [201, 202],
+      "RetryOnTransientErrors": true,
+      "MaxTransientRetries": 1
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "RabbitMqPublish": {
+    "E2EOut": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "guest",
+      "Password": "guest",
+      "VirtualHost": "/",
+      "PublishTarget": "Queue",
+      "QueueName": "integration.e2e.inbox",
+      "ContentType": "application/json",
+      "Persistent": true,
+      "ValidateTopology": true,
+      "ClientProvidedName": "E2E.Sender.Publisher"
+    }
+  }
+}

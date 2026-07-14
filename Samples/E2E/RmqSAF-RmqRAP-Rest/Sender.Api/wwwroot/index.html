@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>E2E Sender — SentAndForgot</title>
+    <style>
+        :root { font-family: system-ui, sans-serif; color-scheme: light dark; }
+        body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+        textarea { width: 100%; min-height: 180px; font-family: ui-monospace, monospace; }
+        button { margin-top: 0.75rem; padding: 0.5rem 1rem; }
+        pre { background: #0001; padding: 1rem; overflow: auto; border-radius: 6px; }
+        label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
+        input[type=text] { width: 100%; padding: 0.4rem; margin-bottom: 0.75rem; }
+    </style>
+</head>
+<body>
+<h1>RmqSAF → RmqRAP → Rest</h1>
+<p>Отправка payload через SentAndForgot (RabbitMQ).</p>
+
+<label for="type">Event type</label>
+<input id="type" type="text" value="SampleEvent" />
+
+<label for="payload">Payload (JSON object for <code>data</code>)</label>
+<textarea id="payload">{
+  "key": "value",
+  "note": "E2E sample"
+}</textarea>
+
+<button id="send">Отправить</button>
+
+<h2>Ответ</h2>
+<pre id="result">—</pre>
+
+<script>
+const sendBtn = document.getElementById('send');
+const result = document.getElementById('result');
+
+sendBtn.addEventListener('click', async () => {
+    result.textContent = 'Отправка...';
+    let data;
+    try {
+        data = JSON.parse(document.getElementById('payload').value);
+    } catch (e) {
+        result.textContent = 'Ошибка JSON: ' + e.message;
+        return;
+    }
+
+    const body = {
+        type: document.getElementById('type').value,
+        data
+    };
+
+    try {
+        const response = await fetch('/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const json = await response.json();
+        result.textContent = JSON.stringify(json, null, 2);
+    } catch (e) {
+        result.textContent = 'Ошибка запроса: ' + e.message;
+    }
+});
+</script>
+</body>
+</html>
