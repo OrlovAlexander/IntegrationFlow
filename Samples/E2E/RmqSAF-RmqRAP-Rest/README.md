@@ -13,13 +13,23 @@ End-to-end демонстрация цепочки **IntegrationFlow**:
 ## Требования
 
 - .NET 10 SDK
-- Docker
+- Docker (Docker Desktop или другой runtime) с **запущенным Docker daemon**
 
 ## Запуск
 
 ### Вариант A: Aspire (локальная разработка)
 
-- [Aspire workload](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling): `dotnet workload install aspire`
+Для Aspire нужен **активный Docker daemon**: AppHost поднимает RabbitMQ в контейнере (`AddRabbitMQ` в `AppHost.cs`). Сервисы `sender`, `bridge` и `storage` запускаются как локальные .NET-процессы и сами по себе Docker не требуют.
+
+Перед стартом убедитесь, что Docker запущен:
+
+```powershell
+docker info
+```
+
+Команда должна завершиться без ошибки подключения к daemon.
+
+- [Aspire workload](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling): `dotnet workload install aspire` (опционально — AppHost может работать через NuGet SDK)
 
 ```powershell
 dotnet run --project RmqSAF-RmqRAP-Rest.AppHost
@@ -150,4 +160,5 @@ dotnet build Sender.Api
 dotnet build RmqSAF-RmqRAP-Rest.AppHost
 ```
 
-Подробный план: [docs/implementation-plan.md](docs/implementation-plan.md).
+Подробный план: [docs/implementation-plan.md](docs/implementation-plan.md).  
+Aspire + REST (подстановка URL storage): [docs/rest-aspire-configuration.md](docs/rest-aspire-configuration.md).

@@ -12,6 +12,11 @@ RabbitMqAspireConfiguration.ApplyRabbitMqConnectionString(
     builder.Configuration,
     ("RabbitMq", "E2EInbox"));
 
+RestAspireConfiguration.ApplyRestServiceReference(
+    builder.Configuration,
+    "storage",
+    "StorageApi");
+
 builder.AddServiceDefaults();
 
 builder.Services.AddIntegrationFlow();

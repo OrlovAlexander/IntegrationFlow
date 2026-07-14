@@ -103,6 +103,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RmqSAF-RmqRAP-Rest", "RmqSA
 		Samples\E2E\RmqSAF-RmqRAP-Rest\docker-compose.yml = Samples\E2E\RmqSAF-RmqRAP-Rest\docker-compose.yml
 		Samples\E2E\RmqSAF-RmqRAP-Rest\Dockerfile = Samples\E2E\RmqSAF-RmqRAP-Rest\Dockerfile
 		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md
+		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\rest-aspire-configuration.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\rest-aspire-configuration.md
+		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RabbitMqAspireConfiguration.cs = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RabbitMqAspireConfiguration.cs
+		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RestAspireConfiguration.cs = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RestAspireConfiguration.cs
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RmqSAF-RmqRAP-Rest.AppHost", "Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.AppHost\RmqSAF-RmqRAP-Rest.AppHost.csproj", "{CBF38DA4-248E-4C5E-9A8D-DBD79F757098}"
