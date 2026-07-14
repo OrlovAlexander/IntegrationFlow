@@ -102,10 +102,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RmqSAF-RmqRAP-Rest", "RmqSA
 		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.sln = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.sln
 		Samples\E2E\RmqSAF-RmqRAP-Rest\docker-compose.yml = Samples\E2E\RmqSAF-RmqRAP-Rest\docker-compose.yml
 		Samples\E2E\RmqSAF-RmqRAP-Rest\Dockerfile = Samples\E2E\RmqSAF-RmqRAP-Rest\Dockerfile
-		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md
-		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\rest-aspire-configuration.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\rest-aspire-configuration.md
-		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RabbitMqAspireConfiguration.cs = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RabbitMqAspireConfiguration.cs
-		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RestAspireConfiguration.cs = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RestAspireConfiguration.cs
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RmqSAF-RmqRAP-Rest.AppHost", "Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.AppHost\RmqSAF-RmqRAP-Rest.AppHost.csproj", "{CBF38DA4-248E-4C5E-9A8D-DBD79F757098}"
@@ -119,6 +115,18 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bridge.Worker", "Samples\E2E\RmqSAF-RmqRAP-Rest\Bridge.Worker\Bridge.Worker.csproj", "{2C89C6AE-8EC5-41AA-ABE1-310BB3646BA1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storage.Api", "Samples\E2E\RmqSAF-RmqRAP-Rest\Storage.Api\Storage.Api.csproj", "{151ECFB1-2E90-4DDC-A9C0-BE7A0BE8832B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AspireConfiguration", "AspireConfiguration", "{5574150F-29C6-4F61-AED8-110E943CAB88}"
+	ProjectSection(SolutionItems) = preProject
+		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RabbitMqAspireConfiguration.cs = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RabbitMqAspireConfiguration.cs
+		Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RestAspireConfiguration.cs = Samples\E2E\RmqSAF-RmqRAP-Rest\RmqSAF-RmqRAP-Rest.ServiceDefaults\RestAspireConfiguration.cs
+		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\rest-aspire-configuration.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\rest-aspire-configuration.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D4314B45-A6B2-4A33-81AA-EDF122DC9162}"
+	ProjectSection(SolutionItems) = preProject
+		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -344,5 +352,7 @@ Global
 		{96BCAAA9-5A9C-48EF-BC23-87DD905369F9} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
 		{2C89C6AE-8EC5-41AA-ABE1-310BB3646BA1} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
 		{151ECFB1-2E90-4DDC-A9C0-BE7A0BE8832B} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
+		{5574150F-29C6-4F61-AED8-110E943CAB88} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
+		{D4314B45-A6B2-4A33-81AA-EDF122DC9162} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
 	EndGlobalSection
 EndGlobal
