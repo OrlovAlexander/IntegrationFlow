@@ -52,16 +52,6 @@ internal sealed class ReceiveAndProcessListenerHostedService : BackgroundService
         Func<IServiceProvider, ReceiveAndProcessHostedServiceOptions> createOptions)
         => new(scopeFactory, createOptions);
 
-    public override Task StartAsync(CancellationToken cancellationToken)
-    {
-        _ = Task.Factory.StartNew(
-            () => ExecuteAsync(cancellationToken),
-            cancellationToken,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default).Unwrap();
-        return Task.CompletedTask;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Yield();
