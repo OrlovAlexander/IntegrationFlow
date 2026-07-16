@@ -128,6 +128,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D4314B45-A
 		Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md = Samples\E2E\RmqSAF-RmqRAP-Rest\docs\implementation-plan.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "e2eTests", "e2eTests", "{27ED9662-EBFE-A8DF-FA70-FB6A58E4022C}"
+	ProjectSection(SolutionItems) = preProject
+		e2eTests\README.md = e2eTests\README.md
+		e2eTests\RmqSAF-RmqRAP-Rest.LoadTests.sln = e2eTests\RmqSAF-RmqRAP-Rest.LoadTests.sln
+		e2eTests\docker-compose.loadtests.yml = e2eTests\docker-compose.loadtests.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RmqSAF-RmqRAP-Rest.LoadTests", "RmqSAF-RmqRAP-Rest.LoadTests", "{E2D104F8-208C-1E86-1B6B-287A7441FA5E}"
+	ProjectSection(SolutionItems) = preProject
+		e2eTests\RmqSAF-RmqRAP-Rest.LoadTests\appsettings.json = e2eTests\RmqSAF-RmqRAP-Rest.LoadTests\appsettings.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RmqSAF-RmqRAP-Rest.LoadTests", "e2eTests\RmqSAF-RmqRAP-Rest.LoadTests\RmqSAF-RmqRAP-Rest.LoadTests.csproj", "{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -330,6 +344,18 @@ Global
 		{151ECFB1-2E90-4DDC-A9C0-BE7A0BE8832B}.Release|x64.Build.0 = Release|Any CPU
 		{151ECFB1-2E90-4DDC-A9C0-BE7A0BE8832B}.Release|x86.ActiveCfg = Release|Any CPU
 		{151ECFB1-2E90-4DDC-A9C0-BE7A0BE8832B}.Release|x86.Build.0 = Release|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Debug|x64.Build.0 = Debug|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Debug|x86.Build.0 = Debug|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Release|x64.ActiveCfg = Release|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Release|x64.Build.0 = Release|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Release|x86.ActiveCfg = Release|Any CPU
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -354,5 +380,7 @@ Global
 		{151ECFB1-2E90-4DDC-A9C0-BE7A0BE8832B} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
 		{5574150F-29C6-4F61-AED8-110E943CAB88} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
 		{D4314B45-A6B2-4A33-81AA-EDF122DC9162} = {D3E4F5A6-B7C8-9012-DEF0-234567890123}
+		{E2D104F8-208C-1E86-1B6B-287A7441FA5E} = {27ED9662-EBFE-A8DF-FA70-FB6A58E4022C}
+		{B2AD6D68-03E6-4957-AE7F-7CBA98A8A668} = {E2D104F8-208C-1E86-1B6B-287A7441FA5E}
 	EndGlobalSection
 EndGlobal

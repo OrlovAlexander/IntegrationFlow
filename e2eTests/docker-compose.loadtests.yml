@@ -1,0 +1,5 @@
+# Проброс порта storage для проверки доставки из load tests на хосте.
+services:
+  storage:
+    ports:
+      - "8081:8080"
